@@ -4,80 +4,108 @@
 
 {% block head %}
 <style>
-    /* 自定义样式 */
-    .card {
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        border: none;
-        transition: all 0.3s ease;
-    }
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.1);
-    }
-    .card-header {
-        border-bottom: 1px solid rgba(0,0,0,0.05);
-        background-color: #fff;
-        font-weight: 600;
-        border-radius: 10px 10px 0 0 !important;
-    }
-    .price-card {
-        background: linear-gradient(135deg, #f5f7fa 0%, #e4eafd 100%);
-    }
-    .stock-price {
-        font-size: 1.8rem;
-        font-weight: 700;
-    }
-    .score-pill {
-        font-size: 1.1rem;
-        padding: 0.4rem 0.8rem;
-        border-radius: 30px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .indicator-value {
-        font-weight: 600;
-    }
-    .analysis-section {
-        line-height: 1.8;
-    }
-    .support-resistance-table td, .support-resistance-table th {
-        padding: 0.5rem;
-    }
-    .trend-up {
-        background: linear-gradient(90deg, rgba(40,167,69,0.1) 0%, rgba(255,255,255,0) 100%);
-        border-left: 3px solid #28a745;
-        padding-left: 8px;
-    }
-    .trend-down {
-        background: linear-gradient(90deg, rgba(220,53,69,0.1) 0%, rgba(255,255,255,0) 100%);
-        border-left: 3px solid #dc3545;
-        padding-left: 8px;
-    }
-    .chart-card {
+    /* Enhanced Material Design 3 Stock Detail Styles */
+    .stock-detail-header {
+        background: linear-gradient(135deg, var(--md-sys-color-primary-container) 0%, var(--md-sys-color-secondary-container) 100%);
+        border-radius: var(--md-sys-shape-corner-large);
+        padding: 32px;
+        margin-bottom: 32px;
+        position: relative;
         overflow: hidden;
     }
-    .tab-content {
-        padding: 1rem;
+
+    .stock-detail-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        transform: translate(50%, -50%);
     }
-    .nav-tabs .nav-link {
-        border: none;
-        color: #495057;
-        font-weight: 500;
-        padding: 0.75rem 1rem;
+
+    .stock-price-display {
+        font-family: var(--md-sys-typescale-financial-large-font);
+        font-size: var(--md-sys-typescale-financial-large-size);
+        font-weight: var(--md-sys-typescale-financial-large-weight);
+        color: var(--md-sys-color-on-primary-container);
+        margin-bottom: 8px;
     }
-    .nav-tabs .nav-link.active {
-        color: #4e73df;
-        background-color: transparent;
-        border-bottom: 3px solid #4e73df;
+
+    .stock-change-display {
+        font-family: var(--md-sys-typescale-financial-medium-font);
+        font-size: var(--md-sys-typescale-financial-medium-size);
+        font-weight: var(--md-sys-typescale-financial-medium-weight);
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
-    .ai-analysis-container {
+
+    .stock-controls {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .stock-metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    .metric-card {
+        background: var(--md-sys-color-surface-container);
+        border-radius: var(--md-sys-shape-corner-medium);
+        padding: 24px;
+        text-align: center;
+        transition: all var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+        border: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .metric-card:hover {
+        background: var(--md-sys-color-surface-container-high);
+        transform: translateY(-4px);
+        box-shadow: var(--md-sys-elevation-level2);
+    }
+
+    .metric-value {
+        font-family: var(--md-sys-typescale-financial-medium-font);
+        font-size: var(--md-sys-typescale-financial-medium-size);
+        font-weight: var(--md-sys-typescale-financial-medium-weight);
+        color: var(--md-sys-color-on-surface);
+        margin-bottom: 8px;
+    }
+
+    .metric-label {
+        font-family: var(--md-sys-typescale-body-small-font);
+        font-size: var(--md-sys-typescale-body-small-size);
+        color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .chart-tabs {
+        margin-bottom: 32px;
+    }
+
+    .chart-container {
+        background: var(--md-sys-color-surface);
+        border-radius: var(--md-sys-shape-corner-large);
+        border: 1px solid var(--md-sys-color-outline-variant);
+        overflow: hidden;
+    }
+
+    .ai-analysis-section {
+        background: var(--md-sys-color-surface-container-low);
+        border-radius: var(--md-sys-shape-corner-large);
+        padding: 32px;
         position: relative;
-        min-height: 200px;
+        min-height: 300px;
     }
-    .ai-analysis-content {
-        transition: opacity 0.3s ease;
-    }
-    .ai-analysis-loader {
+
+    .ai-loader {
         position: absolute;
         top: 0;
         left: 0;
@@ -87,62 +115,54 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        background-color: rgba(255,255,255,0.8);
+        background: rgba(var(--md-sys-color-surface-rgb), 0.9);
+        backdrop-filter: blur(8px);
+        border-radius: var(--md-sys-shape-corner-large);
         z-index: 10;
     }
-    .typing-indicator {
-        display: inline-block;
-        margin-top: 10px;
+
+    .typing-animation {
+        display: flex;
+        gap: 4px;
+        margin-top: 16px;
     }
-    .typing-indicator span {
-        height: 10px;
-        width: 10px;
-        float: left;
-        margin: 0 2px;
-        background-color: #4e73df;
+
+    .typing-dot {
+        width: 8px;
+        height: 8px;
+        background: var(--md-sys-color-primary);
         border-radius: 50%;
-        opacity: 0.4;
-        animation: typing 1s infinite;
+        animation: typing-bounce 1.4s infinite ease-in-out;
     }
-    .typing-indicator span:nth-of-type(1) { animation-delay: 0s; }
-    .typing-indicator span:nth-of-type(2) { animation-delay: 0.2s; }
-    .typing-indicator span:nth-of-type(3) { animation-delay: 0.4s; }
-    @keyframes typing {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.5); opacity: 0.8; }
-        100% { transform: scale(1); }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    .typing-dot:nth-child(3) { animation-delay: 0s; }
+
+    @keyframes typing-bounce {
+        0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+        40% { transform: scale(1.2); opacity: 1; }
     }
-    .badge-pill {
-        border-radius: 30px;
-        padding: 0.4em 0.8em;
+
+    .shimmer-skeleton {
+        background: linear-gradient(90deg, var(--md-sys-color-surface-container) 25%, var(--md-sys-color-surface-container-high) 50%, var(--md-sys-color-surface-container) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: var(--md-sys-shape-corner-small);
     }
-    .market-badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 1;
+
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
     }
-    .price-change-up {
-        background-color: rgba(40,167,69,0.1);
-        color: #28a745;
-    }
-    .price-change-down {
-        background-color: rgba(220,53,69,0.1);
-        color: #dc3545;
-    }
-    .progress {
-        height: 5px;
-        margin-top: 5px;
-    }
-    .analysis-para {
-        margin-bottom: 1rem;
-    }
-    .score-indicator {
+
+    .score-circle {
         position: relative;
-        height: 180px;
-        width: 180px;
+        width: 160px;
+        height: 160px;
         margin: 0 auto;
     }
+
     .score-display {
         position: absolute;
         top: 50%;
@@ -150,280 +170,320 @@
         transform: translate(-50%, -50%);
         text-align: center;
     }
-    .score-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0;
+
+    .score-number {
+        font-family: var(--md-sys-typescale-financial-large-font);
+        font-size: 48px;
+        font-weight: var(--md-sys-typescale-financial-large-weight);
+        color: var(--md-sys-color-primary);
+        line-height: 1;
     }
-    .score-label {
-        font-size: 0.9rem;
-        color: #6c757d;
+
+    .score-text {
+        font-family: var(--md-sys-typescale-body-small-font);
+        font-size: var(--md-sys-typescale-body-small-size);
+        color: var(--md-sys-color-on-surface-variant);
+        margin-top: 4px;
     }
-    .quick-stat {
+
+    .support-resistance-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .support-resistance-table th,
+    .support-resistance-table td {
+        padding: 12px 16px;
         text-align: center;
-        padding: 1rem;
-        border-radius: 10px;
-        margin-bottom: 0.5rem;
-        background-color: #f8f9fa;
-        transition: all 0.3s ease;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
     }
-    .quick-stat:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+
+    .support-resistance-table th {
+        background: var(--md-sys-color-surface-container);
+        color: var(--md-sys-color-on-surface);
+        font-family: var(--md-sys-typescale-title-small-font);
+        font-size: var(--md-sys-typescale-title-small-size);
+        font-weight: var(--md-sys-typescale-title-small-weight);
     }
-    .stat-value {
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
+
+    .trend-indicator {
+        padding: 8px 16px;
+        border-radius: var(--md-sys-shape-corner-small);
+        font-family: var(--md-sys-typescale-label-medium-font);
+        font-size: var(--md-sys-typescale-label-medium-size);
+        font-weight: var(--md-sys-typescale-label-medium-weight);
     }
-    .stat-label {
-        font-size: 0.8rem;
-        color: #6c757d;
+
+    .trend-up {
+        background: var(--md-sys-color-bull-container);
+        color: var(--md-sys-color-on-bull-container);
+        border-left: 4px solid var(--md-sys-color-bull);
+    }
+
+    .trend-down {
+        background: var(--md-sys-color-bear-container);
+        color: var(--md-sys-color-on-bear-container);
+        border-left: 4px solid var(--md-sys-color-bear);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3">
+<div class="page-transition">
     <div id="alerts-container"></div>
 
-    <!-- 标题和控制区 -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 id="stock-title" class="mb-0 fw-bold">
-                <span class="shimmer-bg" style="width: 200px; height: 24px;"></span>
-            </h4>
-            <p id="stock-info" class="text-muted mb-0 small">
-                <span class="shimmer-bg" style="width: 150px; height: 16px;"></span>
-            </p>
-        </div>
-        <div class="d-flex align-items-center">
-            <select class="form-select form-select-sm me-2" id="market-type" style="max-width: 100px;">
-                <option value="A" {% if market_type == 'A' %}selected{% endif %}>A股</option>
-                <option value="HK" {% if market_type == 'HK' %}selected{% endif %}>港股</option>
-                <option value="US" {% if market_type == 'US' %}selected{% endif %}>美股</option>
-            </select>
-            <select class="form-select form-select-sm me-2" id="analysis-period" style="max-width: 100px;">
-                <option value="1m">1个月</option>
-                <option value="3m">3个月</option>
-                <option value="6m">6个月</option>
-                <option value="1y" selected>1年</option>
-            </select>
-            <button id="refresh-btn" class="btn btn-primary btn-sm">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- 系统指标区域 - 始终显示，但先显示加载状态 -->
-    <div id="system-indicators">
-        <!-- 第一行：股票概要和评分 -->
-        <div class="row g-3 mb-3">
-            <!-- 股票概要卡片 -->
-            <div class="col-md-4">
-                <div class="card price-card h-100">
-                    <div class="card-body position-relative">
-                        <span id="market-badge" class="badge market-badge"></span>
-                        <div class="row align-items-center">
-                            <div class="col-7">
-                                <div id="price-container">
-                                    <div class="shimmer-bg" style="width: 120px; height: 32px;"></div>
-                                    <div class="shimmer-bg mt-1" style="width: 80px; height: 20px;"></div>
-                                </div>
-                            </div>
-                            <div class="col-5 text-end">
-                                <div id="recommendation-container">
-                                    <div class="shimmer-bg" style="width: 100px; height: 24px;"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <div class="d-flex justify-content-between text-muted small">
-                                    <span>今开：<span id="open-price">--</span></span>
-                                    <span>最高：<span id="high-price">--</span></span>
-                                    <span>最低：<span id="low-price">--</span></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Enhanced Material Design 3 股票详情头部 -->
+    <div class="stock-detail-header md3-animate-fade-in">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1;">
+            <div style="flex: 1;">
+                <div id="stock-title" style="margin-bottom: 16px;">
+                    <div class="shimmer-skeleton" style="width: 300px; height: 32px; margin-bottom: 8px;"></div>
+                    <div class="shimmer-skeleton" style="width: 200px; height: 20px;"></div>
                 </div>
-            </div>
-            
-            <!-- 评分卡片 -->
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">综合评分</h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <div id="score-container" class="d-flex align-items-center justify-content-center">
-                            <div class="shimmer-bg rounded-circle" style="width: 120px; height: 120px;"></div>
-                        </div>
-                    </div>
+                <div id="stock-price-section" style="margin-bottom: 24px;">
+                    <div class="shimmer-skeleton" style="width: 200px; height: 48px; margin-bottom: 8px;"></div>
+                    <div class="shimmer-skeleton" style="width: 150px; height: 24px;"></div>
                 </div>
-            </div>
-            
-            <!-- 技术指标卡片 -->
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">关键指标</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <div class="quick-stat">
-                                    <div id="rsi-container">
-                                        <div class="shimmer-bg mx-auto" style="width: 50px; height: 24px;"></div>
-                                        <div class="shimmer-bg mx-auto mt-1" style="width: 40px; height: 16px;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="quick-stat">
-                                    <div id="ma-trend-container">
-                                        <div class="shimmer-bg mx-auto" style="width: 50px; height: 24px;"></div>
-                                        <div class="shimmer-bg mx-auto mt-1" style="width: 40px; height: 16px;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="quick-stat">
-                                    <div id="macd-container">
-                                        <div class="shimmer-bg mx-auto" style="width: 50px; height: 24px;"></div>
-                                        <div class="shimmer-bg mx-auto mt-1" style="width: 40px; height: 16px;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="quick-stat">
-                                    <div id="volume-container">
-                                        <div class="shimmer-bg mx-auto" style="width: 50px; height: 24px;"></div>
-                                        <div class="shimmer-bg mx-auto mt-1" style="width: 40px; height: 16px;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 第二行：图表区域 -->
-        <div class="row g-3 mb-3">
-            <div class="col-12">
-                <div class="card chart-card">
-                    <div class="card-header py-2">
-                        <ul class="nav nav-tabs card-header-tabs" id="chartTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="price-tab" data-bs-toggle="tab" data-bs-target="#price-content" type="button" role="tab" aria-controls="price-content" aria-selected="true">价格趋势</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="indicators-tab" data-bs-toggle="tab" data-bs-target="#indicators-content" type="button" role="tab" aria-controls="indicators-content" aria-selected="false">技术指标</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="volume-tab" data-bs-toggle="tab" data-bs-target="#volume-content" type="button" role="tab" aria-controls="volume-content" aria-selected="false">成交量</button>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="tab-content" id="chartTabsContent">
-                        <div class="tab-pane fade show active" id="price-content" role="tabpanel" aria-labelledby="price-tab">
-                            <div id="price-chart" style="height: 400px;"></div>
-                        </div>
-                        <div class="tab-pane fade" id="indicators-content" role="tabpanel" aria-labelledby="indicators-tab">
-                            <div id="indicators-chart" style="height: 400px;"></div>
-                        </div>
-                        <div class="tab-pane fade" id="volume-content" role="tabpanel" aria-labelledby="volume-tab">
-                            <div id="volume-chart" style="height: 400px;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 第三行：支撑压力位和雷达图 -->
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">支撑与压力位</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="support-resistance-container">
-                            <div class="shimmer-bg" style="width: 100%; height: 120px;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">多维度评分</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="radar-chart-container">
-                            <div class="shimmer-bg" style="width: 100%; height: 200px;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- AI分析区域 - 始终显示，但异步加载内容 -->
-    <div class="row g-3 mb-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">AI分析报告</h5>
+                <div id="stock-basic-info" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px;">
                     <div>
-                        <span id="ai-analysis-status" class="badge bg-info">准备分析...</span>
+                        <div style="color: var(--md-sys-color-on-primary-container); opacity: 0.7; font-size: 14px; margin-bottom: 4px;">今开</div>
+                        <div id="open-price" class="shimmer-skeleton" style="width: 80px; height: 20px;"></div>
+                    </div>
+                    <div>
+                        <div style="color: var(--md-sys-color-on-primary-container); opacity: 0.7; font-size: 14px; margin-bottom: 4px;">最高</div>
+                        <div id="high-price" class="shimmer-skeleton" style="width: 80px; height: 20px;"></div>
+                    </div>
+                    <div>
+                        <div style="color: var(--md-sys-color-on-primary-container); opacity: 0.7; font-size: 14px; margin-bottom: 4px;">最低</div>
+                        <div id="low-price" class="shimmer-skeleton" style="width: 80px; height: 20px;"></div>
+                    </div>
+                    <div>
+                        <div style="color: var(--md-sys-color-on-primary-container); opacity: 0.7; font-size: 14px; margin-bottom: 4px;">成交量</div>
+                        <div id="volume-info" class="shimmer-skeleton" style="width: 80px; height: 20px;"></div>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="ai-analysis-container">
-                        <!-- AI分析加载动画 -->
-                        <div id="ai-analysis-loader" class="ai-analysis-loader">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">正在分析...</span>
+            </div>
+            <div class="stock-controls">
+                <div class="md3-text-field md3-text-field-outlined md3-text-field-small">
+                    <select class="md3-text-field-input" id="market-type">
+                        <option value="A" {% if market_type == 'A' %}selected{% endif %}>A股</option>
+                        <option value="HK" {% if market_type == 'HK' %}selected{% endif %}>港股</option>
+                        <option value="US" {% if market_type == 'US' %}selected{% endif %}>美股</option>
+                    </select>
+                    <label class="md3-text-field-label">市场</label>
+                </div>
+                <div class="md3-text-field md3-text-field-outlined md3-text-field-small">
+                    <select class="md3-text-field-input" id="analysis-period">
+                        <option value="1m">1个月</option>
+                        <option value="3m">3个月</option>
+                        <option value="6m">6个月</option>
+                        <option value="1y" selected>1年</option>
+                    </select>
+                    <label class="md3-text-field-label">周期</label>
+                </div>
+                <button id="refresh-btn" class="md3-button md3-button-filled md3-button-small">
+                    <i class="material-icons">refresh</i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 系统指标区域 -->
+    <div id="system-indicators">
+        <!-- 综合评分和关键指标 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+            <!-- 综合评分卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-left">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">analytics</i> 综合评分
+                    </h3>
+                    <p class="md3-card-subtitle">基于多维度分析的投资评分</p>
+                </div>
+                <div class="md3-card-body" style="text-align: center; padding: 32px;">
+                    <div id="score-container">
+                        <div class="score-circle">
+                            <div class="shimmer-skeleton" style="width: 160px; height: 160px; border-radius: 50%;"></div>
+                            <div class="score-display">
+                                <div class="shimmer-skeleton" style="width: 60px; height: 48px; margin: 0 auto 8px;"></div>
+                                <div class="shimmer-skeleton" style="width: 80px; height: 16px; margin: 0 auto;"></div>
                             </div>
-                            <p class="mt-3 mb-0">正在对 <span id="ai-analysis-stock-name">该股票</span> 进行智能分析</p>
-                            <p class="text-muted small mt-1">
-                                已用时 <span id="ai-processing-time">0</span> 秒
-                            </p>
-                            <div class="typing-indicator mt-2">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                            </div>
-                            <div class="progress mt-3" style="width: 250px;">
-                                <div id="ai-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-                            </div>
-                            <button id="cancel-analysis-btn" class="btn btn-outline-secondary btn-sm mt-3">
-                                <i class="fas fa-times"></i> 取消分析
-                            </button>
                         </div>
-                        
-                        <!-- AI分析内容 -->
-                        <div id="ai-analysis-content" class="ai-analysis-content" style="opacity: 0;">
-                            <div id="ai-analysis" class="analysis-section">
-                                <!-- AI分析内容将异步填充 -->
-                            </div>
+                    </div>
+                    <div id="recommendation-container" style="margin-top: 24px;">
+                        <div class="shimmer-skeleton" style="width: 120px; height: 32px; margin: 0 auto;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 关键指标卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-right">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">speed</i> 关键指标
+                    </h3>
+                    <p class="md3-card-subtitle">重要技术指标快速概览</p>
+                </div>
+                <div class="md3-card-body">
+                    <div class="stock-metrics-grid">
+                        <div class="metric-card" id="rsi-container">
+                            <div class="shimmer-skeleton" style="width: 60px; height: 24px; margin: 0 auto 8px;"></div>
+                            <div class="shimmer-skeleton" style="width: 40px; height: 16px; margin: 0 auto;"></div>
+                        </div>
+                        <div class="metric-card" id="ma-trend-container">
+                            <div class="shimmer-skeleton" style="width: 60px; height: 24px; margin: 0 auto 8px;"></div>
+                            <div class="shimmer-skeleton" style="width: 40px; height: 16px; margin: 0 auto;"></div>
+                        </div>
+                        <div class="metric-card" id="macd-container">
+                            <div class="shimmer-skeleton" style="width: 60px; height: 24px; margin: 0 auto 8px;"></div>
+                            <div class="shimmer-skeleton" style="width: 40px; height: 16px; margin: 0 auto;"></div>
+                        </div>
+                        <div class="metric-card" id="volume-trend-container">
+                            <div class="shimmer-skeleton" style="width: 60px; height: 24px; margin: 0 auto 8px;"></div>
+                            <div class="shimmer-skeleton" style="width: 40px; height: 16px; margin: 0 auto;"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Enhanced Material Design 3 图表区域 -->
+        <div class="md3-card md3-card-elevated chart-container md3-animate-fade-in" style="margin-bottom: 32px;">
+            <div class="md3-card-header">
+                <h3 class="md3-card-title">
+                    <i class="material-icons">show_chart</i> 技术分析图表
+                </h3>
+                <p class="md3-card-subtitle">价格走势与技术指标分析</p>
+            </div>
+
+            <!-- Enhanced Material Design 3 Chart Tabs -->
+            <div class="chart-tabs">
+                <div class="md3-tabs">
+                    <div class="md3-tab-bar">
+                        <button class="md3-tab md3-tab-active" id="price-tab" data-target="price-content">
+                            <i class="material-icons">candlestick_chart</i>
+                            <span>价格趋势</span>
+                        </button>
+                        <button class="md3-tab" id="indicators-tab" data-target="indicators-content">
+                            <i class="material-icons">analytics</i>
+                            <span>技术指标</span>
+                        </button>
+                        <button class="md3-tab" id="volume-tab" data-target="volume-content">
+                            <i class="material-icons">bar_chart</i>
+                            <span>成交量</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md3-card-body" style="padding: 0;">
+                <div class="md3-tab-content">
+                    <div class="md3-tab-panel md3-tab-panel-active" id="price-content">
+                        <div id="price-chart" style="height: 450px; padding: 16px;"></div>
+                    </div>
+                    <div class="md3-tab-panel" id="indicators-content">
+                        <div id="indicators-chart" style="height: 450px; padding: 16px;"></div>
+                    </div>
+                    <div class="md3-tab-panel" id="volume-content">
+                        <div id="volume-chart" style="height: 450px; padding: 16px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Material Design 3 支撑压力位和雷达图 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+            <!-- 支撑与压力位卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-left">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">support</i> 支撑与压力位
+                    </h3>
+                    <p class="md3-card-subtitle">关键价格支撑与阻力位分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div id="support-resistance-container">
+                        <div class="shimmer-skeleton" style="width: 100%; height: 200px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 多维度评分卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-right">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">radar</i> 多维度评分
+                    </h3>
+                    <p class="md3-card-subtitle">技术面、基本面、资金面综合分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div id="radar-chart-container">
+                        <div class="shimmer-skeleton" style="width: 100%; height: 250px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <!-- 加载错误时显示的重试按钮 -->
-    <div id="error-retry" class="text-center mt-3" style="display: none;">
-        <div class="alert alert-warning">
-            <p><i class="fas fa-exclamation-triangle"></i> 分析过程中遇到错误</p>
-            <button id="retry-button" class="btn btn-primary mt-2">
-                <i class="fas fa-sync-alt"></i> 重试分析
-            </button>
+
+    <!-- Enhanced Material Design 3 AI分析区域 -->
+    <div class="md3-card md3-card-elevated md3-animate-slide-in-up">
+        <div class="md3-card-header">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div>
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">psychology</i> AI智能分析报告
+                    </h3>
+                    <p class="md3-card-subtitle">基于深度学习的股票投资分析</p>
+                </div>
+                <div>
+                    <span id="ai-analysis-status" class="md3-badge md3-badge-info">准备分析...</span>
+                </div>
+            </div>
+        </div>
+        <div class="md3-card-body">
+            <div class="ai-analysis-section">
+                <!-- Enhanced Material Design 3 AI分析加载动画 -->
+                <div id="ai-analysis-loader" class="ai-loader">
+                    <div class="md3-progress-indicator" style="margin-bottom: 24px;"></div>
+                    <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 16px;">
+                        正在对 <span id="ai-analysis-stock-name" style="color: var(--md-sys-color-primary);">该股票</span> 进行智能分析
+                    </h4>
+                    <p style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); margin-bottom: 16px;">
+                        已用时 <span id="ai-processing-time" style="color: var(--md-sys-color-primary); font-weight: 500;">0</span> 秒
+                    </p>
+                    <div class="typing-animation">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                    <div style="width: 300px; height: 8px; background: var(--md-sys-color-surface-container-high); border-radius: var(--md-sys-shape-corner-small); margin: 24px 0; overflow: hidden;">
+                        <div id="ai-progress-bar" style="height: 100%; background: linear-gradient(90deg, var(--md-sys-color-primary), var(--md-sys-color-secondary)); width: 0%; transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);"></div>
+                    </div>
+                    <button id="cancel-analysis-btn" class="md3-button md3-button-outlined md3-button-small">
+                        <i class="material-icons">close</i> 取消分析
+                    </button>
+                </div>
+
+                <!-- AI分析内容 -->
+                <div id="ai-analysis-content" style="opacity: 0; transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);">
+                    <div id="ai-analysis" style="font-family: var(--md-sys-typescale-body-large-font); font-size: var(--md-sys-typescale-body-large-size); line-height: 1.6; color: var(--md-sys-color-on-surface);">
+                        <!-- AI分析内容将异步填充 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 错误重试区域 -->
+    <div id="error-retry" style="display: none; margin-top: 32px;">
+        <div class="md3-card md3-card-elevated" style="background: var(--md-sys-color-error-container); border: 1px solid var(--md-sys-color-error);">
+            <div class="md3-card-body" style="text-align: center; padding: 32px;">
+                <i class="material-icons" style="font-size: 48px; color: var(--md-sys-color-on-error-container); margin-bottom: 16px;">warning</i>
+                <h4 style="color: var(--md-sys-color-on-error-container); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 16px;">分析过程中遇到错误</h4>
+                <button id="retry-button" class="md3-button md3-button-filled">
+                    <i class="material-icons">refresh</i> 重试分析
+                </button>
+            </div>
         </div>
     </div>
 </div>

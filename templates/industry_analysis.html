@@ -3,249 +3,308 @@
 {% block title %}行业分析 - 智能分析系统{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3">
+<div class="page-transition">
     <div id="alerts-container"></div>
 
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2">
-                    <h5 class="mb-0">行业资金流向分析</h5>
+    <!-- Enhanced Material Design 3 分析表单 -->
+    <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+        <div class="md3-card-header">
+            <h2 class="md3-card-title">
+                <i class="material-icons">business</i> 行业分析
+            </h2>
+            <p class="md3-card-subtitle">行业资金流向与成分股表现分析</p>
+        </div>
+        <div class="md3-card-body">
+            <form id="industry-form" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 20px; align-items: end;">
+                <div class="md3-text-field md3-text-field-outlined">
+                    <select class="md3-text-field-input" id="fund-flow-period">
+                        <option value="即时" selected>即时</option>
+                        <option value="3日排行">3日排行</option>
+                        <option value="5日排行">5日排行</option>
+                        <option value="10日排行">10日排行</option>
+                        <option value="20日排行">20日排行</option>
+                    </select>
+                    <label class="md3-text-field-label">分析周期</label>
                 </div>
-                <div class="card-body py-2">
-                    <form id="industry-form" class="row g-2">
-                        <div class="col-md-3">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">周期</span>
-                                <select class="form-select" id="fund-flow-period">
-                                    <option value="即时" selected>即时</option>
-                                    <option value="3日排行">3日排行</option>
-                                    <option value="5日排行">5日排行</option>
-                                    <option value="10日排行">10日排行</option>
-                                    <option value="20日排行">20日排行</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">行业</span>
-                                <select class="form-select" id="industry-selector">
-                                    <option value="">-- 选择行业 --</option>
-                                    <!-- 行业选项将通过JS动态填充 -->
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary btn-sm w-100">
-                                <i class="fas fa-search"></i> 分析
-                            </button>
-                        </div>
-                    </form>
+
+                <div class="md3-text-field md3-text-field-outlined">
+                    <select class="md3-text-field-input" id="industry-selector">
+                        <option value="">-- 选择行业 --</option>
+                        <!-- 行业选项将通过JS动态填充 -->
+                    </select>
+                    <label class="md3-text-field-label">选择行业</label>
                 </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <button type="submit" class="md3-button md3-button-filled md3-button-large">
+                        <i class="material-icons">analytics</i> 开始分析
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 Loading Panel -->
+    <div id="loading-panel" style="display: none;">
+        <div class="md3-card md3-card-elevated md3-animate-fade-in">
+            <div class="md3-card-body" style="text-align: center; padding: 64px 32px;">
+                <div class="md3-progress-indicator" style="margin-bottom: 24px;"></div>
+                <p style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-body-large-font); font-size: var(--md-sys-typescale-body-large-size); margin: 0;">正在获取行业数据...</p>
             </div>
         </div>
     </div>
 
-    <div id="loading-panel" class="text-center py-5" style="display: none;">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="mt-3 mb-0">正在获取行业数据...</p>
-    </div>
-
-    <!-- 行业资金流向概览 -->
-    <div id="industry-overview" class="row g-3 mb-3" style="display: none;">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">行业资金流向概览</h5>
-                    <div class="d-flex">
-                        <span id="period-badge" class="badge bg-primary ms-2">即时</span>
-                        <button class="btn btn-sm btn-outline-primary ms-2" id="export-btn">
-                            <i class="fas fa-download"></i> 导出数据
+    <!-- Enhanced Material Design 3 行业资金流向概览 -->
+    <div id="industry-overview" style="display: none;">
+        <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+            <div class="md3-card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div>
+                        <h3 class="md3-card-title">
+                            <i class="material-icons">trending_up</i> 行业资金流向概览
+                        </h3>
+                        <p class="md3-card-subtitle">各行业资金流向排行榜</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span id="period-badge" class="md3-badge md3-badge-primary">即时</span>
+                        <button class="md3-button md3-button-outlined md3-button-small" id="export-btn">
+                            <i class="material-icons">download</i> 导出数据
                         </button>
                     </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>序号</th>
-                                    <th>行业</th>
-                                    <th>行业指数</th>
-                                    <th>涨跌幅</th>
-                                    <th>流入资金(亿)</th>
-                                    <th>流出资金(亿)</th>
-                                    <th>净额(亿)</th>
-                                    <th>公司家数</th>
-                                    <th>领涨股</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="industry-table">
-                                <!-- 行业资金流向数据将在JS中动态填充 -->
-                            </tbody>
-                        </table>
-                    </div>
+            </div>
+            <div class="md3-card-body" style="padding: 0;">
+                <div style="overflow-x: auto;">
+                    <table class="md3-data-table">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>行业</th>
+                                <th>行业指数</th>
+                                <th>涨跌幅</th>
+                                <th>流入资金(亿)</th>
+                                <th>流出资金(亿)</th>
+                                <th>净额(亿)</th>
+                                <th>公司家数</th>
+                                <th>领涨股</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="industry-table">
+                            <!-- 行业资金流向数据将在JS中动态填充 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 行业详细分析 -->
-    <div id="industry-detail" class="row g-3 mb-3" style="display: none;">
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header py-2">
-                    <h5 id="industry-name" class="mb-0">行业详情</h5>
+    <!-- Enhanced Material Design 3 行业详细分析 -->
+    <div id="industry-detail" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+            <!-- 行业概况卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-left">
+                <div class="md3-card-header">
+                    <h3 id="industry-name" class="md3-card-title">
+                        <i class="material-icons">domain</i> 行业详情
+                    </h3>
+                    <p class="md3-card-subtitle">行业基本信息与资金流向</p>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>行业概况</h6>
-                            <p><span class="text-muted">行业指数:</span> <span id="industry-index" class="fw-bold"></span></p>
-                            <p><span class="text-muted">涨跌幅:</span> <span id="industry-change" class="fw-bold"></span></p>
-                            <p><span class="text-muted">公司家数:</span> <span id="industry-company-count" class="fw-bold"></span></p>
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 24px;">
+                        <div>
+                            <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 16px;">行业概况</h4>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">行业指数</span>
+                                    <span id="industry-index" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">涨跌幅</span>
+                                    <span id="industry-change" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">公司家数</span>
+                                    <span id="industry-company-count" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <h6>资金流向</h6>
-                            <p><span class="text-muted">流入资金:</span> <span id="industry-inflow" class="fw-bold"></span></p>
-                            <p><span class="text-muted">流出资金:</span> <span id="industry-outflow" class="fw-bold"></span></p>
-                            <p><span class="text-muted">净额:</span> <span id="industry-net-flow" class="fw-bold"></span></p>
+                        <div>
+                            <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 16px;">资金流向</h4>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">流入资金</span>
+                                    <span id="industry-inflow" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">流出资金</span>
+                                    <span id="industry-outflow" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">净额</span>
+                                    <span id="industry-net-flow" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="mt-3">
+                    <div>
+                        <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 16px;">资金流向趋势</h4>
                         <div id="industry-flow-chart" style="height: 200px;"></div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header py-2">
-                    <h5 class="mb-0">行业评分</h5>
+            <!-- 行业评分卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-right">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">analytics</i> 行业评分
+                    </h3>
+                    <p class="md3-card-subtitle">多维度行业分析评分</p>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-5">
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: center; margin-bottom: 24px;">
+                        <div style="text-align: center;">
                             <div id="industry-score-chart" style="height: 150px;"></div>
-                            <h4 id="industry-score" class="text-center mt-2">--</h4>
-                            <p class="text-muted text-center">综合评分</p>
+                            <div style="margin-top: 16px;">
+                                <div id="industry-score" style="font-family: var(--md-sys-typescale-financial-large-font); font-size: var(--md-sys-typescale-financial-large-size); font-weight: var(--md-sys-typescale-financial-large-weight); color: var(--md-sys-color-primary);">--</div>
+                                <div style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface-variant); margin-top: 4px;">综合评分</div>
+                            </div>
                         </div>
-                        <div class="col-md-7">
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>技术面</span>
-                                    <span id="technical-score">--/40</span>
+                        <div>
+                            <h4 style="font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: var(--md-sys-typescale-title-medium-weight); margin-bottom: 24px;">维度评分</h4>
+
+                            <!-- Technical Score -->
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface);">技术面</span>
+                                    <span id="technical-score" style="font-family: var(--md-sys-typescale-financial-small-font); font-size: var(--md-sys-typescale-financial-small-size); color: var(--md-sys-color-primary);">--/40</span>
                                 </div>
-                                <div class="progress">
-                                    <div id="technical-progress" class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>基本面</span>
-                                    <span id="fundamental-score">--/40</span>
-                                </div>
-                                <div class="progress">
-                                    <div id="fundamental-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                <div style="height: 8px; background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-sys-shape-corner-small); overflow: hidden;">
+                                    <div id="technical-progress" style="height: 100%; background-color: var(--md-sys-color-tertiary); width: 0%; transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);"></div>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>资金面</span>
-                                    <span id="capital-flow-score">--/20</span>
+
+                            <!-- Fundamental Score -->
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface);">基本面</span>
+                                    <span id="fundamental-score" style="font-family: var(--md-sys-typescale-financial-small-font); font-size: var(--md-sys-typescale-financial-small-size); color: var(--md-sys-color-success);">--/40</span>
                                 </div>
-                                <div class="progress">
-                                    <div id="capital-flow-progress" class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
+                                <div style="height: 8px; background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-sys-shape-corner-small); overflow: hidden;">
+                                    <div id="fundamental-progress" style="height: 100%; background-color: var(--md-sys-color-success); width: 0%; transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);"></div>
+                                </div>
+                            </div>
+
+                            <!-- Capital Flow Score -->
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface);">资金面</span>
+                                    <span id="capital-flow-score" style="font-family: var(--md-sys-typescale-financial-small-font); font-size: var(--md-sys-typescale-financial-small-size); color: var(--md-sys-color-warning);">--/20</span>
+                                </div>
+                                <div style="height: 8px; background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-sys-shape-corner-small); overflow: hidden;">
+                                    <div id="capital-flow-progress" style="height: 100%; background-color: var(--md-sys-color-warning); width: 0%; transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <h6>投资建议</h6>
-                        <p id="industry-recommendation" class="mb-0"></p>
+                    <div style="border-top: 1px solid var(--md-sys-color-outline-variant); padding-top: 24px;">
+                        <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 16px;">投资建议</h4>
+                        <p id="industry-recommendation" style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); line-height: 1.5; margin: 0;"></p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 行业成分股表现 -->
-    <div id="industry-stocks" class="row g-3 mb-3" style="display: none;">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2">
-                    <h5 class="mb-0">行业成分股表现</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped table-hover mb-0">
-                            <thead>
-                                <tr>
-                                    <th>代码</th>
-                                    <th>名称</th>
-                                    <th>最新价</th>
-                                    <th>涨跌幅</th>
-                                    <th>成交量</th>
-                                    <th>成交额(万)</th>
-                                    <th>换手率</th>
-                                    <th>评分</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="industry-stocks-table">
-                                <!-- 行业成分股数据将在JS中动态填充 -->
-                            </tbody>
-                        </table>
-                    </div>
+    <!-- Enhanced Material Design 3 行业成分股表现 -->
+    <div id="industry-stocks" style="display: none;">
+        <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+            <div class="md3-card-header">
+                <h3 class="md3-card-title">
+                    <i class="material-icons">list</i> 行业成分股表现
+                </h3>
+                <p class="md3-card-subtitle">行业内个股详细表现数据</p>
+            </div>
+            <div class="md3-card-body" style="padding: 0;">
+                <div style="overflow-x: auto;">
+                    <table class="md3-data-table">
+                        <thead>
+                            <tr>
+                                <th>代码</th>
+                                <th>名称</th>
+                                <th>最新价</th>
+                                <th>涨跌幅</th>
+                                <th>成交量</th>
+                                <th>成交额(万)</th>
+                                <th>换手率</th>
+                                <th>评分</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="industry-stocks-table">
+                            <!-- 行业成分股数据将在JS中动态填充 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 行业对比分析 -->
-    <div class="row g-3 mb-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2">
-                    <h5 class="mb-0">行业对比分析</h5>
+    <!-- Enhanced Material Design 3 行业对比分析 -->
+    <div class="md3-card md3-card-elevated md3-animate-slide-in-up">
+        <div class="md3-card-header">
+            <h3 class="md3-card-title">
+                <i class="material-icons">compare_arrows</i> 行业对比分析
+            </h3>
+            <p class="md3-card-subtitle">跨行业资金流向与涨跌幅对比</p>
+        </div>
+        <div class="md3-card-body">
+            <!-- Enhanced Material Design 3 Tabs -->
+            <div class="md3-tabs" style="margin-bottom: 32px;">
+                <div class="md3-tab-bar">
+                    <button class="md3-tab md3-tab-active" id="fund-flow-tab" data-target="fund-flow">
+                        <i class="material-icons">account_balance</i>
+                        <span>资金流向</span>
+                    </button>
+                    <button class="md3-tab" id="performance-tab" data-target="performance">
+                        <i class="material-icons">trending_up</i>
+                        <span>行业涨跌幅</span>
+                    </button>
                 </div>
-                <div class="card-body">
-                    <ul class="nav nav-tabs" id="industry-compare-tabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="fund-flow-tab" data-bs-toggle="tab" data-bs-target="#fund-flow" type="button" role="tab" aria-controls="fund-flow" aria-selected="true">资金流向</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance" type="button" role="tab" aria-controls="performance" aria-selected="false">行业涨跌幅</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content mt-3" id="industry-compare-tabs-content">
-                        <div class="tab-pane fade show active" id="fund-flow" role="tabpanel" aria-labelledby="fund-flow-tab">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>资金净流入前10行业</h6>
-                                    <div id="top-inflow-chart" style="height: 300px;"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>资金净流出前10行业</h6>
-                                    <div id="top-outflow-chart" style="height: 300px;"></div>
-                                </div>
-                            </div>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="md3-tab-content">
+                <div class="md3-tab-panel md3-tab-panel-active" id="fund-flow">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+                        <div>
+                            <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                                <i class="material-icons" style="color: var(--md-sys-color-success);">arrow_upward</i> 资金净流入前10行业
+                            </h4>
+                            <div id="top-inflow-chart" style="height: 300px;"></div>
                         </div>
-                        <div class="tab-pane fade" id="performance" role="tabpanel" aria-labelledby="performance-tab">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>涨幅前10行业</h6>
-                                    <div id="top-gainers-chart" style="height: 300px;"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>跌幅前10行业</h6>
-                                    <div id="top-losers-chart" style="height: 300px;"></div>
-                                </div>
-                            </div>
+                        <div>
+                            <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                                <i class="material-icons" style="color: var(--md-sys-color-error);">arrow_downward</i> 资金净流出前10行业
+                            </h4>
+                            <div id="top-outflow-chart" style="height: 300px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="md3-tab-panel" id="performance">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+                        <div>
+                            <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                                <i class="material-icons" style="color: var(--md-sys-color-bull);">trending_up</i> 涨幅前10行业
+                            </h4>
+                            <div id="top-gainers-chart" style="height: 300px;"></div>
+                        </div>
+                        <div>
+                            <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                                <i class="material-icons" style="color: var(--md-sys-color-bear);">trending_down</i> 跌幅前10行业
+                            </h4>
+                            <div id="top-losers-chart" style="height: 300px;"></div>
                         </div>
                     </div>
                 </div>
@@ -253,6 +312,58 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Enhanced Material Design 3 Tabs */
+.md3-tabs {
+    width: 100%;
+}
+
+.md3-tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    background-color: var(--md-sys-color-surface);
+}
+
+.md3-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 24px;
+    border: none;
+    background: none;
+    color: var(--md-sys-color-on-surface-variant);
+    font-family: var(--md-sys-typescale-title-small-font);
+    font-size: var(--md-sys-typescale-title-small-size);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    border-bottom: 3px solid transparent;
+}
+
+.md3-tab:hover {
+    background-color: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+}
+
+.md3-tab.md3-tab-active {
+    color: var(--md-sys-color-primary);
+    border-bottom-color: var(--md-sys-color-primary);
+    background-color: var(--md-sys-color-primary-container);
+}
+
+.md3-tab-content {
+    margin-top: 24px;
+}
+
+.md3-tab-panel {
+    display: none;
+}
+
+.md3-tab-panel.md3-tab-panel-active {
+    display: block;
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
