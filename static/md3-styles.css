@@ -708,7 +708,7 @@ body {
 
 .md3-text-field-input {
     width: 100%;
-    padding: 16px 16px 8px 16px;
+    padding: 16px 16px 16px 16px;
     border: none;
     background: transparent;
     color: var(--md-sys-color-on-surface);
@@ -718,6 +718,8 @@ body {
     line-height: var(--md-sys-typescale-body-large-line-height);
     outline: none;
     transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    min-height: 24px;
+    box-sizing: border-box;
 }
 
 .md3-text-field-input::placeholder {
@@ -727,7 +729,8 @@ body {
 .md3-text-field-label {
     position: absolute;
     left: 16px;
-    top: 16px;
+    top: 50%;
+    transform: translateY(-50%);
     color: var(--md-sys-color-on-surface-variant);
     font-family: var(--md-sys-typescale-body-large-font);
     font-size: var(--md-sys-typescale-body-large-size);
@@ -736,12 +739,12 @@ body {
     pointer-events: none;
     background-color: var(--md-sys-color-surface);
     padding: 0 4px;
-    transform-origin: left top;
+    transform-origin: left center;
 }
 
 .md3-text-field-input:focus + .md3-text-field-label,
 .md3-text-field-input:not(:placeholder-shown) + .md3-text-field-label {
-    transform: translateY(-24px) scale(0.75);
+    transform: translateY(-32px) scale(0.75);
     color: var(--md-sys-color-primary);
 }
 
@@ -767,6 +770,43 @@ body {
 
 .md3-text-field-error .md3-text-field-supporting-text {
     color: var(--md-sys-color-error);
+}
+
+/* Enhanced Form Field Consistency */
+.md3-text-field-outlined {
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+}
+
+.md3-text-field-outlined .md3-text-field-input {
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+/* Ensure select elements have consistent styling */
+.md3-text-field-outlined select.md3-text-field-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+/* Form grid alignment */
+form[style*="grid-template-columns"] {
+    align-items: end;
+}
+
+form[style*="grid-template-columns"] .md3-text-field {
+    margin-bottom: 0;
+}
+
+form[style*="grid-template-columns"] .md3-button {
+    height: 56px;
+    align-self: stretch;
 }
 
 /* Material Design 3 Badges */
@@ -1326,12 +1366,33 @@ body {
     }
 
     .md3-text-field-input {
-        padding: 14px 12px 6px 12px;
+        padding: 16px 12px 16px 12px;
+        min-height: 20px;
     }
 
     .md3-text-field-label {
         left: 12px;
-        top: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .md3-text-field-input:focus + .md3-text-field-label,
+    .md3-text-field-input:not(:placeholder-shown) + .md3-text-field-label {
+        transform: translateY(-28px) scale(0.75);
+    }
+
+    .md3-text-field-outlined {
+        min-height: 52px;
+    }
+
+    form[style*="grid-template-columns"] .md3-button {
+        height: 52px;
+    }
+
+    .md3-text-field-outlined select.md3-text-field-input {
+        padding-right: 36px;
+        background-size: 14px;
+        background-position: right 10px center;
     }
 }
 
