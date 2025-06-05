@@ -3,109 +3,124 @@
 {% block title %}风险监控 - 智能分析系统{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3">
-    <div id="alerts-container"></div>
-
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2">
-                    <h5 class="mb-0">风险监控</h5>
+<div class="page-transition">
+    <!-- Enhanced Material Design 3 分析表单 -->
+    <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+        <div class="md3-card-header">
+            <h2 class="md3-card-title">
+                <i class="material-icons">warning</i> 风险监控
+            </h2>
+            <p class="md3-card-subtitle">全方位风险评估与预警系统</p>
+        </div>
+        <div class="md3-card-body">
+            <!-- Enhanced Material Design 3 Tabs -->
+            <div class="md3-tabs" style="margin-bottom: 32px;">
+                <div class="md3-tab-bar">
+                    <button class="md3-tab md3-tab-active" id="stock-risk-tab" data-target="stock-risk">
+                        <i class="material-icons">show_chart</i>
+                        <span>个股风险</span>
+                    </button>
+                    <button class="md3-tab" id="portfolio-risk-tab" data-target="portfolio-risk">
+                        <i class="material-icons">work</i>
+                        <span>组合风险</span>
+                    </button>
                 </div>
-                <div class="card-body py-2">
-                    <ul class="nav nav-tabs" id="risk-tabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="stock-risk-tab" data-bs-toggle="tab" data-bs-target="#stock-risk" type="button" role="tab" aria-controls="stock-risk" aria-selected="true">个股风险</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="portfolio-risk-tab" data-bs-toggle="tab" data-bs-target="#portfolio-risk" type="button" role="tab" aria-controls="portfolio-risk" aria-selected="false">组合风险</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content mt-3" id="risk-tabs-content">
-                        <div class="tab-pane fade show active" id="stock-risk" role="tabpanel" aria-labelledby="stock-risk-tab">
-                            <form id="stock-risk-form" class="row g-2">
-                                <div class="col-md-4">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">股票代码</span>
-                                        <input type="text" class="form-control" id="stock-code" placeholder="例如: 600519" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">市场</span>
-                                        <select class="form-select" id="market-type">
-                                            <option value="A" selected>A股</option>
-                                            <option value="HK">港股</option>
-                                            <option value="US">美股</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <button type="submit" class="btn btn-primary btn-sm w-100">
-                                        <i class="fas fa-search"></i> 分析风险
-                                    </button>
-                                </div>
-                            </form>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="md3-tab-content">
+                <div class="md3-tab-panel md3-tab-panel-active" id="stock-risk">
+                    <form id="stock-risk-form" style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 20px; align-items: end;">
+                        <div class="md3-text-field md3-text-field-outlined">
+                            <input type="text" class="md3-text-field-input" id="stock-code" placeholder=" " required>
+                            <label class="md3-text-field-label">股票代码</label>
+                            <div class="md3-text-field-supporting-text">例如：600519、0700.HK、AAPL</div>
                         </div>
-                        <div class="tab-pane fade" id="portfolio-risk" role="tabpanel" aria-labelledby="portfolio-risk-tab">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> 分析投资组合的整体风险，识别高风险股票和风险集中度。
-                            </div>
-                            <button id="analyze-portfolio-btn" class="btn btn-primary btn-sm">
-                                <i class="fas fa-briefcase"></i> 分析我的投资组合
-                            </button>
+
+                        <div class="md3-text-field md3-text-field-outlined">
+                            <select class="md3-text-field-input" id="market-type">
+                                <option value="A" selected>A股</option>
+                                <option value="HK">港股</option>
+                                <option value="US">美股</option>
+                            </select>
+                            <label class="md3-text-field-label">市场类型</label>
+                        </div>
+
+                        <button type="submit" class="md3-button md3-button-filled md3-button-large">
+                            <i class="material-icons">analytics</i> 分析风险
+                        </button>
+                    </form>
+                </div>
+
+                <div class="md3-tab-panel" id="portfolio-risk">
+                    <div class="md3-card md3-card-outlined" style="margin-bottom: 24px; background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container);">
+                        <div class="md3-card-body" style="display: flex; align-items: center; gap: 16px;">
+                            <i class="material-icons" style="color: var(--md-sys-color-primary);">info</i>
+                            <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);">分析投资组合的整体风险，识别高风险股票和风险集中度</span>
                         </div>
                     </div>
+                    <button id="analyze-portfolio-btn" class="md3-button md3-button-filled">
+                        <i class="material-icons">work</i> 分析我的投资组合
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="loading-panel" class="text-center py-5" style="display: none;">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+    <!-- Enhanced Material Design 3 Loading Panel -->
+    <div id="loading-panel" style="display: none;">
+        <div class="md3-card md3-card-elevated md3-animate-fade-in">
+            <div class="md3-card-body" style="text-align: center; padding: 64px 32px;">
+                <div class="md3-progress-indicator" style="margin-bottom: 24px;"></div>
+                <p style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-body-large-font); font-size: var(--md-sys-typescale-body-large-size); margin: 0;">正在分析风险，请稍候...</p>
+            </div>
         </div>
-        <p class="mt-3 mb-0">正在分析风险，请稍候...</p>
     </div>
 
-    <!-- 个股风险分析结果 -->
+    <!-- Enhanced Material Design 3 个股风险分析结果 -->
     <div id="stock-risk-result" style="display: none;">
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">风险概览</h5>
-                        <span id="risk-level-badge" class="badge"></span>
-                    </div>
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-7">
-                                <h3 id="stock-name" class="mb-0 fs-4"></h3>
-                                <p id="stock-info" class="text-muted mb-0 small"></p>
-                            </div>
-                            <div class="col-md-5 text-end">
-                                <div id="risk-gauge-chart" style="height: 120px;"></div>
-                            </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+            <!-- 风险概览卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-left">
+                <div class="md3-card-header">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div>
+                            <h3 class="md3-card-title">
+                                <i class="material-icons">shield</i> 风险概览
+                            </h3>
                         </div>
-                        <div class="row">
-                            <div class="col-12">
-                                <h6>风险预警</h6>
-                                <div id="risk-alerts" class="mt-2">
-                                    <!-- 风险预警内容将在JS中动态填充 -->
-                                </div>
-                            </div>
+                        <span id="risk-level-badge" class="md3-badge"></span>
+                    </div>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 32px;">
+                        <div style="flex: 1;">
+                            <h2 id="stock-name" style="margin: 0 0 8px 0; font-family: var(--md-sys-typescale-headline-large-font); font-size: 28px; font-weight: 500; color: var(--md-sys-color-on-surface);"></h2>
+                            <p id="stock-info" style="margin: 0; color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);"></p>
+                        </div>
+                        <div>
+                            <div id="risk-gauge-chart" style="height: 140px; width: 140px;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 16px;">风险预警</h4>
+                        <div id="risk-alerts">
+                            <!-- 风险预警内容将在JS中动态填充 -->
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">风险构成</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="risk-radar-chart" style="height: 220px;"></div>
-                    </div>
+
+            <!-- 风险构成卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-right">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">radar</i> 风险构成
+                    </h3>
+                    <p class="md3-card-subtitle">多维度风险评估雷达图</p>
+                </div>
+                <div class="md3-card-body">
+                    <div id="risk-radar-chart" style="height: 280px;"></div>
                 </div>
             </div>
         </div>
@@ -304,11 +319,76 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Enhanced Material Design 3 Tabs */
+.md3-tabs {
+    width: 100%;
+}
+
+.md3-tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    background-color: var(--md-sys-color-surface);
+}
+
+.md3-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 24px;
+    border: none;
+    background: none;
+    color: var(--md-sys-color-on-surface-variant);
+    font-family: var(--md-sys-typescale-title-small-font);
+    font-size: var(--md-sys-typescale-title-small-size);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    border-bottom: 3px solid transparent;
+}
+
+.md3-tab:hover {
+    background-color: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+}
+
+.md3-tab.md3-tab-active {
+    color: var(--md-sys-color-primary);
+    border-bottom-color: var(--md-sys-color-primary);
+    background-color: var(--md-sys-color-primary-container);
+}
+
+.md3-tab-content {
+    margin-top: 24px;
+}
+
+.md3-tab-panel {
+    display: none;
+}
+
+.md3-tab-panel.md3-tab-panel-active {
+    display: block;
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
     $(document).ready(function() {
+        // Enhanced Material Design 3 Tab functionality
+        $('.md3-tab').click(function() {
+            const targetId = $(this).data('target');
+
+            // Remove active class from all tabs and panels
+            $('.md3-tab').removeClass('md3-tab-active');
+            $('.md3-tab-panel').removeClass('md3-tab-panel-active');
+
+            // Add active class to clicked tab and corresponding panel
+            $(this).addClass('md3-tab-active');
+            $(`#${targetId}`).addClass('md3-tab-panel-active');
+        });
+
         // 个股风险分析表单提交
         $('#stock-risk-form').submit(function(e) {
             e.preventDefault();

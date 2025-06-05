@@ -3,192 +3,204 @@
 {% block title %}资金流向 - 智能分析系统{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3">
-    <div id="alerts-container"></div>
+<div class="page-transition">
+    <!-- Enhanced Material Design 3 分析表单 -->
+    <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+        <div class="md3-card-header">
+            <h2 class="md3-card-title">
+                <i class="material-icons">account_balance</i> 资金流向分析
+            </h2>
+            <p class="md3-card-subtitle">追踪主力资金动向与市场热点</p>
+        </div>
+        <div class="md3-card-body">
+            <form id="capital-flow-form" style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 20px; align-items: end;">
+                <div class="md3-text-field md3-text-field-outlined">
+                    <select class="md3-text-field-input" id="data-type">
+                        <option value="concept" selected>概念资金流</option>
+                        <option value="individual">个股资金流</option>
+                    </select>
+                    <label class="md3-text-field-label">数据类型</label>
+                </div>
 
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2">
-                    <h5 class="mb-0">资金流向分析</h5>
+                <div class="md3-text-field md3-text-field-outlined">
+                    <select class="md3-text-field-input" id="period-select">
+                        <option value="10日排行" selected>10日排行</option>
+                        <option value="5日排行">5日排行</option>
+                        <option value="3日排行">3日排行</option>
+                    </select>
+                    <label class="md3-text-field-label">分析周期</label>
                 </div>
-                <div class="card-body py-2">
-                    <form id="capital-flow-form" class="row g-2">
-                        <div class="col-md-3">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">数据类型</span>
-                                <select class="form-select" id="data-type">
-                                    <option value="concept" selected>概念资金流</option>
-                                    <option value="individual" >个股资金流</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">周期</span>
-                                <select class="form-select" id="period-select">
-                                    <option value="10日排行" selected>10日排行</option>
-                                    <option value="5日排行">5日排行</option>
-                                    <option value="3日排行">3日排行</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4 stock-input" style="display: none;">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">股票代码</span>
-                                <input type="text" class="form-control" id="stock-code" placeholder="例如: 600519">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary btn-sm w-100">
-                                <i class="fas fa-search"></i> 查询
-                            </button>
-                        </div>
-                    </form>
+
+                <div class="md3-text-field md3-text-field-outlined stock-input" style="display: none;">
+                    <input type="text" class="md3-text-field-input" id="stock-code" placeholder=" ">
+                    <label class="md3-text-field-label">股票代码</label>
+                    <div class="md3-text-field-supporting-text">例如：600519、0700.HK</div>
                 </div>
+
+                <button type="submit" class="md3-button md3-button-filled md3-button-large">
+                    <i class="material-icons">search</i> 开始查询
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 Loading Panel -->
+    <div id="loading-panel" style="display: none;">
+        <div class="md3-card md3-card-elevated md3-animate-fade-in">
+            <div class="md3-card-body" style="text-align: center; padding: 64px 32px;">
+                <div class="md3-progress-indicator" style="margin-bottom: 24px;"></div>
+                <p style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-large-font); font-size: var(--md-sys-typescale-body-large-size); margin: 0;">正在获取资金流向数据...</p>
             </div>
         </div>
     </div>
 
-    <!-- Loading Panel -->
-    <div id="loading-panel" class="text-center py-5" style="display: none;">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="mt-3 mb-0">正在获取资金流向数据...</p>
-    </div>
-
-    <!-- Concept Fund Flow Panel -->
-    <div id="concept-flow-panel" class="row g-3 mb-3" style="display: none;">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">概念资金流向</h5>
-                    <span id="concept-period-badge" class="badge bg-primary">10日排行</span>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>序号</th>
-                                    <th>概念/行业</th>
-                                    <th>行业指数</th>
-                                    <th>涨跌幅</th>
-                                    <th>流入资金(亿)</th>
-                                    <th>流出资金(亿)</th>
-                                    <th>净额(亿)</th>
-                                    <th>公司家数</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="concept-flow-table">
-                                <!-- 资金流向数据将在JS中填充 -->
-                            </tbody>
-                        </table>
+    <!-- Enhanced Material Design 3 Concept Fund Flow Panel -->
+    <div id="concept-flow-panel" style="display: none;">
+        <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+            <div class="md3-card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div>
+                        <h3 class="md3-card-title">
+                            <i class="material-icons">trending_up</i> 概念资金流向
+                        </h3>
+                        <p class="md3-card-subtitle">热门概念板块资金流向排行</p>
                     </div>
+                    <span id="concept-period-badge" class="md3-badge md3-badge-primary">10日排行</span>
+                </div>
+            </div>
+            <div class="md3-card-body" style="padding: 0;">
+                <div style="overflow-x: auto;">
+                    <table class="md3-data-table">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>概念/行业</th>
+                                <th>行业指数</th>
+                                <th>涨跌幅</th>
+                                <th>流入资金(亿)</th>
+                                <th>流出资金(亿)</th>
+                                <th>净额(亿)</th>
+                                <th>公司家数</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="concept-flow-table">
+                            <!-- 资金流向数据将在JS中填充 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Concept Stocks Panel -->
-    <div id="concept-stocks-panel" class="row g-3 mb-3" style="display: none;">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2">
-                    <h5 id="concept-stocks-title" class="mb-0">概念成分股</h5>
+    <!-- Enhanced Material Design 3 Concept Stocks Panel -->
+    <div id="concept-stocks-panel" style="display: none;">
+        <div class="md3-card md3-card-elevated md3-animate-slide-in-up" style="margin-bottom: 32px;">
+            <div class="md3-card-header">
+                <h3 id="concept-stocks-title" class="md3-card-title">
+                    <i class="material-icons">business</i> 概念成分股
+                </h3>
+                <p class="md3-card-subtitle">概念板块内个股资金流向详情</p>
+            </div>
+            <div class="md3-card-body" style="padding: 0;">
+                <div style="overflow-x: auto;">
+                    <table class="md3-data-table">
+                        <thead>
+                            <tr>
+                                <th>代码</th>
+                                <th>名称</th>
+                                <th>最新价</th>
+                                <th>涨跌幅</th>
+                                <th>主力净流入</th>
+                                <th>主力净流入占比</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="concept-stocks-table">
+                            <!-- 概念成分股数据将在JS中填充 -->
+                        </tbody>
+                    </table>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>代码</th>
-                                    <th>名称</th>
-                                    <th>最新价</th>
-                                    <th>涨跌幅</th>
-                                    <th>主力净流入</th>
-                                    <th>主力净流入占比</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="concept-stocks-table">
-                                <!-- 概念成分股数据将在JS中填充 -->
-                            </tbody>
-                        </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 Individual Fund Flow Panel -->
+    <div id="individual-flow-panel" style="display: none;">
+        <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+            <div class="md3-card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div>
+                        <h3 id="individual-flow-title" class="md3-card-title">
+                            <i class="material-icons">show_chart</i> 个股资金流向
+                        </h3>
+                        <p class="md3-card-subtitle">个股主力资金流向详细分析</p>
                     </div>
+                    <span id="individual-period-badge" class="md3-badge md3-badge-primary">10日排行</span>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Individual Fund Flow Panel -->
-    <div id="individual-flow-panel" class="row g-3 mb-3" style="display: none;">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                    <h5 id="individual-flow-title" class="mb-0">个股资金流向</h5>
-                    <span id="individual-period-badge" class="badge bg-primary">10日排行</span>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>资金流向概览</h6>
-                            <table class="table table-sm">
+            <div class="md3-card-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+                    <div>
+                        <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 20px;">资金流向概览</h4>
+                        <div style="overflow-x: auto;">
+                            <table class="md3-data-table md3-data-table-compact">
                                 <tbody id="individual-flow-summary">
                                     <!-- 个股资金流向概览将在JS中填充 -->
                                 </tbody>
                             </table>
                         </div>
-                        <div class="col-md-6">
-                            <h6>资金流入占比</h6>
-                            <div id="fund-flow-pie-chart" style="height: 200px;"></div>
-                        </div>
                     </div>
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <h6>资金流向历史</h6>
-                            <div id="fund-flow-history-chart" style="height: 300px;"></div>
-                        </div>
+                    <div>
+                        <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 20px;">资金流入占比</h4>
+                        <div id="fund-flow-pie-chart" style="height: 240px;"></div>
                     </div>
+                </div>
+                <div>
+                    <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 20px;">资金流向历史</h4>
+                    <div id="fund-flow-history-chart" style="height: 360px;"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Individual Fund Flow Rank Panel -->
-    <div id="individual-rank-panel" class="row g-3 mb-3" style="display: none;">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">个股资金流向排名</h5>
-                    <span id="individual-rank-period-badge" class="badge bg-primary">10日排行</span>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>序号</th>
-                                    <th>代码</th>
-                                    <th>名称</th>
-                                    <th>最新价</th>
-                                    <th>涨跌幅</th>
-                                    <th>主力净流入</th>
-                                    <th>主力净流入占比</th>
-                                    <th>超大单净流入</th>
-                                    <th>大单净流入</th>
-                                    <th>中单净流入</th>
-                                    <th>小单净流入</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="individual-rank-table">
-                                <!-- 个股资金流向排名数据将在JS中填充 -->
-                            </tbody>
-                        </table>
+    <!-- Enhanced Material Design 3 Individual Fund Flow Rank Panel -->
+    <div id="individual-rank-panel" style="display: none;">
+        <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+            <div class="md3-card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div>
+                        <h3 class="md3-card-title">
+                            <i class="material-icons">leaderboard</i> 个股资金流向排名
+                        </h3>
+                        <p class="md3-card-subtitle">个股主力资金净流入排行榜</p>
                     </div>
+                    <span id="individual-rank-period-badge" class="md3-badge md3-badge-primary">10日排行</span>
+                </div>
+            </div>
+            <div class="md3-card-body" style="padding: 0;">
+                <div style="overflow-x: auto;">
+                    <table class="md3-data-table">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>代码</th>
+                                <th>名称</th>
+                                <th>最新价</th>
+                                <th>涨跌幅</th>
+                                <th>主力净流入</th>
+                                <th>主力净流入占比</th>
+                                <th>超大单净流入</th>
+                                <th>大单净流入</th>
+                                <th>中单净流入</th>
+                                <th>小单净流入</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="individual-rank-table">
+                            <!-- 个股资金流向排名数据将在JS中填充 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -320,11 +332,11 @@
             html = '<tr><td colspan="9" class="text-center">暂无数据</td></tr>';
         } else {
             data.forEach((item, index) => {
-                const changeClass = parseFloat(item.change_percent) >= 0 ? 'trend-up' : 'trend-down';
-                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+                const changeClass = parseFloat(item.change_percent) >= 0 ? 'md3-text-bull' : 'md3-text-bear';
+                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="material-icons">arrow_upward</i>' : '<i class="material-icons">arrow_downward</i>';
 
-                const netFlowClass = parseFloat(item.net_flow) >= 0 ? 'trend-up' : 'trend-down';
-                const netFlowIcon = parseFloat(item.net_flow) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+                const netFlowClass = parseFloat(item.net_flow) >= 0 ? 'md3-text-bull' : 'md3-text-bear';
+                const netFlowIcon = parseFloat(item.net_flow) >= 0 ? '<i class="material-icons">arrow_upward</i>' : '<i class="material-icons">arrow_downward</i>';
 
                 html += `
                     <tr>
@@ -337,8 +349,8 @@
                         <td class="${netFlowClass}">${netFlowIcon} ${formatNumber(item.net_flow, 2)}</td>
                         <td>${item.company_count}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="loadConceptStocks('${item.sector}')">
-                                <i class="fas fa-search"></i>
+                            <button class="md3-button md3-button-outlined md3-button-small" onclick="loadConceptStocks('${item.sector}')">
+                                <i class="material-icons">search</i>
                             </button>
                         </td>
                     </tr>

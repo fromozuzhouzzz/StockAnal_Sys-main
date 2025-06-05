@@ -1,8 +1,9 @@
 /* Material Design 3 Enhanced Styles for 智能分析系统 */
+/* Professional Financial Analysis System Design */
 
 /* Material Design 3 Design Tokens - Enhanced Financial Theme */
 :root {
-    /* Primary Colors - Financial Blue Theme */
+    /* Primary Colors - Professional Financial Blue */
     --md-sys-color-primary: #1565C0;
     --md-sys-color-on-primary: #FFFFFF;
     --md-sys-color-primary-container: #E3F2FD;
@@ -19,6 +20,136 @@
     --md-sys-color-on-tertiary: #FFFFFF;
     --md-sys-color-tertiary-container: #E0F2F1;
     --md-sys-color-on-tertiary-container: #004D40;
+
+    /* Enhanced Typography Scale - Professional Financial */
+    --md-sys-typescale-display-large-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-display-large-size: 57px;
+    --md-sys-typescale-display-large-weight: 400;
+    --md-sys-typescale-display-large-line-height: 64px;
+    --md-sys-typescale-display-large-letter-spacing: -0.25px;
+
+    --md-sys-typescale-display-medium-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-display-medium-size: 45px;
+    --md-sys-typescale-display-medium-weight: 400;
+    --md-sys-typescale-display-medium-line-height: 52px;
+    --md-sys-typescale-display-medium-letter-spacing: 0px;
+
+    --md-sys-typescale-display-small-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-display-small-size: 36px;
+    --md-sys-typescale-display-small-weight: 400;
+    --md-sys-typescale-display-small-line-height: 44px;
+    --md-sys-typescale-display-small-letter-spacing: 0px;
+
+    --md-sys-typescale-headline-large-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-headline-large-size: 32px;
+    --md-sys-typescale-headline-large-weight: 500;
+    --md-sys-typescale-headline-large-line-height: 40px;
+    --md-sys-typescale-headline-large-letter-spacing: 0px;
+
+    --md-sys-typescale-headline-medium-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-headline-medium-size: 28px;
+    --md-sys-typescale-headline-medium-weight: 500;
+    --md-sys-typescale-headline-medium-line-height: 36px;
+    --md-sys-typescale-headline-medium-letter-spacing: 0px;
+
+    --md-sys-typescale-headline-small-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-headline-small-size: 24px;
+    --md-sys-typescale-headline-small-weight: 500;
+    --md-sys-typescale-headline-small-line-height: 32px;
+    --md-sys-typescale-headline-small-letter-spacing: 0px;
+
+    --md-sys-typescale-title-large-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-title-large-size: 22px;
+    --md-sys-typescale-title-large-weight: 500;
+    --md-sys-typescale-title-large-line-height: 28px;
+    --md-sys-typescale-title-large-letter-spacing: 0px;
+
+    --md-sys-typescale-title-medium-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-title-medium-size: 18px;
+    --md-sys-typescale-title-medium-weight: 500;
+    --md-sys-typescale-title-medium-line-height: 24px;
+    --md-sys-typescale-title-medium-letter-spacing: 0.15px;
+
+    --md-sys-typescale-title-small-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-title-small-size: 16px;
+    --md-sys-typescale-title-small-weight: 500;
+    --md-sys-typescale-title-small-line-height: 20px;
+    --md-sys-typescale-title-small-letter-spacing: 0.1px;
+
+    --md-sys-typescale-label-large-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-label-large-size: 14px;
+    --md-sys-typescale-label-large-weight: 500;
+    --md-sys-typescale-label-large-line-height: 20px;
+    --md-sys-typescale-label-large-letter-spacing: 0.1px;
+
+    --md-sys-typescale-label-medium-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-label-medium-size: 12px;
+    --md-sys-typescale-label-medium-weight: 500;
+    --md-sys-typescale-label-medium-line-height: 16px;
+    --md-sys-typescale-label-medium-letter-spacing: 0.5px;
+
+    --md-sys-typescale-label-small-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-label-small-size: 11px;
+    --md-sys-typescale-label-small-weight: 500;
+    --md-sys-typescale-label-small-line-height: 16px;
+    --md-sys-typescale-label-small-letter-spacing: 0.5px;
+
+    --md-sys-typescale-body-large-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-body-large-size: 16px;
+    --md-sys-typescale-body-large-weight: 400;
+    --md-sys-typescale-body-large-line-height: 24px;
+    --md-sys-typescale-body-large-letter-spacing: 0.5px;
+
+    --md-sys-typescale-body-medium-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-body-medium-size: 14px;
+    --md-sys-typescale-body-medium-weight: 400;
+    --md-sys-typescale-body-medium-line-height: 20px;
+    --md-sys-typescale-body-medium-letter-spacing: 0.25px;
+
+    --md-sys-typescale-body-small-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-body-small-size: 12px;
+    --md-sys-typescale-body-small-weight: 400;
+    --md-sys-typescale-body-small-line-height: 16px;
+    --md-sys-typescale-body-small-letter-spacing: 0.4px;
+
+    /* Financial Data Typography - Monospace for Numbers */
+    --md-sys-typescale-financial-large-font: 'Roboto Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+    --md-sys-typescale-financial-large-size: 18px;
+    --md-sys-typescale-financial-large-weight: 500;
+    --md-sys-typescale-financial-large-line-height: 24px;
+    --md-sys-typescale-financial-large-letter-spacing: 0px;
+
+    --md-sys-typescale-financial-medium-font: 'Roboto Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+    --md-sys-typescale-financial-medium-size: 16px;
+    --md-sys-typescale-financial-medium-weight: 500;
+    --md-sys-typescale-financial-medium-line-height: 20px;
+    --md-sys-typescale-financial-medium-letter-spacing: 0px;
+
+    --md-sys-typescale-financial-small-font: 'Roboto Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+    --md-sys-typescale-financial-small-size: 14px;
+    --md-sys-typescale-financial-small-weight: 400;
+    --md-sys-typescale-financial-small-line-height: 18px;
+    --md-sys-typescale-financial-small-letter-spacing: 0px;
+
+    /* Enhanced Financial Color System */
+    /* Bull/Bear Market Colors - Chinese Stock Market Convention */
+    /* 上涨用红色（中国股市习惯） */
+    --md-sys-color-bull: #D32F2F;
+    --md-sys-color-on-bull: #FFFFFF;
+    --md-sys-color-bull-container: #FFEBEE;
+    --md-sys-color-on-bull-container: #B71C1C;
+
+    /* 下跌用绿色（中国股市习惯） */
+    --md-sys-color-bear: #00C853;
+    --md-sys-color-on-bear: #FFFFFF;
+    --md-sys-color-bear-container: #E8F5E8;
+    --md-sys-color-on-bear-container: #1B5E20;
+
+    /* Neutral Market Colors */
+    --md-sys-color-neutral: #757575;
+    --md-sys-color-on-neutral: #FFFFFF;
+    --md-sys-color-neutral-container: #F5F5F5;
+    --md-sys-color-on-neutral-container: #424242;
 
     /* Error Colors - Enhanced Red */
     --md-sys-color-error: #D32F2F;
@@ -970,6 +1101,146 @@ body {
     animation: md3-scale-in var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized);
 }
 
+/* Enhanced Financial Data Tables */
+.md3-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--md-sys-color-surface-container);
+    border-radius: var(--md-sys-shape-corner-large);
+    overflow: hidden;
+    box-shadow: var(--md-sys-elevation-level1);
+    margin-bottom: 24px;
+}
+
+.md3-table thead {
+    background-color: var(--md-sys-color-surface-container-high);
+}
+
+.md3-table th {
+    padding: 16px 12px;
+    text-align: left;
+    font-family: var(--md-sys-typescale-label-large-font);
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: var(--md-sys-typescale-label-large-weight);
+    color: var(--md-sys-color-on-surface-variant);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    white-space: nowrap;
+}
+
+.md3-table td {
+    padding: 12px;
+    font-family: var(--md-sys-typescale-body-medium-font);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    color: var(--md-sys-color-on-surface);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    vertical-align: middle;
+}
+
+.md3-table tbody tr:hover {
+    background-color: var(--md-sys-color-surface-container-high);
+}
+
+.md3-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Financial Data Specific Styles */
+.md3-table .financial-data {
+    font-family: var(--md-sys-typescale-financial-medium-font);
+    font-size: var(--md-sys-typescale-financial-medium-size);
+    font-weight: var(--md-sys-typescale-financial-medium-weight);
+    text-align: right;
+}
+
+.md3-table .stock-code {
+    font-family: var(--md-sys-typescale-financial-small-font);
+    font-weight: 600;
+    color: var(--md-sys-color-primary);
+}
+
+.md3-table .stock-name {
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface);
+}
+
+.md3-table .trend-up {
+    color: var(--md-sys-color-bull);
+    font-weight: 500;
+}
+
+.md3-table .trend-down {
+    color: var(--md-sys-color-bear);
+    font-weight: 500;
+}
+
+.md3-table .trend-neutral {
+    color: var(--md-sys-color-neutral);
+}
+
+/* Enhanced Financial Badges */
+.md3-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: var(--md-sys-shape-corner-large);
+    font-family: var(--md-sys-typescale-label-medium-font);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.md3-badge-success {
+    background-color: var(--md-sys-color-success-container);
+    color: var(--md-sys-color-on-success-container);
+}
+
+.md3-badge-warning {
+    background-color: var(--md-sys-color-warning-container);
+    color: var(--md-sys-color-on-warning-container);
+}
+
+.md3-badge-error {
+    background-color: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+}
+
+.md3-badge-bull {
+    background-color: var(--md-sys-color-bull-container);
+    color: var(--md-sys-color-on-bull-container);
+}
+
+.md3-badge-bear {
+    background-color: var(--md-sys-color-bear-container);
+    color: var(--md-sys-color-on-bear-container);
+}
+
+.md3-badge-neutral {
+    background-color: var(--md-sys-color-neutral-container);
+    color: var(--md-sys-color-on-neutral-container);
+}
+
+/* Score Color Classes */
+.md3-score-excellent {
+    background-color: var(--md-sys-color-success-container);
+    color: var(--md-sys-color-on-success-container);
+}
+
+.md3-score-good {
+    background-color: var(--md-sys-color-bull-container);
+    color: var(--md-sys-color-on-bull-container);
+}
+
+.md3-score-fair {
+    background-color: var(--md-sys-color-warning-container);
+    color: var(--md-sys-color-on-warning-container);
+}
+
+.md3-score-poor {
+    background-color: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+}
+
 /* Enhanced Responsive Design */
 @media (max-width: 1200px) {
     .md3-main-content {
@@ -990,6 +1261,12 @@ body {
 
     .md3-card-body {
         padding: 20px;
+    }
+
+    .md3-table th,
+    .md3-table td {
+        padding: 12px 8px;
+        font-size: 13px;
     }
 }
 

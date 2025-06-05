@@ -3,144 +3,185 @@
 {% block title %}基本面分析 - {{ stock_code }} - 智能分析系统{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-3">
-    <div id="alerts-container"></div>
+<div class="page-transition">
+    <!-- Enhanced Material Design 3 分析表单 -->
+    <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+        <div class="md3-card-header">
+            <h2 class="md3-card-title">
+                <i class="material-icons">assessment</i> 基本面分析
+            </h2>
+            <p class="md3-card-subtitle">深度分析股票财务指标与估值水平</p>
+        </div>
+        <div class="md3-card-body">
+            <form id="fundamental-form" style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 20px; align-items: end;">
+                <div class="md3-text-field md3-text-field-outlined">
+                    <input type="text" class="md3-text-field-input" id="stock-code" placeholder=" " required>
+                    <label class="md3-text-field-label">股票代码</label>
+                    <div class="md3-text-field-supporting-text">例如：600519、0700.HK、AAPL</div>
+                </div>
 
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header py-2">
-                    <h5 class="mb-0">基本面分析</h5>
+                <div class="md3-text-field md3-text-field-outlined">
+                    <select class="md3-text-field-input" id="market-type">
+                        <option value="A" selected>A股</option>
+                        <option value="HK">港股</option>
+                        <option value="US">美股</option>
+                    </select>
+                    <label class="md3-text-field-label">市场类型</label>
                 </div>
-                <div class="card-body py-2">
-                    <form id="fundamental-form" class="row g-2">
-                        <div class="col-md-4">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">股票代码</span>
-                                <input type="text" class="form-control" id="stock-code" placeholder="例如: 600519" required>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">市场</span>
-                                <select class="form-select" id="market-type">
-                                    <option value="A" selected>A股</option>
-                                    <option value="HK">港股</option>
-                                    <option value="US">美股</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-primary btn-sm w-100">
-                                <i class="fas fa-search"></i> 分析
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+
+                <button type="submit" class="md3-button md3-button-filled md3-button-large">
+                    <i class="material-icons">analytics</i> 开始分析
+                </button>
+            </form>
         </div>
     </div>
 
+    <!-- Enhanced Material Design 3 分析结果区域 -->
     <div id="fundamental-result" style="display: none;">
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">财务概况</h5>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+            <!-- 财务概况卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-left">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">account_balance</i> 财务概况
+                    </h3>
+                    <p class="md3-card-subtitle">核心财务指标与估值分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 32px;">
+                        <div style="flex: 1;">
+                            <h2 id="stock-name" style="margin: 0 0 8px 0; font-family: var(--md-sys-typescale-headline-large-font); font-size: 28px; font-weight: 500; color: var(--md-sys-color-on-surface);"></h2>
+                            <p id="stock-info" style="margin: 0; color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);"></p>
+                        </div>
+                        <div>
+                            <span id="fundamental-score" class="md3-score-indicator md3-score-good" style="font-size: 18px; padding: 12px 20px;"></span>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-7">
-                                <h3 id="stock-name" class="mb-0 fs-4"></h3>
-                                <p id="stock-info" class="text-muted mb-0 small"></p>
-                            </div>
-                            <div class="col-md-5 text-end">
-                                <span id="fundamental-score" class="badge rounded-pill score-pill"></span>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+                        <div>
+                            <div style="margin-bottom: 24px;">
+                                <span style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-label-large-font); font-size: var(--md-sys-typescale-label-large-size); font-weight: 500; margin-bottom: 16px; display: block;">估值指标</span>
+                                <div style="display: flex; flex-direction: column; gap: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                        <span style="color: var(--md-sys-color-on-surface-variant);">PE(TTM)</span>
+                                        <span id="pe-ttm" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                        <span style="color: var(--md-sys-color-on-surface-variant);">PB</span>
+                                        <span id="pb" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                        <span style="color: var(--md-sys-color-on-surface-variant);">PS(TTM)</span>
+                                        <span id="ps-ttm" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>估值指标</h6>
-                                <ul class="list-unstyled mt-1 mb-0 small">
-                                    <li><span class="text-muted">PE(TTM):</span> <span id="pe-ttm"></span></li>
-                                    <li><span class="text-muted">PB:</span> <span id="pb"></span></li>
-                                    <li><span class="text-muted">PS(TTM):</span> <span id="ps-ttm"></span></li>
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>盈利能力</h6>
-                                <ul class="list-unstyled mt-1 mb-0 small">
-                                    <li><span class="text-muted">ROE:</span> <span id="roe"></span></li>
-                                    <li><span class="text-muted">毛利率:</span> <span id="gross-margin"></span></li>
-                                    <li><span class="text-muted">净利润率:</span> <span id="net-profit-margin"></span></li>
-                                </ul>
+                        <div>
+                            <span style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-label-large-font); font-size: var(--md-sys-typescale-label-large-size); font-weight: 500; margin-bottom: 16px; display: block;">盈利能力</span>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">ROE</span>
+                                    <span id="roe" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">毛利率</span>
+                                    <span id="gross-margin" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">净利润率</span>
+                                    <span id="net-profit-margin" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">成长性分析</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>营收增长</h6>
-                                <ul class="list-unstyled mt-1 mb-0 small">
-                                    <li><span class="text-muted">3年CAGR:</span> <span id="revenue-growth-3y"></span></li>
-                                    <li><span class="text-muted">5年CAGR:</span> <span id="revenue-growth-5y"></span></li>
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>利润增长</h6>
-                                <ul class="list-unstyled mt-1 mb-0 small">
-                                    <li><span class="text-muted">3年CAGR:</span> <span id="profit-growth-3y"></span></li>
-                                    <li><span class="text-muted">5年CAGR:</span> <span id="profit-growth-5y"></span></li>
-                                </ul>
+
+            <!-- 成长性分析卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-right">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">trending_up</i> 成长性分析
+                    </h3>
+                    <p class="md3-card-subtitle">营收与利润增长趋势</p>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 24px;">
+                        <div>
+                            <span style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-label-large-font); font-size: var(--md-sys-typescale-label-large-size); font-weight: 500; margin-bottom: 16px; display: block;">营收增长</span>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">3年CAGR</span>
+                                    <span id="revenue-growth-3y" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">5年CAGR</span>
+                                    <span id="revenue-growth-5y" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
                             </div>
                         </div>
-                        <div class="mt-3">
-                            <div id="growth-chart" style="height: 150px;"></div>
+                        <div>
+                            <span style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-label-large-font); font-size: var(--md-sys-typescale-label-large-size); font-weight: 500; margin-bottom: 16px; display: block;">利润增长</span>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">3年CAGR</span>
+                                    <span id="profit-growth-3y" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">5年CAGR</span>
+                                    <span id="profit-growth-5y" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    <div id="growth-chart" style="height: 200px;"></div>
                 </div>
             </div>
         </div>
 
-        <div class="row g-3 mb-3">
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">估值评分</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="valuation-chart" style="height: 200px;"></div>
-                        <p id="valuation-comment" class="small text-muted mt-2"></p>
-                    </div>
+        <!-- 评分卡片组 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px;">
+            <!-- 估值评分卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">price_check</i> 估值评分
+                    </h3>
+                    <p class="md3-card-subtitle">相对估值水平分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div id="valuation-chart" style="height: 240px;"></div>
+                    <p id="valuation-comment" style="margin-top: 16px; color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); line-height: 1.5;"></p>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">财务健康评分</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="financial-chart" style="height: 200px;"></div>
-                        <p id="financial-comment" class="small text-muted mt-2"></p>
-                    </div>
+
+            <!-- 财务健康评分卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.1s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">health_and_safety</i> 财务健康评分
+                    </h3>
+                    <p class="md3-card-subtitle">财务稳健性评估</p>
+                </div>
+                <div class="md3-card-body">
+                    <div id="financial-chart" style="height: 240px;"></div>
+                    <p id="financial-comment" style="margin-top: 16px; color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); line-height: 1.5;"></p>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">成长性评分</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="growth-score-chart" style="height: 200px;"></div>
-                        <p id="growth-comment" class="small text-muted mt-2"></p>
-                    </div>
+
+            <!-- 成长性评分卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.2s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">growth</i> 成长性评分
+                    </h3>
+                    <p class="md3-card-subtitle">增长潜力评估</p>
+                </div>
+                <div class="md3-card-body">
+                    <div id="growth-score-chart" style="height: 240px;"></div>
+                    <p id="growth-comment" style="margin-top: 16px; color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); line-height: 1.5;"></p>
                 </div>
             </div>
         </div>
@@ -199,8 +240,8 @@
         $('#stock-info').text(data.details.indicators.industry || '未知行业');
 
         // 设置评分
-        const scoreClass = getScoreColorClass(data.total);
-        $('#fundamental-score').text(data.total).addClass(scoreClass);
+        const scoreClass = getMD3ScoreColorClass(data.total);
+        $('#fundamental-score').text(data.total).removeClass().addClass(`md3-score-indicator ${scoreClass}`);
 
         // 设置估值指标
         $('#pe-ttm').text(formatNumber(data.details.indicators.pe_ttm, 2));

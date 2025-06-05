@@ -3,153 +3,262 @@
 
 {% block title %}投资组合 - 智能分析系统{% endblock %}
 
+{% block head %}
+<style>
+    /* Portfolio-specific Material Design 3 enhancements */
+    .md3-portfolio-container {
+        padding: 32px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .md3-portfolio-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 32px;
+        padding: 24px 0;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .md3-portfolio-title {
+        font-family: var(--md-sys-typescale-headline-large-font);
+        font-size: var(--md-sys-typescale-headline-large-size);
+        font-weight: var(--md-sys-typescale-headline-large-weight);
+        color: var(--md-sys-color-on-surface);
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .md3-portfolio-title i {
+        margin-right: 16px;
+        color: var(--md-sys-color-primary);
+        font-size: 32px;
+    }
+
+    .md3-empty-state {
+        text-align: center;
+        padding: 64px 32px;
+        background-color: var(--md-sys-color-surface-container);
+        border-radius: var(--md-sys-shape-corner-large);
+        border: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .md3-empty-state i {
+        font-size: 64px;
+        color: var(--md-sys-color-outline);
+        margin-bottom: 24px;
+    }
+
+    .md3-empty-state h3 {
+        font-family: var(--md-sys-typescale-title-large-font);
+        font-size: var(--md-sys-typescale-title-large-size);
+        font-weight: var(--md-sys-typescale-title-large-weight);
+        color: var(--md-sys-color-on-surface);
+        margin-bottom: 16px;
+    }
+
+    .md3-empty-state p {
+        font-family: var(--md-sys-typescale-body-large-font);
+        font-size: var(--md-sys-typescale-body-large-size);
+        color: var(--md-sys-color-on-surface-variant);
+        margin-bottom: 32px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
+<div class="md3-portfolio-container">
     <div id="alerts-container"></div>
 
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between">
-                    <h5 class="mb-0">我的投资组合</h5>
-                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addStockModal">
-                        <i class="fas fa-plus"></i> 添加股票
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div id="portfolio-empty" class="text-center py-4">
-                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-                        <p>您的投资组合还是空的，请添加股票</p>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStockModal">
-                            <i class="fas fa-plus"></i> 添加股票
-                        </button>
-                    </div>
+    <!-- Enhanced Material Design 3 Portfolio Header -->
+    <div class="md3-portfolio-header">
+        <h1 class="md3-portfolio-title">
+            <i class="material-icons">account_balance_wallet</i>
+            我的投资组合
+        </h1>
+        <button class="md3-button md3-button-filled" data-bs-toggle="modal" data-bs-target="#addStockModal">
+            <i class="material-icons">add</i> 添加股票
+        </button>
+    </div>
 
-                    <div id="portfolio-content" style="display: none;">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>代码</th>
-                                        <th>名称</th>
-                                        <th>行业</th>
-                                        <th>持仓比例</th>
-                                        <th>当前价格</th>
-                                        <th>今日涨跌</th>
-                                        <th>综合评分</th>
-                                        <th>建议</th>
-                                        <th>操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="portfolio-table">
-                                    <!-- 投资组合数据将在JS中动态填充 -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+    <!-- Enhanced Empty State -->
+    <div id="portfolio-empty" class="md3-empty-state">
+        <i class="material-icons">folder_open</i>
+        <h3>投资组合为空</h3>
+        <p>开始构建您的专业投资组合，获取智能分析和建议</p>
+        <button class="md3-button md3-button-filled" data-bs-toggle="modal" data-bs-target="#addStockModal">
+            <i class="material-icons">add</i> 添加第一只股票
+        </button>
+    </div>
+
+    <!-- Enhanced Portfolio Content -->
+    <div id="portfolio-content" style="display: none;">
+        <div class="md3-card">
+            <div class="md3-card-header">
+                <h2 class="md3-card-title">
+                    <i class="material-icons">list</i>
+                    持仓明细
+                </h2>
+            </div>
+            <div class="md3-card-body" style="padding: 0;">
+                <div class="table-responsive">
+                    <table class="md3-table">
+                        <thead>
+                            <tr>
+                                <th>股票代码</th>
+                                <th>股票名称</th>
+                                <th>所属行业</th>
+                                <th>持仓比例</th>
+                                <th>当前价格</th>
+                                <th>今日涨跌</th>
+                                <th>综合评分</th>
+                                <th>投资建议</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portfolio-table">
+                            <!-- 投资组合数据将在JS中动态填充 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="portfolio-analysis" class="row mb-4" style="display: none;">
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="mb-0">投资组合评分</h5>
+    <!-- Enhanced Portfolio Analysis Section -->
+    <div id="portfolio-analysis" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+            <!-- Portfolio Score Card -->
+            <div class="md3-card md3-card-elevated">
+                <div class="md3-card-header">
+                    <h2 class="md3-card-title">
+                        <i class="material-icons">analytics</i>
+                        投资组合评分
+                    </h2>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 text-center">
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: center;">
+                        <div style="text-align: center;">
                             <div id="portfolio-score-chart"></div>
-                            <h4 id="portfolio-score" class="mt-2">--</h4>
-                            <p class="text-muted">综合评分</p>
+                            <div style="margin-top: 16px;">
+                                <div id="portfolio-score" style="font-family: var(--md-sys-typescale-financial-large-font); font-size: var(--md-sys-typescale-financial-large-size); font-weight: var(--md-sys-typescale-financial-large-weight); color: var(--md-sys-color-primary);">--</div>
+                                <div style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface-variant); margin-top: 4px;">综合评分</div>
+                            </div>
                         </div>
-                        <div class="col-md-8">
-                            <h5 class="mb-3">维度评分</h5>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>技术面</span>
-                                    <span id="technical-score">--/40</span>
+                        <div>
+                            <h3 style="font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: var(--md-sys-typescale-title-medium-weight); margin-bottom: 24px;">维度评分</h3>
+
+                            <!-- Technical Score -->
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface);">技术面</span>
+                                    <span id="technical-score" style="font-family: var(--md-sys-typescale-financial-small-font); font-size: var(--md-sys-typescale-financial-small-size); color: var(--md-sys-color-primary);">--/40</span>
                                 </div>
-                                <div class="progress">
-                                    <div id="technical-progress" class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>基本面</span>
-                                    <span id="fundamental-score">--/40</span>
-                                </div>
-                                <div class="progress">
-                                    <div id="fundamental-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                <div style="height: 8px; background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-sys-shape-corner-small); overflow: hidden;">
+                                    <div id="technical-progress" style="height: 100%; background-color: var(--md-sys-color-tertiary); width: 0%; transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);"></div>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span>资金面</span>
-                                    <span id="capital-flow-score">--/20</span>
+
+                            <!-- Fundamental Score -->
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface);">基本面</span>
+                                    <span id="fundamental-score" style="font-family: var(--md-sys-typescale-financial-small-font); font-size: var(--md-sys-typescale-financial-small-size); color: var(--md-sys-color-success);">--/40</span>
                                 </div>
-                                <div class="progress">
-                                    <div id="capital-flow-progress" class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
+                                <div style="height: 8px; background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-sys-shape-corner-small); overflow: hidden;">
+                                    <div id="fundamental-progress" style="height: 100%; background-color: var(--md-sys-color-success); width: 0%; transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);"></div>
+                                </div>
+                            </div>
+
+                            <!-- Capital Flow Score -->
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface);">资金面</span>
+                                    <span id="capital-flow-score" style="font-family: var(--md-sys-typescale-financial-small-font); font-size: var(--md-sys-typescale-financial-small-size); color: var(--md-sys-color-warning);">--/20</span>
+                                </div>
+                                <div style="height: 8px; background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-sys-shape-corner-small); overflow: hidden;">
+                                    <div id="capital-flow-progress" style="height: 100%; background-color: var(--md-sys-color-warning); width: 0%; transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="mb-0">行业分布</h5>
+
+            <!-- Industry Distribution Card -->
+            <div class="md3-card md3-card-elevated">
+                <div class="md3-card-header">
+                    <h2 class="md3-card-title">
+                        <i class="material-icons">pie_chart</i>
+                        行业分布
+                    </h2>
                 </div>
-                <div class="card-body">
+                <div class="md3-card-body">
                     <div id="industry-chart"></div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div id="portfolio-recommendations" class="row mb-4" style="display: none;">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">投资建议</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group" id="recommendations-list">
-                        <!-- 投资建议将在JS中动态填充 -->
-                    </ul>
+        <!-- Investment Recommendations -->
+        <div id="portfolio-recommendations" class="md3-card">
+            <div class="md3-card-header">
+                <h2 class="md3-card-title">
+                    <i class="material-icons">lightbulb</i>
+                    智能投资建议
+                </h2>
+            </div>
+            <div class="md3-card-body">
+                <div id="recommendations-list">
+                    <!-- 投资建议将在JS中动态填充 -->
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 添加股票模态框 -->
+<!-- Enhanced Material Design 3 Add Stock Modal -->
 <div class="modal fade" id="addStockModal" tabindex="-1" aria-labelledby="addStockModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addStockModalLabel">添加股票到投资组合</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--md-sys-shape-corner-large); border: none; box-shadow: var(--md-sys-elevation-level3);">
+            <div class="modal-header" style="background-color: var(--md-sys-color-surface-container-high); border-bottom: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large) 0 0; padding: 24px;">
+                <h5 class="modal-title" id="addStockModalLabel" style="font-family: var(--md-sys-typescale-title-large-font); font-size: var(--md-sys-typescale-title-large-size); font-weight: var(--md-sys-typescale-title-large-weight); color: var(--md-sys-color-on-surface); margin: 0; display: flex; align-items: center;">
+                    <i class="material-icons" style="margin-right: 12px; color: var(--md-sys-color-primary);">add_circle</i>
+                    添加股票到投资组合
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 24px; color: var(--md-sys-color-on-surface-variant); cursor: pointer;">
+                    <i class="material-icons">close</i>
+                </button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" style="padding: 32px; background-color: var(--md-sys-color-surface-container);">
                 <form id="add-stock-form">
-                    <div class="mb-3">
-                        <label for="add-stock-code" class="form-label">股票代码</label>
-                        <input type="text" class="form-control" id="add-stock-code" required>
+                    <!-- Stock Code Input -->
+                    <div class="md3-text-field" style="margin-bottom: 24px;">
+                        <input type="text" class="md3-text-field-input" id="add-stock-code" required placeholder=" ">
+                        <label for="add-stock-code" class="md3-text-field-label">股票代码</label>
+                        <div class="md3-text-field-supporting-text">
+                            <i class="material-icons" style="font-size: 16px; margin-right: 4px;">info</i>
+                            请输入6位股票代码，如：000001
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="add-stock-weight" class="form-label">持仓比例 (%)</label>
-                        <input type="number" class="form-control" id="add-stock-weight" min="1" max="100" value="10" required>
+
+                    <!-- Weight Input -->
+                    <div class="md3-text-field" style="margin-bottom: 24px;">
+                        <input type="number" class="md3-text-field-input" id="add-stock-weight" min="1" max="100" value="10" required placeholder=" ">
+                        <label for="add-stock-weight" class="md3-text-field-label">持仓比例 (%)</label>
+                        <div class="md3-text-field-supporting-text">
+                            <i class="material-icons" style="font-size: 16px; margin-right: 4px;">info</i>
+                            建议单只股票持仓比例不超过20%
+                        </div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" id="add-stock-btn">添加</button>
+            <div class="modal-footer" style="padding: 16px 32px 32px 32px; background-color: var(--md-sys-color-surface-container); border-radius: 0 0 var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large); border-top: none; display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" class="md3-button md3-button-text" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="md3-button md3-button-filled" id="add-stock-btn">
+                    <i class="material-icons">add</i> 添加股票
+                </button>
             </div>
         </div>
     </div>
@@ -203,34 +312,34 @@
 
         let html = '';
         portfolio.forEach((stock, index) => {
-            const scoreClass = getScoreColorClass(stock.score || 0);
+            const scoreClass = getMD3ScoreColorClass(stock.score || 0);
             const priceChangeClass = (stock.price_change || 0) >= 0 ? 'trend-up' : 'trend-down';
-            const priceChangeIcon = (stock.price_change || 0) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+            const priceChangeIcon = (stock.price_change || 0) >= 0 ? '<i class="material-icons">trending_up</i>' : '<i class="material-icons">trending_down</i>';
 
             // 显示加载状态或实际数据
             const stockName = stock.loading ?
-                '<span class="text-muted"><i class="fas fa-spinner fa-pulse"></i> 加载中...</span>' :
-                (stock.stock_name || '未知');
+                '<span style="color: var(--md-sys-color-on-surface-variant);"><i class="material-icons" style="font-size: 16px; animation: spin 1s linear infinite;">refresh</i> 加载中...</span>' :
+                `<span class="stock-name">${stock.stock_name || '未知'}</span>`;
 
             const industryDisplay = stock.industry || '-';
 
             html += `
                 <tr>
-                    <td>${stock.stock_code}</td>
+                    <td><span class="stock-code">${stock.stock_code}</span></td>
                     <td>${stockName}</td>
                     <td>${industryDisplay}</td>
-                    <td>${stock.weight}%</td>
-                    <td>${stock.price ? formatNumber(stock.price, 2) : '-'}</td>
-                    <td class="${priceChangeClass}">${stock.price_change ? (priceChangeIcon + ' ' + formatPercent(stock.price_change, 2)) : '-'}</td>
-                    <td><span class="badge ${scoreClass}">${stock.score || '-'}</span></td>
+                    <td class="financial-data">${stock.weight}%</td>
+                    <td class="financial-data">${stock.price ? formatNumber(stock.price, 2) : '-'}</td>
+                    <td class="${priceChangeClass} financial-data">${stock.price_change ? (priceChangeIcon + ' ' + formatPercent(stock.price_change, 2)) : '-'}</td>
+                    <td><span class="md3-badge ${scoreClass}">${stock.score || '-'}</span></td>
                     <td>${stock.recommendation || '-'}</td>
                     <td>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <a href="/stock_detail/${stock.stock_code}" class="btn btn-outline-primary">
-                                <i class="fas fa-chart-line"></i>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="/stock_detail/${stock.stock_code}" class="md3-icon-button" title="查看详情">
+                                <i class="material-icons">analytics</i>
                             </a>
-                            <button type="button" class="btn btn-outline-danger" onclick="removeStock(${index})">
-                                <i class="fas fa-trash"></i>
+                            <button type="button" class="md3-icon-button" onclick="removeStock(${index})" title="移除股票" style="color: var(--md-sys-color-error);">
+                                <i class="material-icons">delete</i>
                             </button>
                         </div>
                     </td>
@@ -582,21 +691,286 @@
             });
         }
 
-        // 渲染建议
+        // 渲染建议 - Material Design 3 Style
         let html = '';
         recommendations.forEach(rec => {
-            html += `<li class="list-group-item list-group-item-${rec.type}">${rec.text}</li>`;
+            const iconMap = {
+                success: 'check_circle',
+                primary: 'info',
+                warning: 'warning',
+                danger: 'error'
+            };
+
+            const colorMap = {
+                success: 'var(--md-sys-color-success-container)',
+                primary: 'var(--md-sys-color-primary-container)',
+                warning: 'var(--md-sys-color-warning-container)',
+                danger: 'var(--md-sys-color-error-container)'
+            };
+
+            const textColorMap = {
+                success: 'var(--md-sys-color-on-success-container)',
+                primary: 'var(--md-sys-color-on-primary-container)',
+                warning: 'var(--md-sys-color-on-warning-container)',
+                danger: 'var(--md-sys-color-on-error-container)'
+            };
+
+            html += `
+                <div style="
+                    background-color: ${colorMap[rec.type]};
+                    color: ${textColorMap[rec.type]};
+                    padding: 16px 20px;
+                    border-radius: var(--md-sys-shape-corner-medium);
+                    margin-bottom: 12px;
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 12px;
+                    font-family: var(--md-sys-typescale-body-medium-font);
+                    font-size: var(--md-sys-typescale-body-medium-size);
+                    line-height: var(--md-sys-typescale-body-medium-line-height);
+                ">
+                    <i class="material-icons" style="font-size: 20px; margin-top: 2px;">${iconMap[rec.type]}</i>
+                    <span>${rec.text}</span>
+                </div>
+            `;
         });
 
         $('#recommendations-list').html(html);
     }
 
-    // 获取评分颜色
+    // Enhanced Material Design 3 Score Color Functions
+    function getMD3ScoreColorClass(score) {
+        if (score >= 80) return 'md3-score-excellent';
+        if (score >= 60) return 'md3-score-good';
+        if (score >= 40) return 'md3-score-fair';
+        return 'md3-score-poor';
+    }
+
+    // 获取评分颜色 - Material Design 3
     function getScoreColor(score) {
-        if (score >= 80) return '#28a745'; // 绿色
-        if (score >= 60) return '#007bff'; // 蓝色
-        if (score >= 40) return '#ffc107'; // 黄色
-        return '#dc3545'; // 红色
+        if (score >= 80) return 'var(--md-sys-color-success)';
+        if (score >= 60) return 'var(--md-sys-color-bull)';
+        if (score >= 40) return 'var(--md-sys-color-warning)';
+        return 'var(--md-sys-color-error)';
+    }
+
+    // 格式化数字
+    function formatNumber(num, decimals = 2) {
+        if (num === null || num === undefined) return '-';
+        return parseFloat(num).toFixed(decimals);
+    }
+
+    // 格式化百分比
+    function formatPercent(num, decimals = 2) {
+        if (num === null || num === undefined) return '-';
+        const formatted = parseFloat(num).toFixed(decimals);
+        return formatted + '%';
+    }
+
+    // 显示成功消息
+    function showSuccess(message) {
+        showAlert(message, 'success');
+    }
+
+    // 显示错误消息
+    function showError(message) {
+        showAlert(message, 'error');
+    }
+
+    // 显示信息消息
+    function showInfo(message) {
+        showAlert(message, 'info');
+    }
+
+    // 通用消息显示函数
+    function showAlert(message, type) {
+        const alertContainer = $('#alerts-container');
+        const alertId = 'alert-' + Date.now();
+
+        const alertColors = {
+            success: 'var(--md-sys-color-success-container)',
+            error: 'var(--md-sys-color-error-container)',
+            info: 'var(--md-sys-color-primary-container)'
+        };
+
+        const alertTextColors = {
+            success: 'var(--md-sys-color-on-success-container)',
+            error: 'var(--md-sys-color-on-error-container)',
+            info: 'var(--md-sys-color-on-primary-container)'
+        };
+
+        const alertIcons = {
+            success: 'check_circle',
+            error: 'error',
+            info: 'info'
+        };
+
+        const alertHtml = `
+            <div id="${alertId}" class="md3-alert" style="
+                background-color: ${alertColors[type]};
+                color: ${alertTextColors[type]};
+                padding: 16px 24px;
+                border-radius: var(--md-sys-shape-corner-large);
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                box-shadow: var(--md-sys-elevation-level1);
+                animation: slideInDown 0.3s ease-out;
+            ">
+                <i class="material-icons" style="margin-right: 12px; font-size: 20px;">${alertIcons[type]}</i>
+                <span style="flex: 1; font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);">${message}</span>
+                <button onclick="$('#${alertId}').fadeOut(300, function() { $(this).remove(); })" style="
+                    background: none;
+                    border: none;
+                    color: inherit;
+                    cursor: pointer;
+                    padding: 4px;
+                    margin-left: 12px;
+                ">
+                    <i class="material-icons" style="font-size: 18px;">close</i>
+                </button>
+            </div>
+        `;
+
+        alertContainer.append(alertHtml);
+
+        // 自动移除消息
+        setTimeout(() => {
+            $(`#${alertId}`).fadeOut(300, function() {
+                $(this).remove();
+            });
+        }, 5000);
     }
 </script>
+
+<style>
+    /* Additional animations and enhancements */
+    @keyframes slideInDown {
+        from {
+            transform: translateY(-20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* Enhanced Material Design 3 Text Fields */
+    .md3-text-field {
+        position: relative;
+        margin-bottom: 16px;
+    }
+
+    .md3-text-field-input {
+        width: 100%;
+        padding: 16px 16px 8px 16px;
+        border: 1px solid var(--md-sys-color-outline);
+        border-radius: var(--md-sys-shape-corner-small);
+        background-color: var(--md-sys-color-surface-container-high);
+        color: var(--md-sys-color-on-surface);
+        font-family: var(--md-sys-typescale-body-large-font);
+        font-size: var(--md-sys-typescale-body-large-size);
+        transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+        outline: none;
+    }
+
+    .md3-text-field-input:focus {
+        border-color: var(--md-sys-color-primary);
+        box-shadow: 0 0 0 2px var(--md-sys-color-primary-container);
+    }
+
+    .md3-text-field-label {
+        position: absolute;
+        left: 16px;
+        top: 16px;
+        color: var(--md-sys-color-on-surface-variant);
+        font-family: var(--md-sys-typescale-body-large-font);
+        font-size: var(--md-sys-typescale-body-large-size);
+        transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+        pointer-events: none;
+        background-color: var(--md-sys-color-surface-container-high);
+        padding: 0 4px;
+    }
+
+    .md3-text-field-input:focus + .md3-text-field-label,
+    .md3-text-field-input:not(:placeholder-shown) + .md3-text-field-label {
+        top: -8px;
+        left: 12px;
+        font-size: var(--md-sys-typescale-body-small-size);
+        color: var(--md-sys-color-primary);
+    }
+
+    .md3-text-field-supporting-text {
+        margin-top: 4px;
+        font-family: var(--md-sys-typescale-body-small-font);
+        font-size: var(--md-sys-typescale-body-small-size);
+        color: var(--md-sys-color-on-surface-variant);
+        display: flex;
+        align-items: center;
+    }
+
+    /* Enhanced Icon Button Styles */
+    .md3-icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--md-sys-shape-corner-full);
+        border: none;
+        background-color: transparent;
+        color: var(--md-sys-color-on-surface-variant);
+        cursor: pointer;
+        transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .md3-icon-button:hover {
+        background-color: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+    }
+
+    .md3-icon-button:active {
+        transform: scale(0.95);
+    }
+
+    /* Responsive Design Enhancements */
+    @media (max-width: 768px) {
+        .md3-portfolio-container {
+            padding: 16px;
+        }
+
+        .md3-portfolio-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .md3-portfolio-title {
+            font-size: var(--md-sys-typescale-headline-medium-size);
+        }
+
+        .md3-table th,
+        .md3-table td {
+            padding: 8px 4px;
+            font-size: 12px;
+        }
+
+        .md3-table .stock-code {
+            font-size: 11px;
+        }
+
+        .md3-icon-button {
+            width: 36px;
+            height: 36px;
+        }
+    }
+</style>
 {% endblock %}
