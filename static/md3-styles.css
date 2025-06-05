@@ -1,0 +1,1208 @@
+/* Material Design 3 Enhanced Styles for 智能分析系统 */
+
+/* Material Design 3 Design Tokens - Enhanced Financial Theme */
+:root {
+    /* Primary Colors - Financial Blue Theme */
+    --md-sys-color-primary: #1565C0;
+    --md-sys-color-on-primary: #FFFFFF;
+    --md-sys-color-primary-container: #E3F2FD;
+    --md-sys-color-on-primary-container: #0D47A1;
+
+    /* Secondary Colors - Professional Gray */
+    --md-sys-color-secondary: #546E7A;
+    --md-sys-color-on-secondary: #FFFFFF;
+    --md-sys-color-secondary-container: #ECEFF1;
+    --md-sys-color-on-secondary-container: #263238;
+
+    /* Tertiary Colors - Accent Teal */
+    --md-sys-color-tertiary: #00695C;
+    --md-sys-color-on-tertiary: #FFFFFF;
+    --md-sys-color-tertiary-container: #E0F2F1;
+    --md-sys-color-on-tertiary-container: #004D40;
+
+    /* Error Colors - Enhanced Red */
+    --md-sys-color-error: #D32F2F;
+    --md-sys-color-on-error: #FFFFFF;
+    --md-sys-color-error-container: #FFEBEE;
+    --md-sys-color-on-error-container: #B71C1C;
+
+    /* Surface Colors - Clean White Base */
+    --md-sys-color-surface: #FAFAFA;
+    --md-sys-color-on-surface: #212121;
+    --md-sys-color-surface-variant: #F5F5F5;
+    --md-sys-color-on-surface-variant: #616161;
+    --md-sys-color-surface-container: #FFFFFF;
+    --md-sys-color-surface-container-low: #F8F9FA;
+    --md-sys-color-surface-container-high: #F1F3F4;
+    --md-sys-color-surface-container-highest: #E8EAED;
+
+    /* Outline Colors */
+    --md-sys-color-outline: #9E9E9E;
+    --md-sys-color-outline-variant: #E0E0E0;
+
+    /* Financial Success/Trend Colors */
+    --md-sys-color-success: #2E7D32;
+    --md-sys-color-on-success: #FFFFFF;
+    --md-sys-color-success-container: #E8F5E8;
+    --md-sys-color-on-success-container: #1B5E20;
+
+    /* Financial Warning Colors */
+    --md-sys-color-warning: #F57C00;
+    --md-sys-color-on-warning: #FFFFFF;
+    --md-sys-color-warning-container: #FFF3E0;
+    --md-sys-color-on-warning-container: #E65100;
+    
+    /* Enhanced Typography Scale for Financial Data */
+    --md-sys-typescale-display-large-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-display-large-size: 57px;
+    --md-sys-typescale-display-large-weight: 300;
+    --md-sys-typescale-display-large-line-height: 64px;
+
+    --md-sys-typescale-headline-large-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-headline-large-size: 32px;
+    --md-sys-typescale-headline-large-weight: 400;
+    --md-sys-typescale-headline-large-line-height: 40px;
+
+    --md-sys-typescale-title-large-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-title-large-size: 22px;
+    --md-sys-typescale-title-large-weight: 500;
+    --md-sys-typescale-title-large-line-height: 28px;
+
+    --md-sys-typescale-title-medium-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-title-medium-size: 18px;
+    --md-sys-typescale-title-medium-weight: 500;
+    --md-sys-typescale-title-medium-line-height: 24px;
+
+    --md-sys-typescale-body-large-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-body-large-size: 16px;
+    --md-sys-typescale-body-large-weight: 400;
+    --md-sys-typescale-body-large-line-height: 24px;
+
+    --md-sys-typescale-body-medium-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-body-medium-size: 14px;
+    --md-sys-typescale-body-medium-weight: 400;
+    --md-sys-typescale-body-medium-line-height: 20px;
+
+    --md-sys-typescale-label-large-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-label-large-size: 14px;
+    --md-sys-typescale-label-large-weight: 500;
+    --md-sys-typescale-label-large-line-height: 20px;
+
+    --md-sys-typescale-label-medium-font: 'Roboto', 'Noto Sans SC', sans-serif;
+    --md-sys-typescale-label-medium-size: 12px;
+    --md-sys-typescale-label-medium-weight: 500;
+    --md-sys-typescale-label-medium-line-height: 16px;
+
+    /* Financial Data Typography */
+    --md-sys-typescale-financial-large-font: 'Roboto Mono', 'JetBrains Mono', monospace;
+    --md-sys-typescale-financial-large-size: 24px;
+    --md-sys-typescale-financial-large-weight: 500;
+    --md-sys-typescale-financial-large-line-height: 32px;
+
+    --md-sys-typescale-financial-medium-font: 'Roboto Mono', 'JetBrains Mono', monospace;
+    --md-sys-typescale-financial-medium-size: 16px;
+    --md-sys-typescale-financial-medium-weight: 400;
+    --md-sys-typescale-financial-medium-line-height: 24px;
+    
+    /* Enhanced Elevation System */
+    --md-sys-elevation-level0: none;
+    --md-sys-elevation-level1: 0px 1px 3px 0px rgba(0, 0, 0, 0.12), 0px 1px 2px 0px rgba(0, 0, 0, 0.24);
+    --md-sys-elevation-level2: 0px 3px 6px 0px rgba(0, 0, 0, 0.16), 0px 3px 6px 0px rgba(0, 0, 0, 0.23);
+    --md-sys-elevation-level3: 0px 6px 12px 0px rgba(0, 0, 0, 0.15), 0px 4px 6px 0px rgba(0, 0, 0, 0.12);
+    --md-sys-elevation-level4: 0px 8px 16px 0px rgba(0, 0, 0, 0.15), 0px 6px 10px 0px rgba(0, 0, 0, 0.12);
+    --md-sys-elevation-level5: 0px 12px 24px 0px rgba(0, 0, 0, 0.15), 0px 8px 16px 0px rgba(0, 0, 0, 0.12);
+
+    /* Enhanced Shape System */
+    --md-sys-shape-corner-none: 0px;
+    --md-sys-shape-corner-extra-small: 4px;
+    --md-sys-shape-corner-small: 8px;
+    --md-sys-shape-corner-medium: 12px;
+    --md-sys-shape-corner-large: 16px;
+    --md-sys-shape-corner-extra-large: 24px;
+    --md-sys-shape-corner-full: 50%;
+
+    /* Motion and Animation */
+    --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+    --md-sys-motion-easing-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+    --md-sys-motion-duration-short1: 50ms;
+    --md-sys-motion-duration-short2: 100ms;
+    --md-sys-motion-duration-short3: 150ms;
+    --md-sys-motion-duration-short4: 200ms;
+    --md-sys-motion-duration-medium1: 250ms;
+    --md-sys-motion-duration-medium2: 300ms;
+    --md-sys-motion-duration-medium3: 350ms;
+    --md-sys-motion-duration-medium4: 400ms;
+    --md-sys-motion-duration-long1: 450ms;
+    --md-sys-motion-duration-long2: 500ms;
+    --md-sys-motion-duration-long3: 550ms;
+    --md-sys-motion-duration-long4: 600ms;
+}
+
+/* Enhanced Dark Mode Support for Financial Theme */
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Primary Colors - Dark Financial Blue */
+        --md-sys-color-primary: #90CAF9;
+        --md-sys-color-on-primary: #0D47A1;
+        --md-sys-color-primary-container: #1565C0;
+        --md-sys-color-on-primary-container: #E3F2FD;
+
+        /* Secondary Colors - Dark Professional Gray */
+        --md-sys-color-secondary: #B0BEC5;
+        --md-sys-color-on-secondary: #263238;
+        --md-sys-color-secondary-container: #37474F;
+        --md-sys-color-on-secondary-container: #ECEFF1;
+
+        /* Tertiary Colors - Dark Teal */
+        --md-sys-color-tertiary: #80CBC4;
+        --md-sys-color-on-tertiary: #004D40;
+        --md-sys-color-tertiary-container: #00695C;
+        --md-sys-color-on-tertiary-container: #E0F2F1;
+
+        /* Surface Colors - Dark */
+        --md-sys-color-surface: #121212;
+        --md-sys-color-on-surface: #E0E0E0;
+        --md-sys-color-surface-variant: #1E1E1E;
+        --md-sys-color-on-surface-variant: #BDBDBD;
+        --md-sys-color-surface-container: #1F1F1F;
+        --md-sys-color-surface-container-low: #1A1A1A;
+        --md-sys-color-surface-container-high: #242424;
+        --md-sys-color-surface-container-highest: #2A2A2A;
+
+        /* Outline Colors - Dark */
+        --md-sys-color-outline: #757575;
+        --md-sys-color-outline-variant: #424242;
+
+        /* Error Colors - Dark */
+        --md-sys-color-error: #EF5350;
+        --md-sys-color-on-error: #FFFFFF;
+        --md-sys-color-error-container: #B71C1C;
+        --md-sys-color-on-error-container: #FFCDD2;
+
+        /* Success Colors - Dark */
+        --md-sys-color-success: #66BB6A;
+        --md-sys-color-on-success: #FFFFFF;
+        --md-sys-color-success-container: #1B5E20;
+        --md-sys-color-on-success-container: #C8E6C9;
+
+        /* Warning Colors - Dark */
+        --md-sys-color-warning: #FFA726;
+        --md-sys-color-on-warning: #FFFFFF;
+        --md-sys-color-warning-container: #E65100;
+        --md-sys-color-on-warning-container: #FFE0B2;
+    }
+}
+
+/* Enhanced Base Styles */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--md-sys-typescale-body-large-font);
+    font-size: var(--md-sys-typescale-body-large-size);
+    font-weight: var(--md-sys-typescale-body-large-weight);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    background-color: var(--md-sys-color-surface);
+    color: var(--md-sys-color-on-surface);
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Enhanced Material Design 3 Navigation Bar */
+.md3-navbar {
+    background-color: var(--md-sys-color-surface-container);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    box-shadow: var(--md-sys-elevation-level2);
+    height: 72px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+    transition: all var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+}
+
+.md3-navbar-brand {
+    font-family: var(--md-sys-typescale-title-large-font);
+    font-size: var(--md-sys-typescale-title-large-size);
+    font-weight: 600;
+    color: var(--md-sys-color-primary);
+    text-decoration: none;
+    margin-right: 32px;
+    display: flex;
+    align-items: center;
+    transition: color var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.md3-navbar-brand:hover {
+    color: var(--md-sys-color-primary);
+    text-decoration: none;
+}
+
+.md3-navbar-brand i {
+    margin-right: 12px;
+    font-size: 24px;
+}
+
+.md3-navbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+}
+
+.md3-nav-item {
+    position: relative;
+}
+
+.md3-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: var(--md-sys-shape-corner-large);
+    color: var(--md-sys-color-on-surface-variant);
+    text-decoration: none;
+    font-family: var(--md-sys-typescale-label-large-font);
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: var(--md-sys-typescale-label-large-weight);
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.md3-nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--md-sys-color-primary);
+    opacity: 0;
+    transition: opacity var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    border-radius: inherit;
+}
+
+.md3-nav-link:hover::before {
+    opacity: 0.08;
+}
+
+.md3-nav-link:hover {
+    color: var(--md-sys-color-primary);
+    text-decoration: none;
+}
+
+.md3-nav-link.active {
+    background-color: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+}
+
+.md3-nav-link.active::before {
+    opacity: 0;
+}
+
+.md3-nav-link i {
+    margin-right: 8px;
+    font-size: 18px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Enhanced Material Design 3 Main Layout */
+.md3-main-container {
+    display: flex;
+    min-height: calc(100vh - 72px);
+    background-color: var(--md-sys-color-surface);
+}
+
+.md3-main-content {
+    flex: 1;
+    padding: 32px;
+    overflow-y: auto;
+    max-width: 100%;
+}
+
+/* Enhanced Material Design 3 Cards */
+.md3-card {
+    background-color: var(--md-sys-color-surface-container);
+    border-radius: var(--md-sys-shape-corner-large);
+    box-shadow: var(--md-sys-elevation-level1);
+    margin-bottom: 24px;
+    overflow: hidden;
+    transition: all var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    position: relative;
+}
+
+.md3-card:hover {
+    box-shadow: var(--md-sys-elevation-level3);
+    transform: translateY(-2px);
+}
+
+.md3-card-elevated {
+    box-shadow: var(--md-sys-elevation-level2);
+    border: none;
+}
+
+.md3-card-elevated:hover {
+    box-shadow: var(--md-sys-elevation-level4);
+}
+
+.md3-card-filled {
+    background-color: var(--md-sys-color-surface-container-high);
+    box-shadow: none;
+    border: none;
+}
+
+.md3-card-outlined {
+    background-color: var(--md-sys-color-surface);
+    box-shadow: none;
+    border: 1px solid var(--md-sys-color-outline);
+}
+
+.md3-card-header {
+    padding: 20px 24px 16px 24px;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    background-color: var(--md-sys-color-surface-container-high);
+}
+
+.md3-card-title {
+    font-family: var(--md-sys-typescale-title-medium-font);
+    font-size: var(--md-sys-typescale-title-medium-size);
+    font-weight: var(--md-sys-typescale-title-medium-weight);
+    line-height: var(--md-sys-typescale-title-medium-line-height);
+    color: var(--md-sys-color-on-surface);
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.md3-card-title i {
+    margin-right: 12px;
+    color: var(--md-sys-color-primary);
+    font-size: 20px;
+}
+
+.md3-card-subtitle {
+    font-family: var(--md-sys-typescale-body-medium-font);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    font-weight: var(--md-sys-typescale-body-medium-weight);
+    color: var(--md-sys-color-on-surface-variant);
+    margin: 4px 0 0 0;
+}
+
+.md3-card-body {
+    padding: 24px;
+}
+
+.md3-card-actions {
+    padding: 16px 24px 24px 24px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* Enhanced Material Design 3 Buttons */
+.md3-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    border-radius: var(--md-sys-shape-corner-large);
+    font-family: var(--md-sys-typescale-label-large-font);
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: var(--md-sys-typescale-label-large-weight);
+    line-height: var(--md-sys-typescale-label-large-line-height);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    position: relative;
+    overflow: hidden;
+    min-height: 40px;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.md3-button:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.md3-button i {
+    margin-right: 8px;
+    font-size: 18px;
+}
+
+.md3-button-filled {
+    background-color: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    box-shadow: var(--md-sys-elevation-level1);
+}
+
+.md3-button-filled:hover {
+    box-shadow: var(--md-sys-elevation-level2);
+    background-color: var(--md-sys-color-primary);
+}
+
+.md3-button-filled:active {
+    box-shadow: var(--md-sys-elevation-level1);
+}
+
+.md3-button-outlined {
+    background-color: transparent;
+    color: var(--md-sys-color-primary);
+    border: 1px solid var(--md-sys-color-outline);
+}
+
+.md3-button-outlined:hover {
+    background-color: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    border-color: var(--md-sys-color-primary);
+}
+
+.md3-button-text {
+    background-color: transparent;
+    color: var(--md-sys-color-primary);
+    padding: 12px 16px;
+}
+
+.md3-button-text:hover {
+    background-color: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+}
+
+.md3-button-tonal {
+    background-color: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+}
+
+.md3-button-tonal:hover {
+    box-shadow: var(--md-sys-elevation-level1);
+    background-color: var(--md-sys-color-secondary-container);
+}
+
+/* Button Sizes */
+.md3-button-small {
+    padding: 8px 16px;
+    min-height: 32px;
+    font-size: 12px;
+}
+
+.md3-button-large {
+    padding: 16px 32px;
+    min-height: 48px;
+    font-size: 16px;
+}
+
+/* Icon Buttons */
+.md3-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--md-sys-shape-corner-full);
+    border: none;
+    background-color: transparent;
+    color: var(--md-sys-color-on-surface-variant);
+    cursor: pointer;
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    position: relative;
+    overflow: hidden;
+}
+
+.md3-icon-button:hover {
+    background-color: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+}
+
+.md3-icon-button-filled {
+    background-color: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+}
+
+.md3-icon-button-filled:hover {
+    box-shadow: var(--md-sys-elevation-level1);
+}
+
+/* Enhanced Material Design 3 Form Fields */
+.md3-text-field {
+    position: relative;
+    margin-bottom: 24px;
+}
+
+.md3-text-field-filled {
+    background-color: var(--md-sys-color-surface-container-high);
+    border-radius: var(--md-sys-shape-corner-extra-small) var(--md-sys-shape-corner-extra-small) 0 0;
+    border-bottom: 1px solid var(--md-sys-color-outline);
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.md3-text-field-filled:hover {
+    background-color: var(--md-sys-color-surface-container-highest);
+}
+
+.md3-text-field-filled:focus-within {
+    border-bottom: 2px solid var(--md-sys-color-primary);
+}
+
+.md3-text-field-outlined {
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: var(--md-sys-shape-corner-extra-small);
+    background-color: var(--md-sys-color-surface);
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.md3-text-field-outlined:hover {
+    border-color: var(--md-sys-color-on-surface);
+}
+
+.md3-text-field-outlined:focus-within {
+    border-color: var(--md-sys-color-primary);
+    border-width: 2px;
+}
+
+.md3-text-field-input {
+    width: 100%;
+    padding: 16px 16px 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--md-sys-color-on-surface);
+    font-family: var(--md-sys-typescale-body-large-font);
+    font-size: var(--md-sys-typescale-body-large-size);
+    font-weight: var(--md-sys-typescale-body-large-weight);
+    line-height: var(--md-sys-typescale-body-large-line-height);
+    outline: none;
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.md3-text-field-input::placeholder {
+    color: transparent;
+}
+
+.md3-text-field-label {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    color: var(--md-sys-color-on-surface-variant);
+    font-family: var(--md-sys-typescale-body-large-font);
+    font-size: var(--md-sys-typescale-body-large-size);
+    font-weight: var(--md-sys-typescale-body-large-weight);
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized);
+    pointer-events: none;
+    background-color: var(--md-sys-color-surface);
+    padding: 0 4px;
+    transform-origin: left top;
+}
+
+.md3-text-field-input:focus + .md3-text-field-label,
+.md3-text-field-input:not(:placeholder-shown) + .md3-text-field-label {
+    transform: translateY(-24px) scale(0.75);
+    color: var(--md-sys-color-primary);
+}
+
+.md3-text-field-supporting-text {
+    font-family: var(--md-sys-typescale-body-medium-font);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    color: var(--md-sys-color-on-surface-variant);
+    margin-top: 4px;
+    padding: 0 16px;
+}
+
+.md3-text-field-error .md3-text-field-label {
+    color: var(--md-sys-color-error);
+}
+
+.md3-text-field-error .md3-text-field-outlined {
+    border-color: var(--md-sys-color-error);
+}
+
+.md3-text-field-error .md3-text-field-filled {
+    border-bottom-color: var(--md-sys-color-error);
+}
+
+.md3-text-field-error .md3-text-field-supporting-text {
+    color: var(--md-sys-color-error);
+}
+
+/* Material Design 3 Badges */
+.md3-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: var(--md-sys-shape-corner-small);
+    font-family: var(--md-sys-typescale-label-large-font);
+    font-size: 12px;
+    font-weight: var(--md-sys-typescale-label-large-weight);
+}
+
+.md3-badge-success {
+    background-color: var(--md-sys-color-success-container);
+    color: var(--md-sys-color-on-success-container);
+}
+
+.md3-badge-error {
+    background-color: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+}
+
+.md3-badge-warning {
+    background-color: var(--md-sys-color-warning-container);
+    color: var(--md-sys-color-on-warning-container);
+}
+
+.md3-badge-primary {
+    background-color: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+}
+
+/* Material Design 3 Loading States */
+.md3-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.32);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.md3-progress-indicator {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--md-sys-color-primary-container);
+    border-top: 4px solid var(--md-sys-color-primary);
+    border-radius: 50%;
+    animation: md3-spin 1s linear infinite;
+}
+
+@keyframes md3-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Material Design 3 Utility Classes */
+.md3-text-primary {
+    color: var(--md-sys-color-primary);
+}
+
+.md3-text-secondary {
+    color: var(--md-sys-color-secondary);
+}
+
+.md3-text-error {
+    color: var(--md-sys-color-error);
+}
+
+.md3-text-success {
+    color: var(--md-sys-color-success);
+}
+
+.md3-text-warning {
+    color: var(--md-sys-color-warning);
+}
+
+.md3-text-on-surface {
+    color: var(--md-sys-color-on-surface);
+}
+
+.md3-text-on-surface-variant {
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.md3-bg-surface {
+    background-color: var(--md-sys-color-surface);
+}
+
+.md3-bg-surface-container {
+    background-color: var(--md-sys-color-surface-container);
+}
+
+.md3-bg-primary-container {
+    background-color: var(--md-sys-color-primary-container);
+}
+
+/* Enhanced Financial Components */
+
+/* Financial Data Display */
+.md3-financial-value {
+    font-family: var(--md-sys-typescale-financial-medium-font);
+    font-size: var(--md-sys-typescale-financial-medium-size);
+    font-weight: var(--md-sys-typescale-financial-medium-weight);
+    line-height: var(--md-sys-typescale-financial-medium-line-height);
+    color: var(--md-sys-color-on-surface);
+}
+
+.md3-financial-value-large {
+    font-family: var(--md-sys-typescale-financial-large-font);
+    font-size: var(--md-sys-typescale-financial-large-size);
+    font-weight: var(--md-sys-typescale-financial-large-weight);
+    line-height: var(--md-sys-typescale-financial-large-line-height);
+}
+
+/* Enhanced Trend Indicators */
+.trend-up {
+    color: var(--md-sys-color-success);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.trend-down {
+    color: var(--md-sys-color-error);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.trend-neutral {
+    color: var(--md-sys-color-on-surface-variant);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Stock Price Display */
+.md3-stock-price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.md3-stock-price-current {
+    font-family: var(--md-sys-typescale-financial-large-font);
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--md-sys-color-on-surface);
+}
+
+.md3-stock-price-change {
+    font-family: var(--md-sys-typescale-financial-medium-font);
+    font-size: var(--md-sys-typescale-financial-medium-size);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Market Status Indicators */
+.md3-market-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: var(--md-sys-shape-corner-small);
+    font-family: var(--md-sys-typescale-label-medium-font);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
+}
+
+.md3-market-status-open {
+    background-color: var(--md-sys-color-success-container);
+    color: var(--md-sys-color-on-success-container);
+}
+
+.md3-market-status-closed {
+    background-color: var(--md-sys-color-outline-variant);
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.md3-market-status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--md-sys-shape-corner-full);
+    background-color: currentColor;
+}
+
+/* Data Tables */
+.md3-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--md-sys-typescale-body-medium-font);
+    font-size: var(--md-sys-typescale-body-medium-size);
+}
+
+.md3-data-table th {
+    padding: 16px 12px;
+    text-align: left;
+    font-weight: var(--md-sys-typescale-label-large-weight);
+    color: var(--md-sys-color-on-surface-variant);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    background-color: var(--md-sys-color-surface-container-high);
+}
+
+.md3-data-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    color: var(--md-sys-color-on-surface);
+}
+
+.md3-data-table tr:hover {
+    background-color: var(--md-sys-color-surface-container-high);
+}
+
+/* Progress Indicators */
+.md3-linear-progress {
+    width: 100%;
+    height: 4px;
+    background-color: var(--md-sys-color-surface-container-highest);
+    border-radius: var(--md-sys-shape-corner-full);
+    overflow: hidden;
+}
+
+.md3-linear-progress-bar {
+    height: 100%;
+    background-color: var(--md-sys-color-primary);
+    border-radius: inherit;
+    transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+}
+
+/* Score Indicators */
+.md3-score-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--md-sys-shape-corner-large);
+    font-family: var(--md-sys-typescale-label-large-font);
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: 600;
+}
+
+.md3-score-excellent {
+    background-color: var(--md-sys-color-success-container);
+    color: var(--md-sys-color-on-success-container);
+}
+
+.md3-score-good {
+    background-color: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+}
+
+.md3-score-fair {
+    background-color: var(--md-sys-color-warning-container);
+    color: var(--md-sys-color-on-warning-container);
+}
+
+.md3-score-poor {
+    background-color: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+}
+
+/* Enhanced Animations and Transitions */
+@keyframes md3-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes md3-slide-in-left {
+    from {
+        opacity: 0;
+        transform: translateX(-24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes md3-slide-in-right {
+    from {
+        opacity: 0;
+        transform: translateX(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes md3-scale-in {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.md3-animate-fade-in {
+    animation: md3-fade-in var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+}
+
+.md3-animate-slide-in-left {
+    animation: md3-slide-in-left var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+}
+
+.md3-animate-slide-in-right {
+    animation: md3-slide-in-right var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+}
+
+.md3-animate-scale-in {
+    animation: md3-scale-in var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized);
+}
+
+/* Enhanced Responsive Design */
+@media (max-width: 1200px) {
+    .md3-main-content {
+        padding: 24px;
+    }
+
+    .md3-navbar {
+        padding: 0 16px;
+    }
+
+    .md3-navbar-brand {
+        margin-right: 24px;
+    }
+
+    .md3-nav-link {
+        padding: 10px 12px;
+    }
+
+    .md3-card-body {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .md3-navbar {
+        height: 64px;
+        padding: 0 12px;
+    }
+
+    .md3-navbar-brand {
+        font-size: 18px;
+        margin-right: 16px;
+    }
+
+    .md3-navbar-nav {
+        gap: 2px;
+    }
+
+    .md3-nav-link {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    .md3-nav-link i {
+        margin-right: 6px;
+        font-size: 16px;
+    }
+
+    .md3-main-container {
+        min-height: calc(100vh - 64px);
+    }
+
+    .md3-main-content {
+        padding: 16px;
+    }
+
+    .md3-card {
+        margin-bottom: 16px;
+        border-radius: var(--md-sys-shape-corner-medium);
+    }
+
+    .md3-card-header {
+        padding: 16px 16px 12px 16px;
+    }
+
+    .md3-card-body {
+        padding: 16px;
+    }
+
+    .md3-card-title {
+        font-size: 16px;
+    }
+
+    .md3-button {
+        padding: 10px 20px;
+        min-height: 36px;
+    }
+
+    .md3-text-field-input {
+        padding: 14px 12px 6px 12px;
+    }
+
+    .md3-text-field-label {
+        left: 12px;
+        top: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .md3-navbar {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: 56px;
+        padding: 8px;
+    }
+
+    .md3-navbar-brand {
+        font-size: 16px;
+        margin-right: 12px;
+    }
+
+    .md3-navbar-nav {
+        width: 100%;
+        justify-content: space-around;
+        margin-top: 8px;
+    }
+
+    .md3-nav-link {
+        padding: 6px 8px;
+        font-size: 12px;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .md3-nav-link i {
+        margin-right: 0;
+        font-size: 14px;
+    }
+
+    .md3-main-content {
+        padding: 12px;
+    }
+
+    .md3-card-header {
+        padding: 12px;
+    }
+
+    .md3-card-body {
+        padding: 12px;
+    }
+
+    .md3-button {
+        padding: 8px 16px;
+        min-height: 32px;
+        font-size: 13px;
+    }
+}
+
+/* Enhanced Chart Styling for Material Design 3 */
+.apexcharts-tooltip {
+    background: var(--md-sys-color-surface-container) !important;
+    border: 1px solid var(--md-sys-color-outline-variant) !important;
+    box-shadow: var(--md-sys-elevation-level3) !important;
+    border-radius: var(--md-sys-shape-corner-medium) !important;
+    padding: 12px !important;
+    font-family: var(--md-sys-typescale-body-medium-font) !important;
+    font-size: var(--md-sys-typescale-body-medium-size) !important;
+    color: var(--md-sys-color-on-surface) !important;
+}
+
+.apexcharts-tooltip-title {
+    background: var(--md-sys-color-surface-container-high) !important;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant) !important;
+    padding: 8px 12px !important;
+    margin: -12px -12px 8px -12px !important;
+    font-weight: 600 !important;
+    color: var(--md-sys-color-on-surface) !important;
+    border-radius: var(--md-sys-shape-corner-medium) var(--md-sys-shape-corner-medium) 0 0 !important;
+}
+
+.apexcharts-tooltip-y-group {
+    padding: 4px 0 !important;
+}
+
+.apexcharts-tooltip-candlestick {
+    padding: 8px 12px !important;
+}
+
+.apexcharts-tooltip-candlestick div {
+    margin: 4px 0 !important;
+    font-family: var(--md-sys-typescale-financial-medium-font) !important;
+}
+
+.apexcharts-tooltip-candlestick span {
+    font-weight: 500 !important;
+}
+
+.apexcharts-crosshairs {
+    stroke-width: 1px !important;
+    stroke: var(--md-sys-color-outline) !important;
+    stroke-dasharray: 4 4 !important;
+    opacity: 0.7 !important;
+}
+
+.apexcharts-tooltip-marker {
+    width: 12px !important;
+    height: 12px !important;
+    display: inline-block !important;
+    margin-right: 8px !important;
+    border-radius: var(--md-sys-shape-corner-full) !important;
+}
+
+.apexcharts-tooltip-series-group {
+    padding: 6px 12px !important;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant) !important;
+}
+
+.apexcharts-tooltip-series-group:last-child {
+    border-bottom: none !important;
+}
+
+.apexcharts-tooltip-text-y-value {
+    font-weight: 600 !important;
+    font-family: var(--md-sys-typescale-financial-medium-font) !important;
+}
+
+.apexcharts-xaxistooltip {
+    background: var(--md-sys-color-surface-container) !important;
+    border: 1px solid var(--md-sys-color-outline-variant) !important;
+    border-radius: var(--md-sys-shape-corner-small) !important;
+    box-shadow: var(--md-sys-elevation-level2) !important;
+    padding: 6px 12px !important;
+    font-family: var(--md-sys-typescale-body-medium-font) !important;
+    font-size: var(--md-sys-typescale-body-medium-size) !important;
+    color: var(--md-sys-color-on-surface) !important;
+}
+
+.apexcharts-yaxistooltip {
+    background: var(--md-sys-color-surface-container) !important;
+    border: 1px solid var(--md-sys-color-outline-variant) !important;
+    border-radius: var(--md-sys-shape-corner-small) !important;
+    box-shadow: var(--md-sys-elevation-level2) !important;
+    padding: 6px 12px !important;
+    font-family: var(--md-sys-typescale-financial-medium-font) !important;
+    font-size: var(--md-sys-typescale-body-medium-size) !important;
+    color: var(--md-sys-color-on-surface) !important;
+}
+
+.apexcharts-legend {
+    font-family: var(--md-sys-typescale-body-medium-font) !important;
+    font-size: var(--md-sys-typescale-body-medium-size) !important;
+}
+
+.apexcharts-legend-text {
+    color: var(--md-sys-color-on-surface-variant) !important;
+}

@@ -1,0 +1,775 @@
+{% extends "layout.html" %}
+
+{% block title %}资金流向 - 智能分析系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div id="alerts-container"></div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2">
+                    <h5 class="mb-0">资金流向分析</h5>
+                </div>
+                <div class="card-body py-2">
+                    <form id="capital-flow-form" class="row g-2">
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">数据类型</span>
+                                <select class="form-select" id="data-type">
+                                    <option value="concept" selected>概念资金流</option>
+                                    <option value="individual" >个股资金流</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">周期</span>
+                                <select class="form-select" id="period-select">
+                                    <option value="10日排行" selected>10日排行</option>
+                                    <option value="5日排行">5日排行</option>
+                                    <option value="3日排行">3日排行</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4 stock-input" style="display: none;">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">股票代码</span>
+                                <input type="text" class="form-control" id="stock-code" placeholder="例如: 600519">
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="fas fa-search"></i> 查询
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Panel -->
+    <div id="loading-panel" class="text-center py-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 mb-0">正在获取资金流向数据...</p>
+    </div>
+
+    <!-- Concept Fund Flow Panel -->
+    <div id="concept-flow-panel" class="row g-3 mb-3" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">概念资金流向</h5>
+                    <span id="concept-period-badge" class="badge bg-primary">10日排行</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>概念/行业</th>
+                                    <th>行业指数</th>
+                                    <th>涨跌幅</th>
+                                    <th>流入资金(亿)</th>
+                                    <th>流出资金(亿)</th>
+                                    <th>净额(亿)</th>
+                                    <th>公司家数</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="concept-flow-table">
+                                <!-- 资金流向数据将在JS中填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Concept Stocks Panel -->
+    <div id="concept-stocks-panel" class="row g-3 mb-3" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2">
+                    <h5 id="concept-stocks-title" class="mb-0">概念成分股</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>代码</th>
+                                    <th>名称</th>
+                                    <th>最新价</th>
+                                    <th>涨跌幅</th>
+                                    <th>主力净流入</th>
+                                    <th>主力净流入占比</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="concept-stocks-table">
+                                <!-- 概念成分股数据将在JS中填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Fund Flow Panel -->
+    <div id="individual-flow-panel" class="row g-3 mb-3" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <h5 id="individual-flow-title" class="mb-0">个股资金流向</h5>
+                    <span id="individual-period-badge" class="badge bg-primary">10日排行</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>资金流向概览</h6>
+                            <table class="table table-sm">
+                                <tbody id="individual-flow-summary">
+                                    <!-- 个股资金流向概览将在JS中填充 -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>资金流入占比</h6>
+                            <div id="fund-flow-pie-chart" style="height: 200px;"></div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6>资金流向历史</h6>
+                            <div id="fund-flow-history-chart" style="height: 300px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Fund Flow Rank Panel -->
+    <div id="individual-rank-panel" class="row g-3 mb-3" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">个股资金流向排名</h5>
+                    <span id="individual-rank-period-badge" class="badge bg-primary">10日排行</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>代码</th>
+                                    <th>名称</th>
+                                    <th>最新价</th>
+                                    <th>涨跌幅</th>
+                                    <th>主力净流入</th>
+                                    <th>主力净流入占比</th>
+                                    <th>超大单净流入</th>
+                                    <th>大单净流入</th>
+                                    <th>中单净流入</th>
+                                    <th>小单净流入</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="individual-rank-table">
+                                <!-- 个股资金流向排名数据将在JS中填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // 默认加载概念资金流向
+        loadConceptFundFlow('90日排行');
+
+        // 表单提交事件
+        $('#capital-flow-form').submit(function(e) {
+            e.preventDefault();
+            const dataType = $('#data-type').val();
+            const period = $('#period-select').val();
+            const stockCode = $('#stock-code').val().trim();
+
+            if (dataType === 'concept') {
+                loadConceptFundFlow(period);
+            } else if (dataType === 'individual') {
+                if (stockCode) {
+                    loadIndividualFundFlow(stockCode);
+                } else {
+                    loadIndividualFundFlowRank(period);
+                }
+            }
+        });
+
+        // 数据类型切换事件
+        $('#data-type').change(function() {
+            const dataType = $(this).val();
+            if (dataType === 'individual') {
+                $('.stock-input').show();
+            } else {
+                $('.stock-input').hide();
+            }
+        });
+    });
+
+    // 加载概念资金流向
+    function loadConceptFundFlow(period) {
+        $('#loading-panel').show();
+        $('#concept-flow-panel, #concept-stocks-panel, #individual-flow-panel, #individual-rank-panel').hide();
+
+        $.ajax({
+            url: `/api/concept_fund_flow?period=${period}`,
+            type: 'GET',
+            success: function(response) {
+                renderConceptFundFlow(response, period);
+                $('#loading-panel').hide();
+                $('#concept-flow-panel').show();
+            },
+            error: function(xhr, status, error) {
+                $('#loading-panel').hide();
+                showError('获取概念资金流向数据失败: ' + error);
+            }
+        });
+    }
+
+    // 加载概念成分股
+    function loadConceptStocks(sector) {
+        $('#loading-panel').show();
+        $('#concept-stocks-panel').hide();
+
+        $.ajax({
+            url: `/api/sector_stocks?sector=${encodeURIComponent(sector)}`,
+            type: 'GET',
+            success: function(response) {
+                renderConceptStocks(response, sector);
+                $('#loading-panel').hide();
+                $('#concept-stocks-panel').show();
+            },
+            error: function(xhr, status, error) {
+                $('#loading-panel').hide();
+                showError('获取概念成分股数据失败: ' + error);
+            }
+        });
+    }
+
+    // 加载个股资金流向
+    function loadIndividualFundFlow(stockCode) {
+        $('#loading-panel').show();
+        $('#concept-flow-panel, #concept-stocks-panel, #individual-flow-panel, #individual-rank-panel').hide();
+
+        $.ajax({
+            url: `/api/individual_fund_flow?stock_code=${stockCode}`,
+            type: 'GET',
+            success: function(response) {
+                renderIndividualFundFlow(response);
+                $('#loading-panel').hide();
+                $('#individual-flow-panel').show();
+            },
+            error: function(xhr, status, error) {
+                $('#loading-panel').hide();
+                showError('获取个股资金流向数据失败: ' + error);
+            }
+        });
+    }
+
+    // 加载个股资金流向排名
+    function loadIndividualFundFlowRank(period) {
+        $('#loading-panel').show();
+        $('#concept-flow-panel, #concept-stocks-panel, #individual-flow-panel, #individual-rank-panel').hide();
+
+        $.ajax({
+            url: `/api/individual_fund_flow_rank?period=${period}`,
+            type: 'GET',
+            success: function(response) {
+                renderIndividualFundFlowRank(response, period);
+                $('#loading-panel').hide();
+                $('#individual-rank-panel').show();
+            },
+            error: function(xhr, status, error) {
+                $('#loading-panel').hide();
+                showError('获取个股资金流向排名数据失败: ' + error);
+            }
+        });
+    }
+
+    // 渲染概念资金流向
+    function renderConceptFundFlow(data, period) {
+        $('#concept-period-badge').text(period);
+
+        let html = '';
+        if (!data || data.length === 0) {
+            html = '<tr><td colspan="9" class="text-center">暂无数据</td></tr>';
+        } else {
+            data.forEach((item, index) => {
+                const changeClass = parseFloat(item.change_percent) >= 0 ? 'trend-up' : 'trend-down';
+                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+
+                const netFlowClass = parseFloat(item.net_flow) >= 0 ? 'trend-up' : 'trend-down';
+                const netFlowIcon = parseFloat(item.net_flow) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+
+                html += `
+                    <tr>
+                        <td>${item.rank}</td>
+                        <td><a href="javascript:void(0)" onclick="loadConceptStocks('${item.sector}')">${item.sector}</a></td>
+                        <td>${formatNumber(item.sector_index, 2)}</td>
+                        <td class="${changeClass}">${changeIcon} ${formatPercent(item.change_percent)}</td>
+                        <td>${formatNumber(item.inflow, 2)}</td>
+                        <td>${formatNumber(item.outflow, 2)}</td>
+                        <td class="${netFlowClass}">${netFlowIcon} ${formatNumber(item.net_flow, 2)}</td>
+                        <td>${item.company_count}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="loadConceptStocks('${item.sector}')">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        $('#concept-flow-table').html(html);
+    }
+
+    // 渲染概念成分股
+    function renderConceptStocks(data, sector) {
+        $('#concept-stocks-title').text(`${sector} 成分股`);
+
+        let html = '';
+        if (!data || data.length === 0) {
+            html = '<tr><td colspan="7" class="text-center">暂无数据</td></tr>';
+        } else {
+            data.forEach((item) => {
+                const changeClass = parseFloat(item.change_percent) >= 0 ? 'trend-up' : 'trend-down';
+                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+
+                const netFlowClass = parseFloat(item.main_net_inflow) >= 0 ? 'trend-up' : 'trend-down';
+                const netFlowIcon = parseFloat(item.main_net_inflow) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+
+                html += `
+                    <tr>
+                        <td>${item.code}</td>
+                        <td>${item.name}</td>
+                        <td>${formatNumber(item.price, 2)}</td>
+                        <td class="${changeClass}">${changeIcon} ${formatPercent(item.change_percent)}</td>
+                        <td class="${netFlowClass}">${netFlowIcon} ${formatMoney(item.main_net_inflow)}</td>
+                        <td class="${netFlowClass}">${formatPercent(item.main_net_inflow_percent)}</td>
+                        <td>
+                            <a href="/stock_detail/${item.code}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-info" onclick="loadIndividualFundFlow('${item.code}')">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        $('#concept-stocks-table').html(html);
+    }
+
+    // 渲染个股资金流向
+    function renderIndividualFundFlow(data) {
+        if (!data || !data.data || data.data.length === 0) {
+            showError('未获取到有效的个股资金流向数据');
+            return;
+        }
+
+        // Sort data by date (descending - newest first)
+        data.data.sort((a, b) => {
+            // Parse dates to ensure proper comparison
+            let dateA = new Date(a.date);
+            let dateB = new Date(b.date);
+            return dateB - dateA;
+        });
+
+        // Re-calculate summary for 90 days instead of relying on backend calculation
+        recalculateSummary(data, 90);
+
+        // 设置标题
+        $('#individual-flow-title').text(`${data.stock_code} 资金流向`);
+
+        // 渲染概览
+        renderIndividualFlowSummary(data);
+
+        // 渲染资金流入占比饼图
+        renderFundFlowPieChart(data);
+
+        // 渲染资金流向历史图表
+        renderFundFlowHistoryChart(data);
+    }
+
+    function recalculateSummary(data, days) {
+        // Get recent data (up to the specified number of days)
+        const recent_data = data.data.slice(0, Math.min(days, data.data.length));
+
+        // Calculate summary statistics
+        const total_main_net_inflow = recent_data.reduce((sum, item) => sum + item.main_net_inflow, 0);
+        const avg_main_net_inflow_percent = recent_data.reduce((sum, item) => sum + item.main_net_inflow_percent, 0) / recent_data.length;
+        const positive_days = recent_data.filter(item => item.main_net_inflow > 0).length;
+        const negative_days = recent_data.length - positive_days;
+
+        // Create or update summary object
+        data.summary = {
+            recent_days: recent_data.length,
+            total_main_net_inflow: total_main_net_inflow,
+            avg_main_net_inflow_percent: avg_main_net_inflow_percent,
+            positive_days: positive_days,
+            negative_days: negative_days
+        };
+    }
+
+    // 渲染个股资金流向概览
+    function renderIndividualFlowSummary(data) {
+        if (!data.summary) return;
+
+        const summary = data.summary;
+        // Now using the first item after sorting
+        const recent = data.data[0]; // 最近一天的数据
+
+        let html = `
+            <tr>
+                <td>最新日期：</td>
+                <td>${recent.date}</td>
+                <td>最新价：</td>
+                <td>${formatNumber(recent.price, 2)}</td>
+            </tr>
+            <tr>
+                <td>涨跌幅：</td>
+                <td class="${recent.change_percent >= 0 ? 'trend-up' : 'trend-down'}">
+                    ${recent.change_percent >= 0 ? '↑' : '↓'} ${formatPercent(recent.change_percent)}
+                </td>
+                <td>分析周期：</td>
+                <td>${summary.recent_days}天</td>
+            </tr>
+            <tr>
+                <td>主力净流入：</td>
+                <td class="${summary.total_main_net_inflow >= 0 ? 'trend-up' : 'trend-down'}">
+                    ${summary.total_main_net_inflow >= 0 ? '↑' : '↓'} ${formatMoney(summary.total_main_net_inflow)}
+                </td>
+                <td>净流入占比：</td>
+                <td class="${summary.avg_main_net_inflow_percent >= 0 ? 'trend-up' : 'trend-down'}">
+                    ${summary.avg_main_net_inflow_percent >= 0 ? '↑' : '↓'} ${formatPercent(summary.avg_main_net_inflow_percent)}
+                </td>
+            </tr>
+            <tr>
+                <td>资金流入天数：</td>
+                <td>${summary.positive_days}天</td>
+                <td>资金流出天数：</td>
+                <td>${summary.negative_days}天</td>
+            </tr>
+        `;
+
+        $('#individual-flow-summary').html(html);
+    }
+
+    // 渲染资金流入占比饼图
+    function renderFundFlowPieChart(data) {
+        if (!data.data || data.data.length === 0) return;
+
+        // Using the first item after sorting
+        const recent = data.data[0]; // 最近一天的数据
+
+        // 计算资金流入总额（绝对值）
+        const totalInflow = Math.abs(recent.super_large_net_inflow) +
+                            Math.abs(recent.large_net_inflow) +
+                            Math.abs(recent.medium_net_inflow) +
+                            Math.abs(recent.small_net_inflow);
+
+        // 计算各类型占比
+        const superLargePct = Math.abs(recent.super_large_net_inflow) / totalInflow * 100;
+        const largePct = Math.abs(recent.large_net_inflow) / totalInflow * 100;
+        const mediumPct = Math.abs(recent.medium_net_inflow) / totalInflow * 100;
+        const smallPct = Math.abs(recent.small_net_inflow) / totalInflow * 100;
+
+        const options = {
+            series: [superLargePct, largePct, mediumPct, smallPct],
+            chart: {
+                type: 'pie',
+                height: 200
+            },
+            labels: ['超大单', '大单', '中单', '小单'],
+            colors: ['#0d6efd', '#198754', '#ffc107', '#dc3545'],
+            legend: {
+                position: 'bottom'
+            },
+            tooltip: {
+                y: {
+                    formatter: function(value) {
+                        return value.toFixed(2) + '%';
+                    }
+                }
+            }
+        };
+
+        // 清除旧图表
+        $('#fund-flow-pie-chart').empty();
+
+        const chart = new ApexCharts(document.querySelector("#fund-flow-pie-chart"), options);
+        chart.render();
+    }
+
+    // 渲染资金流向历史图表
+    function renderFundFlowHistoryChart(data) {
+        if (!data.data || data.data.length === 0) return;
+
+        // 最近90天的数据
+        // Since we've already sorted the data, just get the first 90 and reverse for chronological display
+        const historyData = data.data.slice(0, 90).reverse();
+
+        const dates = historyData.map(item => item.date);
+        const mainNetInflow = historyData.map(item => item.main_net_inflow);
+        const superLargeInflow = historyData.map(item => item.super_large_net_inflow);
+        const largeInflow = historyData.map(item => item.large_net_inflow);
+        const mediumInflow = historyData.map(item => item.medium_net_inflow);
+        const smallInflow = historyData.map(item => item.small_net_inflow);
+        const priceChanges = historyData.map(item => item.change_percent);
+
+        const options = {
+            series: [
+                {
+                    name: '主力净流入',
+                    type: 'column',
+                    data: mainNetInflow
+                },
+                {
+                    name: '超大单',
+                    type: 'line',
+                    data: superLargeInflow
+                },
+                {
+                    name: '大单',
+                    type: 'line',
+                    data: largeInflow
+                },
+                {
+                    name: '价格涨跌幅',
+                    type: 'line',
+                    data: priceChanges
+                }
+            ],
+            chart: {
+                height: 300,
+                type: 'line',
+                toolbar: {
+                    show: false
+                }
+            },
+            stroke: {
+                width: [0, 2, 2, 2],
+                curve: 'smooth'
+            },
+            plotOptions: {
+                bar: {
+                    columnWidth: '50%'
+                }
+            },
+            colors: ['#0d6efd', '#198754', '#ffc107', '#dc3545'],
+            dataLabels: {
+                enabled: false
+            },
+            labels: dates,
+            xaxis: {
+                type: 'category'
+            },
+            yaxis: [
+                {
+                    title: {
+                        text: '资金流入(亿)',
+                        style: {
+                            fontSize: '12px'
+                        }
+                    },
+                    labels: {
+                        formatter: function(val) {
+                            // Convert to 亿 for display (divide by 100 million)
+                            return (val / 100000000).toFixed(2);
+                        }
+                    }
+                },
+                {
+                    opposite: true,
+                    title: {
+                        text: '价格涨跌幅(%)',
+                        style: {
+                            fontSize: '12px'
+                        }
+                    },
+                    labels: {
+                        formatter: function(val) {
+                            return val.toFixed(2);
+                        }
+                    },
+                    min: -10,
+                    max: 10,
+                    tickAmount: 5
+                }
+            ],
+            tooltip: {
+                shared: true,
+                intersect: false,
+                y: {
+                    formatter: function(y, { seriesIndex }) {
+                        if (seriesIndex === 3) {
+                            return y.toFixed(2) + '%';
+                        }
+                        // Display money values in 亿 (hundred million) units
+                        return (y / 100000000).toFixed(2) + ' 亿';
+                    }
+                }
+            },
+            legend: {
+                position: 'top'
+            }
+        };
+
+        // 清除旧图表
+        $('#fund-flow-history-chart').empty();
+
+        const chart = new ApexCharts(document.querySelector("#fund-flow-history-chart"), options);
+        chart.render();
+    }
+
+    // 渲染个股资金流向排名
+    function renderIndividualFundFlowRank(data, period) {
+        $('#individual-rank-period-badge').text(period);
+
+        let html = '';
+        if (!data || data.length === 0) {
+            html = '<tr><td colspan="12" class="text-center">暂无数据</td></tr>';
+        } else {
+            data.forEach((item) => {
+                const changeClass = parseFloat(item.change_percent) >= 0 ? 'trend-up' : 'trend-down';
+                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+
+                const mainNetClass = parseFloat(item.main_net_inflow) >= 0 ? 'trend-up' : 'trend-down';
+                const mainNetIcon = parseFloat(item.main_net_inflow) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+
+                html += `
+                    <tr>
+                        <td>${item.rank}</td>
+                        <td>${item.code}</td>
+                        <td>${item.name}</td>
+                        <td>${formatNumber(item.price, 2)}</td>
+                        <td class="${changeClass}">${changeIcon} ${formatPercent(item.change_percent)}</td>
+                        <td class="${mainNetClass}">${mainNetIcon} ${formatMoney(item.main_net_inflow)}</td>
+                        <td class="${mainNetClass}">${formatPercent(item.main_net_inflow_percent)}</td>
+                        <td>${formatMoney(item.super_large_net_inflow)}</td>
+                        <td>${formatMoney(item.large_net_inflow)}</td>
+                        <td>${formatMoney(item.medium_net_inflow)}</td>
+                        <td>${formatMoney(item.small_net_inflow)}</td>
+                        <td>
+                            <a href="/stock_detail/${item.code}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-info" onclick="loadIndividualFundFlow('${item.code}')">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        $('#individual-rank-table').html(html);
+    }
+
+    // 格式化资金数字（支持大数字缩写）
+    function formatCompactNumber(num) {
+        if (Math.abs(num) >= 1.0e9) {
+            return (num / 1.0e9).toFixed(2) + "B";
+        } else if (Math.abs(num) >= 1.0e6) {
+            return (num / 1.0e6).toFixed(2) + "M";
+        } else if (Math.abs(num) >= 1.0e3) {
+            return (num / 1.0e3).toFixed(2) + "K";
+        } else {
+            return num.toFixed(2);
+        }
+    }
+
+    // 格式化资金
+    function formatMoney(value) {
+        if (value === null || value === undefined) {
+            return '--';
+        }
+
+        value = parseFloat(value);
+        if (isNaN(value)) {
+            return '--';
+        }
+
+        if (Math.abs(value) >= 1e8) {
+            return (value / 1e8).toFixed(2) + ' 亿';
+        } else if (Math.abs(value) >= 1e4) {
+            return (value / 1e4).toFixed(2) + ' 万';
+        } else {
+            return value.toFixed(2) + ' 元';
+        }
+    }
+
+    // 格式化百分比
+    function formatPercent(value) {
+        if (value === null || value === undefined) {
+            return '--';
+        }
+
+        value = parseFloat(value);
+        if (isNaN(value)) {
+            return '--';
+        }
+
+        return value.toFixed(2) + '%';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+    const dataType = document.getElementById('data-type');
+    const periodSelect = document.getElementById('period-select');
+    const stockInput = document.querySelector('.stock-input');
+
+    // 初始加载时检查默认值
+    toggleOptions();
+
+    dataType.addEventListener('change', toggleOptions);
+
+    function toggleOptions() {
+        if (dataType.value === 'individual') {
+            // 个股资金流选项
+            periodSelect.innerHTML = `
+                <option value="3日">3日</option>
+                <option value="5日">5日</option>
+                <option value="10日">10日</option>
+            `;
+            stockInput.style.display = 'block';
+        } else {
+            // 概念资金流选项
+            periodSelect.innerHTML = `
+                <option value="10日排行" selected>10日排行</option>
+                <option value="5日排行">5日排行</option>
+                <option value="3日排行">3日排行</option>
+            `;
+            stockInput.style.display = 'none';
+        }
+    }
+});
+</script>
+{% endblock %}

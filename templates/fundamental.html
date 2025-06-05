@@ -1,0 +1,405 @@
+{% extends "layout.html" %}
+
+{% block title %}基本面分析 - {{ stock_code }} - 智能分析系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div id="alerts-container"></div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2">
+                    <h5 class="mb-0">基本面分析</h5>
+                </div>
+                <div class="card-body py-2">
+                    <form id="fundamental-form" class="row g-2">
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">股票代码</span>
+                                <input type="text" class="form-control" id="stock-code" placeholder="例如: 600519" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">市场</span>
+                                <select class="form-select" id="market-type">
+                                    <option value="A" selected>A股</option>
+                                    <option value="HK">港股</option>
+                                    <option value="US">美股</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="fas fa-search"></i> 分析
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="fundamental-result" style="display: none;">
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header py-2">
+                        <h5 class="mb-0">财务概况</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-7">
+                                <h3 id="stock-name" class="mb-0 fs-4"></h3>
+                                <p id="stock-info" class="text-muted mb-0 small"></p>
+                            </div>
+                            <div class="col-md-5 text-end">
+                                <span id="fundamental-score" class="badge rounded-pill score-pill"></span>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>估值指标</h6>
+                                <ul class="list-unstyled mt-1 mb-0 small">
+                                    <li><span class="text-muted">PE(TTM):</span> <span id="pe-ttm"></span></li>
+                                    <li><span class="text-muted">PB:</span> <span id="pb"></span></li>
+                                    <li><span class="text-muted">PS(TTM):</span> <span id="ps-ttm"></span></li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>盈利能力</h6>
+                                <ul class="list-unstyled mt-1 mb-0 small">
+                                    <li><span class="text-muted">ROE:</span> <span id="roe"></span></li>
+                                    <li><span class="text-muted">毛利率:</span> <span id="gross-margin"></span></li>
+                                    <li><span class="text-muted">净利润率:</span> <span id="net-profit-margin"></span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header py-2">
+                        <h5 class="mb-0">成长性分析</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>营收增长</h6>
+                                <ul class="list-unstyled mt-1 mb-0 small">
+                                    <li><span class="text-muted">3年CAGR:</span> <span id="revenue-growth-3y"></span></li>
+                                    <li><span class="text-muted">5年CAGR:</span> <span id="revenue-growth-5y"></span></li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>利润增长</h6>
+                                <ul class="list-unstyled mt-1 mb-0 small">
+                                    <li><span class="text-muted">3年CAGR:</span> <span id="profit-growth-3y"></span></li>
+                                    <li><span class="text-muted">5年CAGR:</span> <span id="profit-growth-5y"></span></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div id="growth-chart" style="height: 150px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header py-2">
+                        <h5 class="mb-0">估值评分</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="valuation-chart" style="height: 200px;"></div>
+                        <p id="valuation-comment" class="small text-muted mt-2"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header py-2">
+                        <h5 class="mb-0">财务健康评分</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="financial-chart" style="height: 200px;"></div>
+                        <p id="financial-comment" class="small text-muted mt-2"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header py-2">
+                        <h5 class="mb-0">成长性评分</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="growth-score-chart" style="height: 200px;"></div>
+                        <p id="growth-comment" class="small text-muted mt-2"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('#fundamental-form').submit(function(e) {
+            e.preventDefault();
+            const stockCode = $('#stock-code').val().trim();
+            const marketType = $('#market-type').val();
+
+            if (!stockCode) {
+                showError('请输入股票代码！');
+                return;
+            }
+
+            fetchFundamentalAnalysis(stockCode);
+        });
+    });
+
+    function fetchFundamentalAnalysis(stockCode) {
+        showLoading();
+
+        $.ajax({
+            url: '/api/fundamental_analysis',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                stock_code: stockCode
+            }),
+            success: function(response) {
+                hideLoading();
+                renderFundamentalAnalysis(response, stockCode);
+                $('#fundamental-result').show();
+            },
+            error: function(xhr, status, error) {
+                hideLoading();
+                let errorMsg = '获取基本面分析失败';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg += ': ' + xhr.responseJSON.error;
+                } else if (error) {
+                    errorMsg += ': ' + error;
+                }
+                showError(errorMsg);
+            }
+        });
+    }
+
+    function renderFundamentalAnalysis(data, stockCode) {
+        // 设置基本信息
+        $('#stock-name').text(data.details.indicators.stock_name || stockCode);
+        $('#stock-info').text(data.details.indicators.industry || '未知行业');
+
+        // 设置评分
+        const scoreClass = getScoreColorClass(data.total);
+        $('#fundamental-score').text(data.total).addClass(scoreClass);
+
+        // 设置估值指标
+        $('#pe-ttm').text(formatNumber(data.details.indicators.pe_ttm, 2));
+        $('#pb').text(formatNumber(data.details.indicators.pb, 2));
+        $('#ps-ttm').text(formatNumber(data.details.indicators.ps_ttm, 2));
+
+        // 设置盈利能力
+        $('#roe').text(formatPercent(data.details.indicators.roe, 2));
+        $('#gross-margin').text(formatPercent(data.details.indicators.gross_margin, 2));
+        $('#net-profit-margin').text(formatPercent(data.details.indicators.net_profit_margin, 2));
+
+        // 设置成长率
+        $('#revenue-growth-3y').text(formatPercent(data.details.growth.revenue_growth_3y, 2));
+        $('#revenue-growth-5y').text(formatPercent(data.details.growth.revenue_growth_5y, 2));
+        $('#profit-growth-3y').text(formatPercent(data.details.growth.profit_growth_3y, 2));
+        $('#profit-growth-5y').text(formatPercent(data.details.growth.profit_growth_5y, 2));
+
+        // 评论
+        $('#valuation-comment').text("估值处于行业" + (data.valuation > 20 ? "合理水平" : "偏高水平"));
+        $('#financial-comment').text("财务状况" + (data.financial_health > 30 ? "良好" : "一般"));
+        $('#growth-comment').text("成长性" + (data.growth > 20 ? "较好" : "一般"));
+
+        // 渲染图表
+        renderValuationChart(data.valuation);
+        renderFinancialChart(data.financial_health);
+        renderGrowthScoreChart(data.growth);
+        renderGrowthChart(data.details.growth);
+    }
+
+    function renderValuationChart(score) {
+        const options = {
+            series: [score],
+            chart: {
+                height: 200,
+                type: 'radialBar',
+            },
+            plotOptions: {
+                radialBar: {
+                    hollow: {
+                        size: '70%',
+                    },
+                    dataLabels: {
+                        name: {
+                            fontSize: '22px',
+                        },
+                        value: {
+                            fontSize: '16px',
+                        },
+                        total: {
+                            show: true,
+                            label: '估值',
+                            formatter: function() {
+                                return score;
+                            }
+                        }
+                    }
+                }
+            },
+            colors: ['#1ab7ea'],
+            labels: ['估值'],
+        };
+
+        const chart = new ApexCharts(document.querySelector("#valuation-chart"), options);
+        chart.render();
+    }
+
+    function renderFinancialChart(score) {
+        const options = {
+            series: [score],
+            chart: {
+                height: 200,
+                type: 'radialBar',
+            },
+            plotOptions: {
+                radialBar: {
+                    hollow: {
+                        size: '70%',
+                    },
+                    dataLabels: {
+                        name: {
+                            fontSize: '22px',
+                        },
+                        value: {
+                            fontSize: '16px',
+                        },
+                        total: {
+                            show: true,
+                            label: '财务',
+                            formatter: function() {
+                                return score;
+                            }
+                        }
+                    }
+                }
+            },
+            colors: ['#20E647'],
+            labels: ['财务'],
+        };
+
+        const chart = new ApexCharts(document.querySelector("#financial-chart"), options);
+        chart.render();
+    }
+
+    function renderGrowthScoreChart(score) {
+        const options = {
+            series: [score],
+            chart: {
+                height: 200,
+                type: 'radialBar',
+            },
+            plotOptions: {
+                radialBar: {
+                    hollow: {
+                        size: '70%',
+                    },
+                    dataLabels: {
+                        name: {
+                            fontSize: '22px',
+                        },
+                        value: {
+                            fontSize: '16px',
+                        },
+                        total: {
+                            show: true,
+                            label: '成长',
+                            formatter: function() {
+                                return score;
+                            }
+                        }
+                    }
+                }
+            },
+            colors: ['#F9CE1D'],
+            labels: ['成长'],
+        };
+
+        const chart = new ApexCharts(document.querySelector("#growth-score-chart"), options);
+        chart.render();
+    }
+
+    function renderGrowthChart(growthData) {
+        const options = {
+            series: [{
+                name: '营收增长率',
+                data: [
+                    growthData.revenue_growth_3y || 0,
+                    growthData.revenue_growth_5y || 0
+                ]
+            }, {
+                name: '利润增长率',
+                data: [
+                    growthData.profit_growth_3y || 0,
+                    growthData.profit_growth_5y || 0
+                ]
+            }],
+            chart: {
+                type: 'bar',
+                height: 150,
+                toolbar: {
+                    show: false
+                }
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: false,
+                    columnWidth: '55%',
+                    endingShape: 'rounded'
+                },
+            },
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                show: true,
+                width: 2,
+                colors: ['transparent']
+            },
+            xaxis: {
+                categories: ['3年CAGR', '5年CAGR'],
+            },
+            yaxis: {
+                title: {
+                    text: '百分比 (%)'
+                }
+            },
+            fill: {
+                opacity: 1
+            },
+            tooltip: {
+                y: {
+                    formatter: function(val) {
+                        return val + "%"
+                    }
+                }
+            }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#growth-chart"), options);
+        chart.render();
+    }
+</script>
+{% endblock %}

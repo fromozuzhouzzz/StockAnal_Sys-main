@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}智能分析系统{% endblock %}</title>
+    <!-- Enhanced Google Fonts for Material Design 3 -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Material Design Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- ApexCharts -->
+    <link href="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.min.css" rel="stylesheet">
+    <!-- Enhanced Material Design 3 Styles -->
+    <link href="/static/md3-styles.css" rel="stylesheet">
+    <!-- Download PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Enhanced Material Design 3 Custom Styles -->
+    <style>
+        /* Page-specific enhancements */
+        .page-transition {
+            animation: md3-fade-in var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+        }
+
+        /* Enhanced search field in navbar */
+        .md3-navbar .md3-text-field {
+            margin-bottom: 0;
+            width: 320px;
+        }
+
+        .md3-navbar .md3-text-field-input {
+            background-color: var(--md-sys-color-surface-container-high);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--md-sys-shape-corner-large);
+            padding: 12px 48px 12px 16px;
+            font-size: 14px;
+            transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+        }
+
+        .md3-navbar .md3-text-field-input:focus {
+            background-color: var(--md-sys-color-surface);
+            border-color: var(--md-sys-color-primary);
+            box-shadow: var(--md-sys-elevation-level1);
+        }
+
+        .md3-navbar .md3-text-field-label {
+            top: 12px;
+            font-size: 14px;
+            background-color: transparent;
+        }
+
+        .md3-navbar .md3-text-field-input:focus + .md3-text-field-label,
+        .md3-navbar .md3-text-field-input:not(:placeholder-shown) + .md3-text-field-label {
+            transform: translateY(-28px) scale(0.75);
+            background-color: var(--md-sys-color-surface);
+        }
+
+        .search-button {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--md-sys-color-on-surface-variant);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: var(--md-sys-shape-corner-small);
+            transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+        }
+
+        .search-button:hover {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+
+
+
+
+        /* Layout adjustments for enhanced navbar */
+        .md3-main-container {
+            min-height: calc(100vh - 72px);
+        }
+
+
+
+        /* Chart container fixes */
+        #price-chart {
+            height: 400px !important;
+            max-height: 400px;
+        }
+
+        #indicators-chart {
+            height: 350px !important;
+            max-height: 350px;
+        }
+
+        .apexcharts-canvas {
+            overflow: visible !important;
+        }
+
+        #radar-chart {
+            height: 200px !important;
+            max-height: 200px;
+        }
+
+        #score-chart {
+            height: 200px !important;
+            max-height: 200px;
+        }
+
+
+
+        /* AI分析样式 */
+        .analysis-para {
+          line-height: 1.8;
+          margin-bottom: 1.2rem;
+          color: #333;
+        }
+
+        .keyword {
+          color: #2c7be5;
+          font-weight: 600;
+        }
+
+        .term {
+          color: #d6336c;
+          font-weight: 500;
+          padding: 0 2px;
+        }
+
+        .price {
+          color: #00a47c;
+          font-family: 'Roboto Mono', monospace;
+          background: #f3faf8;
+          padding: 2px 4px;
+          border-radius: 3px;
+        }
+
+        .date {
+          color: #6c757d;
+          font-family: 'Roboto Mono', monospace;
+        }
+
+        strong.keyword {
+          border-bottom: 2px solid #2c7be5;
+        }
+
+        .table-info {
+            position: relative;
+        }
+
+        .table-info:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 123, 255, 0.1);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 0.3; }
+            100% { opacity: 0.5; }
+        }
+
+    /* 财经门户样式 */
+    .finance-portal-container {
+        display: grid;
+        grid-template-columns: 250px 1fr 300px;
+        grid-template-rows: 1fr 80px;
+        grid-template-areas:
+            "sidebar news hotspot"
+            "footer footer footer";
+        height: calc(100vh - 56px);
+        overflow: hidden;
+        gap: 15px;
+        padding: 15px;
+        background-color: #f5f7fa;
+    }
+
+    /* 左侧栏样式 */
+    .portal-sidebar {
+        grid-area: sidebar;
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        overflow-y: auto;
+        padding: 15px;
+    }
+
+    .sidebar-header {
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .sidebar-header h5 {
+        margin: 0;
+        color: #333;
+        font-size: 16px;
+    }
+
+    .sidebar-nav {
+        list-style: none;
+        padding: 0;
+        margin: 10px 0;
+    }
+
+    .sidebar-nav li {
+        margin-bottom: 5px;
+    }
+
+    .sidebar-nav a {
+        display: block;
+        padding: 10px 15px;
+        color: #444;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+
+    .sidebar-nav a:hover {
+        background-color: #f0f5ff;
+        color: #1a73e8;
+    }
+
+    .sidebar-nav i {
+        width: 20px;
+        margin-right: 8px;
+        text-align: center;
+    }
+
+    /* 中间新闻区域样式 */
+    .portal-news {
+        grid-area: news;
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .news-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        background-color: #fff;
+    }
+
+    .news-header h5 {
+        margin: 0;
+        color: #333;
+        font-size: 16px;
+    }
+
+    .news-tools {
+        display: flex;
+        align-items: center;
+    }
+
+    .news-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0;
+    }
+
+    /* 新闻时间线改进样式 */
+    .news-timeline-container {
+        padding: 15px;
+    }
+
+    .time-point {
+        position: relative;
+        padding: 0 0 15px 65px;
+        min-height: 50px;
+    }
+
+    .time-point:before {
+        content: '';
+        position: absolute;
+        left: 40px;
+        top: 8px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #1a73e8;
+        z-index: 1;
+    }
+
+    .time-point:after {
+        content: '';
+        position: absolute;
+        left: 45px;
+        top: 15px;
+        width: 2px;
+        height: calc(100% - 8px);
+        background-color: #e3e6ea;
+    }
+
+    .time-point:last-child:after {
+        display: none;
+    }
+
+    .time-label {
+        position: absolute;
+        left: 0;
+        top: 5px;
+        width: 35px;
+        text-align: right;
+        font-weight: bold;
+        font-size: 13px;
+        color: #444;
+    }
+
+    .news-items {
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .news-item {
+        padding: 10px 15px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .news-item:last-child {
+        border-bottom: none;
+    }
+
+    .news-content {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #333;
+    }
+
+    /* 右侧热点区域样式 */
+    .portal-hotspot {
+        grid-area: hotspot;
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .hotspot-header {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        background-color: #fff;
+    }
+
+    .hotspot-header h5 {
+        margin: 0;
+        color: #333;
+        font-size: 16px;
+    }
+
+    .hotspot-content {
+        overflow-y: auto;
+        padding: 10px 15px;
+        flex: 1;
+    }
+
+    .hotspot-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .hotspot-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .hotspot-item:last-child {
+        border-bottom: none;
+    }
+
+    .hotspot-rank {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        background-color: #e9ecef;
+        color: #666;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .hotspot-rank.rank-top {
+        background-color: #fb6340;
+        color: #fff;
+    }
+
+    .hotspot-title {
+        flex: 1;
+        font-size: 14px;
+        line-height: 1.4;
+        color: #333;
+    }
+
+    /* 页脚区域样式 */
+    .portal-footer {
+        grid-area: footer;
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    /* 修改后的市场状态样式 */
+    .market-status {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 40px;
+        border-bottom: 1px solid #eee;
+        padding: 0 10px;
+    }
+
+    .market-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .group-title {
+        font-size: 12px;
+        font-weight: bold;
+        color: #666;
+        white-space: nowrap;
+    }
+
+    .status-group {
+        display: flex;
+        gap: 15px;
+    }
+
+    .status-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    .status-item i {
+        font-size: 10px;
+    }
+
+    .current-time {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        color: #666;
+        font-size: 12px;
+    }
+
+    .refresh-time {
+        color: #888;
+    }
+
+    i.status-open {
+        color: #2dce89;
+    }
+
+    i.status-closed {
+        color: #8898aa;
+    }
+
+    .ticker-news {
+        height: 40px;
+        overflow: hidden;
+        position: relative;
+        background-color: #f8f9fa;
+    }
+
+    .ticker-wrapper {
+        display: flex;
+        position: absolute;
+        white-space: nowrap;
+    }
+
+    .ticker-item {
+        padding: 0 30px;
+        line-height: 40px;
+        color: #333;
+    }
+
+    @keyframes ticker {
+        0% {
+            transform: translate3d(0, 0, 0);
+        }
+        100% {
+            transform: translate3d(-50%, 0, 0);
+        }
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 1200px) {
+        .finance-portal-container {
+            grid-template-columns: 200px 1fr 250px;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .finance-portal-container {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto 1fr auto auto;
+            grid-template-areas:
+                "sidebar"
+                "news"
+                "hotspot"
+                "footer";
+            height: auto;
+            overflow: auto;
+        }
+
+        .portal-news, .portal-hotspot {
+            height: 500px;
+        }
+
+        .portal-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-radius: 0;
+        }
+    }
+    
+    .time-date {
+        position: absolute;
+        left: 0;
+        top: 25px;
+        width: 35px;
+        text-align: right;
+        font-size: 11px;
+        color: #666;
+        font-weight: normal;
+    }
+    
+    /* 调整时间点样式，为日期留出空间 */
+    .time-point {
+        position: relative;
+        padding: 0 0 15px 65px;
+        min-height: 60px; /* 增加高度 */
+    }
+
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Material Design 3 Loading Overlay -->
+    <div id="loading-overlay" class="md3-loading-overlay">
+        <div class="md3-progress-indicator" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 Top Navigation -->
+    <nav class="md3-navbar">
+        <a class="md3-navbar-brand" href="/">
+            <i class="material-icons">trending_up</i>
+            智能分析系统
+        </a>
+
+        <div class="md3-navbar-nav">
+            <div class="md3-nav-item">
+                <a class="md3-nav-link {% if request.path == '/' %}active{% endif %}" href="/">
+                    <i class="material-icons">home</i> 主页
+                </a>
+            </div>
+            <div class="md3-nav-item">
+                <a class="md3-nav-link {% if request.path == '/dashboard' %}active{% endif %}" href="/dashboard">
+                    <i class="material-icons">dashboard</i> 仪表盘
+                </a>
+            </div>
+            <div class="md3-nav-item">
+                <a class="md3-nav-link {% if request.path.startswith('/fundamental') %}active{% endif %}" href="/fundamental">
+                    <i class="material-icons">assessment</i> 基本面
+                </a>
+            </div>
+            <div class="md3-nav-item">
+                <a class="md3-nav-link {% if request.path.startswith('/capital_flow') %}active{% endif %}" href="/capital_flow">
+                    <i class="material-icons">account_balance</i> 资金流向
+                </a>
+            </div>
+            <div class="md3-nav-item">
+                <a class="md3-nav-link {% if request.path.startswith('/scenario') %}active{% endif %}" href="/scenario_predict">
+                    <i class="material-icons">lightbulb</i> 情景预测
+                </a>
+            </div>
+            <div class="md3-nav-item">
+                <a class="md3-nav-link {% if request.path == '/market_scan' %}active{% endif %}" href="/market_scan">
+                    <i class="material-icons">search</i> 市场扫描
+                </a>
+            </div>
+            <div class="md3-nav-item">
+                <a class="md3-nav-link {% if request.path == '/portfolio' %}active{% endif %}" href="/portfolio">
+                    <i class="material-icons">work</i> 投资组合
+                </a>
+            </div>
+            <div class="md3-nav-item">
+                <a class="md3-nav-link {% if request.path.startswith('/risk') %}active{% endif %}" href="/risk_monitor">
+                    <i class="material-icons">warning</i> 风险监控
+                </a>
+            </div>
+            <div class="md3-nav-item">
+                <a class="md3-nav-link {% if request.path == '/qa' %}active{% endif %}" href="/qa">
+                    <i class="material-icons">help</i> 智能问答
+                </a>
+            </div>
+        </div>
+
+        <!-- Enhanced Material Design 3 Search Field -->
+        <div class="md3-text-field md3-text-field-outlined" style="margin-left: auto; position: relative;">
+            <input type="text" id="search-stock" class="md3-text-field-input" placeholder=" " aria-label="搜索股票">
+            <label class="md3-text-field-label">搜索股票代码/名称</label>
+            <button class="search-button" type="button" id="search-button" aria-label="搜索">
+                <i class="material-icons">search</i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Material Design 3 Main Content -->
+    <div class="md3-main-container">
+        {% block sidebar %}{% endblock %}
+
+        <main class="md3-main-content">
+            <div id="alerts-container"></div>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Bootstrap JS with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.min.js"></script>
+    <!-- Common JS -->
+    <script>
+        // Material Design 3 Loading Functions
+        function showLoading() {
+            $('#loading-overlay').css('display', 'flex');
+        }
+
+        function hideLoading() {
+            $('#loading-overlay').css('display', 'none');
+        }
+
+        // Material Design 3 Alert Functions
+        function showError(message) {
+            const alertHtml = `
+                <div class="md3-card" style="background-color: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); margin-bottom: 16px;">
+                    <div class="md3-card-body" style="padding: 16px; display: flex; align-items: center;">
+                        <i class="fas fa-exclamation-circle" style="margin-right: 12px; font-size: 20px;"></i>
+                        <span style="flex: 1;">${message}</span>
+                        <button type="button" class="md3-button md3-button-text" onclick="this.parentElement.parentElement.remove();" style="margin-left: 12px; padding: 8px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            $('#alerts-container').html(alertHtml);
+        }
+
+        function showInfo(message) {
+            const alertHtml = `
+                <div class="md3-card" style="background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); margin-bottom: 16px;">
+                    <div class="md3-card-body" style="padding: 16px; display: flex; align-items: center;">
+                        <i class="fas fa-info-circle" style="margin-right: 12px; font-size: 20px;"></i>
+                        <span style="flex: 1;">${message}</span>
+                        <button type="button" class="md3-button md3-button-text" onclick="this.parentElement.parentElement.remove();" style="margin-left: 12px; padding: 8px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            $('#alerts-container').html(alertHtml);
+        }
+
+        function showSuccess(message) {
+            const alertHtml = `
+                <div class="md3-card" style="background-color: var(--md-sys-color-success-container); color: var(--md-sys-color-on-success-container); margin-bottom: 16px;">
+                    <div class="md3-card-body" style="padding: 16px; display: flex; align-items: center;">
+                        <i class="fas fa-check-circle" style="margin-right: 12px; font-size: 20px;"></i>
+                        <span style="flex: 1;">${message}</span>
+                        <button type="button" class="md3-button md3-button-text" onclick="this.parentElement.parentElement.remove();" style="margin-left: 12px; padding: 8px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            $('#alerts-container').html(alertHtml);
+        }
+
+        // 搜索股票并跳转到详情页
+        $('#search-button').click(function() {
+            const stockCode = $('#search-stock').val().trim();
+            if (stockCode) {
+                window.location.href = `/stock_detail/${stockCode}`;
+            }
+        });
+
+        // 回车键搜索
+        $('#search-stock').keypress(function(e) {
+            if (e.which === 13) {
+                $('#search-button').click();
+            }
+        });
+
+        // 格式化数字 - 增强版
+        function formatNumber(num, digits = 2) {
+            if (num === null || num === undefined) return '-';
+            return parseFloat(num).toFixed(digits);
+        }
+
+        // 格式化技术指标 - 新增函数
+        function formatIndicator(value, indicatorType) {
+            if (value === null || value === undefined) return '-';
+
+            // 根据指标类型使用不同的小数位数
+            if (indicatorType === 'MACD' || indicatorType === 'Signal' || indicatorType === 'Histogram') {
+                return parseFloat(value).toFixed(3);  // MACD相关指标使用3位小数
+            } else if (indicatorType === 'RSI') {
+                return parseFloat(value).toFixed(2);  // RSI使用2位小数
+            } else {
+                return parseFloat(value).toFixed(2);  // 默认使用2位小数
+            }
+        }
+
+        // 格式化百分比
+        function formatPercent(num, digits = 2) {
+            if (num === null || num === undefined) return '-';
+            return parseFloat(num).toFixed(digits) + '%';
+        }
+
+        // 根据评分获取颜色类
+        function getScoreColorClass(score) {
+            if (score >= 80) return 'bg-success';
+            if (score >= 60) return 'bg-primary';
+            if (score >= 40) return 'bg-warning';
+            return 'bg-danger';
+        }
+
+        // 根据趋势获取颜色类
+        function getTrendColorClass(trend) {
+            return trend === 'UP' ? 'trend-up' : 'trend-down';
+        }
+
+        // 根据趋势获取图标
+        function getTrendIcon(trend) {
+            return trend === 'UP' ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

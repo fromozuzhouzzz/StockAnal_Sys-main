@@ -1,0 +1,1135 @@
+{% extends "layout.html" %}
+
+{% block title %}行业分析 - 智能分析系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div id="alerts-container"></div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2">
+                    <h5 class="mb-0">行业资金流向分析</h5>
+                </div>
+                <div class="card-body py-2">
+                    <form id="industry-form" class="row g-2">
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">周期</span>
+                                <select class="form-select" id="fund-flow-period">
+                                    <option value="即时" selected>即时</option>
+                                    <option value="3日排行">3日排行</option>
+                                    <option value="5日排行">5日排行</option>
+                                    <option value="10日排行">10日排行</option>
+                                    <option value="20日排行">20日排行</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">行业</span>
+                                <select class="form-select" id="industry-selector">
+                                    <option value="">-- 选择行业 --</option>
+                                    <!-- 行业选项将通过JS动态填充 -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="fas fa-search"></i> 分析
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-panel" class="text-center py-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 mb-0">正在获取行业数据...</p>
+    </div>
+
+    <!-- 行业资金流向概览 -->
+    <div id="industry-overview" class="row g-3 mb-3" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">行业资金流向概览</h5>
+                    <div class="d-flex">
+                        <span id="period-badge" class="badge bg-primary ms-2">即时</span>
+                        <button class="btn btn-sm btn-outline-primary ms-2" id="export-btn">
+                            <i class="fas fa-download"></i> 导出数据
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>行业</th>
+                                    <th>行业指数</th>
+                                    <th>涨跌幅</th>
+                                    <th>流入资金(亿)</th>
+                                    <th>流出资金(亿)</th>
+                                    <th>净额(亿)</th>
+                                    <th>公司家数</th>
+                                    <th>领涨股</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="industry-table">
+                                <!-- 行业资金流向数据将在JS中动态填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 行业详细分析 -->
+    <div id="industry-detail" class="row g-3 mb-3" style="display: none;">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header py-2">
+                    <h5 id="industry-name" class="mb-0">行业详情</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>行业概况</h6>
+                            <p><span class="text-muted">行业指数:</span> <span id="industry-index" class="fw-bold"></span></p>
+                            <p><span class="text-muted">涨跌幅:</span> <span id="industry-change" class="fw-bold"></span></p>
+                            <p><span class="text-muted">公司家数:</span> <span id="industry-company-count" class="fw-bold"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>资金流向</h6>
+                            <p><span class="text-muted">流入资金:</span> <span id="industry-inflow" class="fw-bold"></span></p>
+                            <p><span class="text-muted">流出资金:</span> <span id="industry-outflow" class="fw-bold"></span></p>
+                            <p><span class="text-muted">净额:</span> <span id="industry-net-flow" class="fw-bold"></span></p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div id="industry-flow-chart" style="height: 200px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header py-2">
+                    <h5 class="mb-0">行业评分</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div id="industry-score-chart" style="height: 150px;"></div>
+                            <h4 id="industry-score" class="text-center mt-2">--</h4>
+                            <p class="text-muted text-center">综合评分</p>
+                        </div>
+                        <div class="col-md-7">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>技术面</span>
+                                    <span id="technical-score">--/40</span>
+                                </div>
+                                <div class="progress">
+                                    <div id="technical-progress" class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>基本面</span>
+                                    <span id="fundamental-score">--/40</span>
+                                </div>
+                                <div class="progress">
+                                    <div id="fundamental-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>资金面</span>
+                                    <span id="capital-flow-score">--/20</span>
+                                </div>
+                                <div class="progress">
+                                    <div id="capital-flow-progress" class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h6>投资建议</h6>
+                        <p id="industry-recommendation" class="mb-0"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 行业成分股表现 -->
+    <div id="industry-stocks" class="row g-3 mb-3" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2">
+                    <h5 class="mb-0">行业成分股表现</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>代码</th>
+                                    <th>名称</th>
+                                    <th>最新价</th>
+                                    <th>涨跌幅</th>
+                                    <th>成交量</th>
+                                    <th>成交额(万)</th>
+                                    <th>换手率</th>
+                                    <th>评分</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="industry-stocks-table">
+                                <!-- 行业成分股数据将在JS中动态填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 行业对比分析 -->
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2">
+                    <h5 class="mb-0">行业对比分析</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="industry-compare-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="fund-flow-tab" data-bs-toggle="tab" data-bs-target="#fund-flow" type="button" role="tab" aria-controls="fund-flow" aria-selected="true">资金流向</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance" type="button" role="tab" aria-controls="performance" aria-selected="false">行业涨跌幅</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3" id="industry-compare-tabs-content">
+                        <div class="tab-pane fade show active" id="fund-flow" role="tabpanel" aria-labelledby="fund-flow-tab">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>资金净流入前10行业</h6>
+                                    <div id="top-inflow-chart" style="height: 300px;"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>资金净流出前10行业</h6>
+                                    <div id="top-outflow-chart" style="height: 300px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="performance" role="tabpanel" aria-labelledby="performance-tab">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>涨幅前10行业</h6>
+                                    <div id="top-gainers-chart" style="height: 300px;"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>跌幅前10行业</h6>
+                                    <div id="top-losers-chart" style="height: 300px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+
+    $(document).ready(function() {
+    // 加载行业资金流向数据
+    loadIndustryFundFlow();
+
+    $('#industry-form').submit(function(e) {
+        e.preventDefault();
+
+        // 获取选择的行业
+        const industry = $('#industry-selector').val();
+
+        if (!industry) {
+            showError('请选择行业名称');
+            return;
+        }
+
+        // 分析行业
+        loadIndustryDetail(industry);
+    });
+
+    // 资金流向周期切换
+    $('#fund-flow-period').change(function() {
+        const period = $(this).val();
+        loadIndustryFundFlow(period);
+    });
+
+    // 导出按钮点击事件
+    $('#export-btn').click(function() {
+        exportToCSV();
+    });
+    });
+
+    function analyzeIndustry(industry) {
+        $('#loading-panel').show();
+        $('#industry-result').hide();
+
+        // 1. 获取行业详情
+        $.ajax({
+            url: `/api/industry_detail?industry=${encodeURIComponent(industry)}`,
+            type: 'GET',
+            success: function(industryDetail) {
+                console.log("Industry detail loaded successfully:", industryDetail);
+
+                // 2. 获取行业成分股
+                $.ajax({
+                    url: `/api/industry_stocks?industry=${encodeURIComponent(industry)}`,
+                    type: 'GET',
+                    success: function(stocksResponse) {
+                        console.log("Industry stocks loaded successfully:", stocksResponse);
+
+                        $('#loading-panel').hide();
+
+                        // 渲染行业详情和成分股
+                        renderIndustryDetail(industryDetail);
+                        renderIndustryStocks(stocksResponse);
+
+                        $('#industry-detail').show();
+                        $('#industry-stocks').show();
+                    },
+                    error: function(xhr, status, error) {
+                        $('#loading-panel').hide();
+                        console.error("Error loading industry stocks:", error);
+                        showError('获取行业成分股失败: ' + (xhr.responseJSON?.error || error));
+                    }
+                });
+            },
+            error: function(xhr, status, error) {
+                $('#loading-panel').hide();
+                console.error("Error loading industry detail:", error);
+                showError('获取行业详情失败: ' + (xhr.responseJSON?.error || error));
+            }
+        });
+    }
+
+    // 加载行业资金流向数据
+    function loadIndustryFundFlow(period = '即时') {
+        $('#loading-panel').show();
+        $('#industry-overview').hide();
+        $('#industry-detail').hide();
+        $('#industry-stocks').hide();
+
+        $.ajax({
+            url: `/api/industry_fund_flow?symbol=${encodeURIComponent(period)}`,
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (Array.isArray(response) && response.length > 0) {
+                    renderIndustryFundFlow(response, period);
+                    populateIndustrySelector(response);
+
+                    // 加载行业对比数据
+                    loadIndustryCompare();
+
+                    $('#loading-panel').hide();
+                    $('#industry-overview').show();
+                } else {
+                    showError('获取行业资金流向数据失败：返回数据为空');
+                    $('#loading-panel').hide();
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#loading-panel').hide();
+                let errorMsg = '获取行业资金流向数据失败';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg += ': ' + xhr.responseJSON.error;
+                } else if (error) {
+                    errorMsg += ': ' + error;
+                }
+                showError(errorMsg);
+            }
+        });
+    }
+
+
+    // 统一的行业详情加载函数
+    function loadIndustryDetail(industry) {
+        console.log(`Loading industry detail for: ${industry}`);
+        $('#loading-panel').show();
+        $('#industry-overview').hide();
+        $('#industry-detail').hide();
+        $('#industry-stocks').hide();
+
+        // 并行加载行业详情和行业成分股
+        $.when(
+            // 获取行业详情
+            $.ajax({
+                url: `/api/industry_detail?industry=${encodeURIComponent(industry)}`,
+                type: 'GET',
+                dataType: 'json'
+            }),
+            // 获取行业成分股
+            $.ajax({
+                url: `/api/industry_stocks?industry=${encodeURIComponent(industry)}`,
+                type: 'GET',
+                dataType: 'json'
+            })
+        ).done(function(detailResponse, stocksResponse) {
+            // 处理行业详情数据
+            const industryData = detailResponse[0];
+
+            // 处理行业成分股数据
+            const stocksData = stocksResponse[0];
+
+            console.log("Industry detail loaded:", industryData);
+            console.log("Industry stocks loaded:", stocksData);
+
+            renderIndustryDetail(industryData);
+            renderIndustryStocks(stocksData);
+
+            $('#loading-panel').hide();
+            $('#industry-detail').show();
+            $('#industry-stocks').show();
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            $('#loading-panel').hide();
+            console.error("Error loading industry data:", textStatus, errorThrown);
+            let errorMsg = '获取行业数据失败';
+            try {
+                if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
+                    errorMsg += ': ' + jqXHR.responseJSON.error;
+                } else if (errorThrown) {
+                    errorMsg += ': ' + errorThrown;
+                }
+            } catch (e) {
+                console.error("Error parsing error response:", e);
+            }
+            showError(errorMsg);
+        });
+    }
+
+    // 加载行业对比数据
+    function loadIndustryCompare() {
+        $.ajax({
+            url: '/api/industry_compare',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                try {
+                    if (response && response.results) {
+                        // 按资金净流入排序
+                        const sortedByNetFlow = [...response.results]
+                            .filter(item => item.netFlow !== undefined)
+                            .sort((a, b) => parseFloat(b.netFlow || 0) - parseFloat(a.netFlow || 0));
+
+                        // 按涨跌幅排序
+                        const sortedByChange = [...response.results]
+                            .filter(item => item.change !== undefined)
+                            .sort((a, b) => parseFloat(b.change || 0) - parseFloat(a.change || 0));
+
+                        // 资金净流入前10行业
+                        const topInflow = sortedByNetFlow.slice(0, 10);
+                        renderBarChart('top-inflow-chart',
+                                    topInflow.map(item => item.industry),
+                                    topInflow.map(item => parseFloat(item.netFlow || 0)),
+                                    '资金净流入(亿)',
+                                    '#00E396');
+
+                        // 资金净流出前10行业
+                        const bottomInflow = [...sortedByNetFlow].reverse().slice(0, 10);
+                        renderBarChart('top-outflow-chart',
+                                    bottomInflow.map(item => item.industry),
+                                    bottomInflow.map(item => Math.abs(parseFloat(item.netFlow || 0))),
+                                    '资金净流出(亿)',
+                                    '#FF4560');
+
+                        // 涨幅前10行业
+                        const topGainers = sortedByChange.slice(0, 10);
+                        renderBarChart('top-gainers-chart',
+                                    topGainers.map(item => item.industry),
+                                    topGainers.map(item => parseFloat(item.change || 0)),
+                                    '涨幅(%)',
+                                    '#00E396');
+
+                        // 跌幅前10行业
+                        const topLosers = [...sortedByChange].reverse().slice(0, 10);
+                        renderBarChart('top-losers-chart',
+                                    topLosers.map(item => item.industry),
+                                    topLosers.map(item => Math.abs(parseFloat(item.change || 0))),
+                                    '跌幅(%)',
+                                    '#FF4560');
+                    }
+                } catch (e) {
+                    console.error("Error processing industry comparison data:", e);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('获取行业对比数据失败:', error);
+            }
+        });
+    }
+
+    // 渲染行业资金流向表格
+    function renderIndustryFundFlow(data, period) {
+        $('#period-badge').text(period);
+
+        let html = '';
+        if (data.length === 0) {
+            html = '<tr><td colspan="10" class="text-center">暂无数据</td></tr>';
+        } else {
+            data.forEach((item, index) => {
+                const changeClass = parseFloat(item.change) >= 0 ? 'trend-up' : 'trend-down';
+                const changeIcon = parseFloat(item.change) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+
+                const netFlowClass = parseFloat(item.netFlow) >= 0 ? 'trend-up' : 'trend-down';
+                const netFlowIcon = parseFloat(item.netFlow) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+
+                html += `
+                    <tr>
+                        <td>${item.rank}</td>
+                        <td>
+                            <a href="javascript:void(0)" onclick="loadIndustryDetail('${item.industry}')" class="industry-link">
+                                ${item.industry}
+                            </a>
+                        </td>
+                        <td>${formatNumber(item.index, 2)}</td>
+                        <td class="${changeClass}">${changeIcon} ${item.change}%</td>
+                        <td>${formatNumber(item.inflow, 2)}</td>
+                        <td>${formatNumber(item.outflow, 2)}</td>
+                        <td class="${netFlowClass}">${netFlowIcon} ${formatNumber(item.netFlow, 2)}</td>
+                        <td>${item.companyCount}</td>
+                        <td>${item.leadingStock || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="loadIndustryDetail('${item.industry}')">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        $('#industry-table').html(html);
+    }
+
+    // 渲染行业详情
+    function renderIndustryDetail(data) {
+        if (!data) {
+            console.error("renderIndustryDetail: No data provided");
+            return;
+        }
+
+        console.log("Rendering industry detail:", data);
+
+        // 设置基本信息
+        $('#industry-name').text(data.industry);
+
+        // 设置行业评分
+        const scoreClass = getScoreColorClass(data.score);
+        $('#industry-score').text(data.score).removeClass().addClass(scoreClass);
+
+        // 设置技术面、基本面、资金面分数 (模拟分数)
+        const technicalScore = Math.round(data.score * 0.4);
+        const fundamentalScore = Math.round(data.score * 0.4);
+        const capitalFlowScore = Math.round(data.score * 0.2);
+
+        $('#technical-score').text(`${technicalScore}/40`);
+        $('#fundamental-score').text(`${fundamentalScore}/40`);
+        $('#capital-flow-score').text(`${capitalFlowScore}/20`);
+
+        $('#technical-progress').css('width', `${technicalScore / 40 * 100}%`);
+        $('#fundamental-progress').css('width', `${fundamentalScore / 40 * 100}%`);
+        $('#capital-flow-progress').css('width', `${capitalFlowScore / 20 * 100}%`);
+
+        // 设置行业基本信息
+        $('#industry-index').text(formatNumber(data.index, 2));
+        $('#industry-company-count').text(data.companyCount);
+
+        // 设置涨跌幅
+        const changeClass = parseFloat(data.change) >= 0 ? 'trend-up' : 'trend-down';
+        const changeIcon = parseFloat(data.change) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+        $('#industry-change').html(`<span class="${changeClass}">${changeIcon} ${data.change}%</span>`);
+
+        // 设置资金流向
+        $('#industry-inflow').text(formatNumber(data.inflow, 2) + ' 亿');
+        $('#industry-outflow').text(formatNumber(data.outflow, 2) + ' 亿');
+
+        const netFlowClass = parseFloat(data.netFlow) >= 0 ? 'trend-up' : 'trend-down';
+        const netFlowIcon = parseFloat(data.netFlow) >= 0 ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
+        $('#industry-net-flow').html(`<span class="${netFlowClass}">${netFlowIcon} ${formatNumber(data.netFlow, 2)} 亿</span>`);
+
+        // 设置投资建议
+        $('#industry-recommendation').text(data.recommendation);
+
+        // 绘制行业评分图表
+        renderIndustryScoreChart(data.score);
+
+        // 绘制资金流向图表
+        renderIndustryFlowChart(data.flowHistory);
+    }
+
+
+    // 渲染行业成分股表格
+    function renderIndustryStocks(data) {
+        if (!data) {
+            console.error("renderIndustryStocks: No data provided");
+            return;
+        }
+
+        console.log("Rendering industry stocks:", data);
+
+        let html = '';
+
+        if (!Array.isArray(data) || data.length === 0) {
+            html = '<tr><td colspan="9" class="text-center">暂无成分股数据</td></tr>';
+        } else {
+            data.forEach(stock => {
+                const changeClass = parseFloat(stock.change) >= 0 ? 'trend-up' : 'trend-down';
+                const changeIcon = parseFloat(stock.change) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+
+                html += `
+                    <tr>
+                        <td>${stock.code}</td>
+                        <td>${stock.name}</td>
+                        <td>${formatNumber(stock.price, 2)}</td>
+                        <td class="${changeClass}">${changeIcon} ${formatNumber(stock.change, 2)}%</td>
+                        <td>${formatNumber(stock.volume, 0)}</td>
+                        <td>${formatMoney(stock.turnover)}</td>
+                        <td>${formatNumber(stock.turnover_rate || stock.turnoverRate, 2)}%</td>
+                        <td>${stock.score ? formatNumber(stock.score, 0) : '-'}</td>
+                        <td>
+                            <a href="/stock_detail/${stock.code}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        $('#industry-stocks-table').html(html);
+    }
+
+    function renderCapitalFlowChart(flowHistory) {
+
+        // 添加数据检查
+        if (!flowHistory || !Array.isArray(flowHistory) || flowHistory.length === 0) {
+            // 如果没有历史数据，显示提示信息
+            document.querySelector("#industry-flow-chart").innerHTML =
+                '<div class="text-center text-muted py-5">暂无资金流向历史数据</div>';
+            return;
+        }
+
+        const dates = flowHistory.map(item => item.date);
+        const netFlows = flowHistory.map(item => parseFloat(item.netFlow));
+        const changes = flowHistory.map(item => parseFloat(item.change));
+
+        // 确保所有数组都有值
+        if (dates.length === 0 || netFlows.length === 0 || changes.length === 0) {
+            document.querySelector("#industry-flow-chart").innerHTML =
+                '<div class="text-center text-muted py-5">资金流向数据格式不正确</div>';
+            return;
+        }
+
+        const options = {
+            series: [
+                {
+                    name: '净流入(亿)',
+                    type: 'column',
+                    data: netFlows
+                },
+                {
+                    name: '涨跌幅(%)',
+                    type: 'line',
+                    data: changes
+                }
+            ],
+            chart: {
+                height: 265,
+                type: 'line',
+                toolbar: {
+                    show: false
+                }
+            },
+            plotOptions: {
+                bar: {
+                    borderRadius: 2,
+                    dataLabels: {
+                        position: 'top'
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                width: [0, 3]
+            },
+            colors: ['#0d6efd', '#dc3545'],
+            xaxis: {
+                categories: dates,
+                labels: {
+                    formatter: function(value) {
+                        return value.slice(5); // 只显示月-日
+                    }
+                }
+            },
+            yaxis: [
+                {
+                    title: {
+                        text: '净流入(亿)',
+                        style: {
+                            fontSize: '12px'
+                        }
+                    },
+                    labels: {
+                        formatter: function(val) {
+                            return val.toFixed(2);
+                        }
+                    }
+                },
+                {
+                    opposite: true,
+                    title: {
+                        text: '涨跌幅(%)',
+                        style: {
+                            fontSize: '12px'
+                        }
+                    },
+                    labels: {
+                        formatter: function(val) {
+                            return val.toFixed(2);
+                        }
+                    }
+                }
+            ],
+            tooltip: {
+                shared: true,
+                intersect: false,
+                y: {
+                    formatter: function(value, { seriesIndex }) {
+                        if (seriesIndex === 0) {
+                            return value.toFixed(2) + ' 亿';
+                        }
+                        return value.toFixed(2) + '%';
+                    }
+                }
+            },
+            legend: {
+                position: 'top'
+            }
+        };
+
+        // 清除任何现有图表
+        document.querySelector("#industry-flow-chart").innerHTML = '';
+        const chart = new ApexCharts(document.querySelector("#industry-flow-chart"), options);
+        chart.render();
+    }
+
+    // 填充行业选择器
+    function populateIndustrySelector(data) {
+        let options = '<option value="">-- 选择行业 --</option>';
+        const industries = data.map(item => item.industry);
+
+        industries.forEach(industry => {
+            options += `<option value="${industry}">${industry}</option>`;
+        });
+
+        $('#industry-selector').html(options);
+    }
+
+    // 评分颜色类
+    function getScoreColorClass(score) {
+        if (score >= 80) return 'badge rounded-pill bg-success';
+        if (score >= 60) return 'badge rounded-pill bg-primary';
+        if (score >= 40) return 'badge rounded-pill bg-warning text-dark';
+        return 'badge rounded-pill bg-danger';
+    }
+
+    // 获取评分颜色
+    function getScoreColor(score) {
+        if (score >= 80) return '#28a745'; // 绿色
+        if (score >= 60) return '#007bff'; // 蓝色
+        if (score >= 40) return '#ffc107'; // 黄色
+        return '#dc3545'; // 红色
+    }
+
+    // 格式化金额（单位：万元）
+    function formatMoney(value) {
+        if (value === undefined || value === null) {
+            return '--';
+        }
+
+        value = parseFloat(value);
+        if (isNaN(value)) {
+            return '--';
+        }
+
+        if (value >= 100000000) {
+            return (value / 100000000).toFixed(2) + ' 亿';
+        } else if (value >= 10000) {
+            return (value / 10000).toFixed(2) + ' 万';
+        } else {
+            return value.toFixed(2);
+        }
+    }
+
+    // 渲染行业资金流向图表
+    function renderIndustryFlowChart(data) {
+        const options = {
+            series: [
+                {
+                    name: '流入资金',
+                    data: data.flowHistory.map(item => item.inflow)
+                },
+                {
+                    name: '流出资金',
+                    data: data.flowHistory.map(item => item.outflow)
+                },
+                {
+                    name: '净流入',
+                    data: data.flowHistory.map(item => item.netFlow)
+                }
+            ],
+            chart: {
+                type: 'bar',
+                height: 200,
+                toolbar: {
+                    show: false
+                }
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: false,
+                    columnWidth: '55%',
+                    endingShape: 'rounded'
+                },
+            },
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                show: true,
+                width: 2,
+                colors: ['transparent']
+            },
+            xaxis: {
+                categories: data.flowHistory.map(item => item.date)
+            },
+            yaxis: {
+                title: {
+                    text: '亿元'
+                }
+            },
+            fill: {
+                opacity: 1
+            },
+            tooltip: {
+                y: {
+                    formatter: function(val) {
+                        return val + " 亿元";
+                    }
+                }
+            },
+            colors: ['#00E396', '#FF4560', '#008FFB']
+        };
+
+        const chart = new ApexCharts(document.querySelector("#industry-flow-chart"), options);
+        chart.render();
+    }
+
+    // 绘制行业评分图表
+    function renderIndustryScoreChart(score) {
+        const options = {
+            series: [score],
+            chart: {
+                height: 150,
+                type: 'radialBar',
+            },
+            plotOptions: {
+                radialBar: {
+                    hollow: {
+                        size: '70%',
+                    },
+                    dataLabels: {
+                        show: false
+                    }
+                }
+            },
+            colors: [getScoreColor(score)],
+            stroke: {
+                lineCap: 'round'
+            }
+        };
+
+        // 清除旧图表并创建新图表
+        $('#industry-score-chart').empty();
+        const chart = new ApexCharts(document.querySelector("#industry-score-chart"), options);
+        chart.render();
+    }
+
+    // 绘制行业资金流向图表
+    function renderIndustryFlowChart(flowHistory) {
+        if (!flowHistory || !Array.isArray(flowHistory) || flowHistory.length === 0) {
+            console.error("renderIndustryFlowChart: Invalid flow history data");
+            return;
+        }
+
+        console.log("Rendering flow chart with data:", flowHistory);
+
+        const dates = flowHistory.map(item => item.date);
+        const netFlows = flowHistory.map(item => parseFloat(item.netFlow));
+        const changes = flowHistory.map(item => parseFloat(item.change));
+
+        const options = {
+            series: [
+                {
+                    name: '净流入(亿)',
+                    type: 'column',
+                    data: netFlows
+                },
+                {
+                    name: '涨跌幅(%)',
+                    type: 'line',
+                    data: changes
+                }
+            ],
+            chart: {
+                height: 200,
+                type: 'line',
+                toolbar: {
+                    show: false
+                }
+            },
+            plotOptions: {
+                bar: {
+                    borderRadius: 2,
+                    dataLabels: {
+                        position: 'top'
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                width: [0, 3]
+            },
+            colors: ['#0d6efd', '#dc3545'],
+            xaxis: {
+                categories: dates,
+                labels: {
+                    formatter: function(value) {
+                        // Only show month-day if it's a date string
+                        if (typeof value === 'string' && value.includes('-')) {
+                            return value.slice(5); // 只显示月-日
+                        }
+                        return value;
+                    }
+                }
+            },
+            yaxis: [
+                {
+                    title: {
+                        text: '净流入(亿)',
+                        style: {
+                            fontSize: '12px'
+                        }
+                    },
+                    labels: {
+                        formatter: function(val) {
+                            return val.toFixed(2);
+                        }
+                    }
+                },
+                {
+                    opposite: true,
+                    title: {
+                        text: '涨跌幅(%)',
+                        style: {
+                            fontSize: '12px'
+                        }
+                    },
+                    labels: {
+                        formatter: function(val) {
+                            return val.toFixed(2);
+                        }
+                    }
+                }
+            ],
+            tooltip: {
+                shared: true,
+                intersect: false,
+                y: {
+                    formatter: function(value, { seriesIndex }) {
+                        if (seriesIndex === 0) {
+                            return value.toFixed(2) + ' 亿';
+                        }
+                        return value.toFixed(2) + '%';
+                    }
+                }
+            },
+            legend: {
+                position: 'top'
+            }
+        };
+
+        // 清除旧图表并创建新图表
+        $('#industry-flow-chart').empty();
+        try {
+            const chart = new ApexCharts(document.querySelector("#industry-flow-chart"), options);
+            chart.render();
+        } catch (e) {
+            console.error("Error rendering flow chart:", e);
+        }
+    }
+
+    // 渲染行业对比图表
+    function renderIndustryCompareCharts(data) {
+        // 按资金净流入排序
+        const sortedByNetFlow = [...data].sort((a, b) => b.netFlow - a.netFlow);
+
+        // 资金净流入前10
+        const topInflow = sortedByNetFlow.slice(0, 10);
+        renderBarChart('top-inflow-chart', topInflow.map(item => item.industry), topInflow.map(item => item.netFlow), '资金净流入(亿元)', '#00E396');
+
+        // 资金净流出前10
+        const bottomInflow = [...sortedByNetFlow].reverse().slice(0, 10);
+        renderBarChart('top-outflow-chart', bottomInflow.map(item => item.industry), bottomInflow.map(item => Math.abs(item.netFlow)), '资金净流出(亿元)', '#FF4560');
+
+        // 按涨跌幅排序
+        const sortedByChange = [...data].sort((a, b) => parseFloat(b.change) - parseFloat(a.change));
+
+        // 涨幅前10
+        const topGainers = sortedByChange.slice(0, 10);
+        renderBarChart('top-gainers-chart', topGainers.map(item => item.industry), topGainers.map(item => parseFloat(item.change)), '涨幅(%)', '#00E396');
+
+        // 跌幅前10
+        const topLosers = [...sortedByChange].reverse().slice(0, 10);
+        renderBarChart('top-losers-chart', topLosers.map(item => item.industry), topLosers.map(item => Math.abs(parseFloat(item.change))), '跌幅(%)', '#FF4560');
+    }
+
+    // 通用水平条形图
+    function renderBarChart(elementId, categories, data, title, color) {
+        if (!categories || !data || categories.length === 0 || data.length === 0) {
+            console.error(`renderBarChart: Invalid data for ${elementId}`);
+            return;
+        }
+
+        const options = {
+            series: [{
+                name: title,
+                data: data
+            }],
+            chart: {
+                type: 'bar',
+                height: 300,
+                toolbar: {
+                    show: false
+                }
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: true,
+                    dataLabels: {
+                        position: 'top',
+                    },
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                offsetX: -6,
+                style: {
+                    fontSize: '12px',
+                    colors: ['#fff']
+                },
+                formatter: function(val) {
+                    return val.toFixed(2);
+                }
+            },
+            stroke: {
+                show: true,
+                width: 1,
+                colors: ['#fff']
+            },
+            xaxis: {
+                categories: categories
+            },
+            yaxis: {
+                title: {
+                    text: title
+                }
+            },
+            fill: {
+                opacity: 1
+            },
+            colors: [color]
+        };
+
+        // 清除旧图表并创建新图表
+        $(`#${elementId}`).empty();
+        try {
+            const chart = new ApexCharts(document.querySelector(`#${elementId}`), options);
+            chart.render();
+        } catch (e) {
+            console.error(`Error rendering chart ${elementId}:`, e);
+        }
+    }
+
+    // 导出CSV
+    function exportToCSV() {
+        // 获取表格数据
+        const table = document.querySelector('#industry-overview table');
+        let csv = [];
+        let rows = table.querySelectorAll('tr');
+
+        for (let i = 0; i < rows.length; i++) {
+            let row = [], cols = rows[i].querySelectorAll('td, th');
+
+            for (let j = 0; j < cols.length - 1; j++) { // 跳过最后一列（操作列）
+                // 获取单元格的文本内容，去除HTML标签
+                let text = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/,/g, '，');
+                row.push(text);
+            }
+
+            csv.push(row.join(','));
+        }
+
+        // 下载CSV文件
+        const period = $('#period-badge').text();
+        const csvString = csv.join('\n');
+        const filename = `行业资金流向_${period}_${new Date().toISOString().slice(0, 10)}.csv`;
+
+        const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+
+        link.style.display = 'none';
+        document.body.appendChild(link);
+
+        link.click();
+
+        document.body.removeChild(link);
+    }
+
+</script>
+{% endblock %}

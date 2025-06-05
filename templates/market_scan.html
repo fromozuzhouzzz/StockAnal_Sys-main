@@ -1,0 +1,591 @@
+{% extends "layout.html" %}
+
+{% block title %}市场扫描 - 智能分析系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div id="alerts-container"></div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <h5 class="mb-0">市场扫描</h5>
+                </div>
+                <div class="card-body">
+                    <form id="scan-form" class="row g-3">
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <span class="input-group-text">选择指数</span>
+                                <select class="form-select" id="index-selector">
+                                    <option value="">-- 选择指数 --</option>
+                                    <option value="000300">沪深300</option>
+                                    <option value="000905">中证500</option>
+                                    <option value="000852">中证1000</option>
+                                    <option value="000001">上证指数</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <span class="input-group-text">选择行业</span>
+                                <select class="form-select" id="industry-selector">
+                                    <option value="">-- 选择行业 --</option>
+                                    <option value="保险">保险</option>
+                                    <option value="食品饮料">食品饮料</option>
+                                    <option value="多元金融">多元金融</option>
+                                    <option value="游戏">游戏</option>
+                                    <option value="酿酒行业">酿酒行业</option>
+                                    <option value="商业百货">商业百货</option>
+                                    <option value="证券">证券</option>
+                                    <option value="船舶制造">船舶制造</option>
+                                    <option value="家用轻工">家用轻工</option>
+                                    <option value="旅游酒店">旅游酒店</option>
+                                    <option value="美容护理">美容护理</option>
+                                    <option value="医疗服务">医疗服务</option>
+                                    <option value="软件开发">软件开发</option>
+                                    <option value="化学制药">化学制药</option>
+                                    <option value="医疗器械">医疗器械</option>
+                                    <option value="家电行业">家电行业</option>
+                                    <option value="汽车服务">汽车服务</option>
+                                    <option value="造纸印刷">造纸印刷</option>
+                                    <option value="纺织服装">纺织服装</option>
+                                    <option value="光伏设备">光伏设备</option>
+                                    <option value="房地产服务">房地产服务</option>
+                                    <option value="文化传媒">文化传媒</option>
+                                    <option value="医药商业">医药商业</option>
+                                    <option value="中药">中药</option>
+                                    <option value="专业服务">专业服务</option>
+                                    <option value="生物制品">生物制品</option>
+                                    <option value="仪器仪表">仪器仪表</option>
+                                    <option value="房地产开发">房地产开发</option>
+                                    <option value="教育">教育</option>
+                                    <option value="半导体">半导体</option>
+                                    <option value="玻璃玻纤">玻璃玻纤</option>
+                                    <option value="汽车整车">汽车整车</option>
+                                    <option value="消费电子">消费电子</option>
+                                    <option value="贸易行业">贸易行业</option>
+                                    <option value="包装材料">包装材料</option>
+                                    <option value="汽车零部件">汽车零部件</option>
+                                    <option value="电子化学品">电子化学品</option>
+                                    <option value="电子元件">电子元件</option>
+                                    <option value="装修建材">装修建材</option>
+                                    <option value="交运设备">交运设备</option>
+                                    <option value="农牧饲渔">农牧饲渔</option>
+                                    <option value="塑料制品">塑料制品</option>
+                                    <option value="珠宝首饰">珠宝首饰</option>
+                                    <option value="贵金属">贵金属</option>
+                                    <option value="非金属材料">非金属材料</option>
+                                    <option value="装修装饰">装修装饰</option>
+                                    <option value="风电设备">风电设备</option>
+                                    <option value="工程咨询服务">工程咨询服务</option>
+                                    <option value="专用设备">专用设备</option>
+                                    <option value="光学光电子">光学光电子</option>
+                                    <option value="航空机场">航空机场</option>
+                                    <option value="小金属">小金属</option>
+                                    <option value="物流行业">物流行业</option>
+                                    <option value="通用设备">通用设备</option>
+                                    <option value="计算机设备">计算机设备</option>
+                                    <option value="环保行业">环保行业</option>
+                                    <option value="航运港口">航运港口</option>
+                                    <option value="通信设备">通信设备</option>
+                                    <option value="水泥建材">水泥建材</option>
+                                    <option value="电池">电池</option>
+                                    <option value="化肥行业">化肥行业</option>
+                                    <option value="互联网服务">互联网服务</option>
+                                    <option value="工程建设">工程建设</option>
+                                    <option value="橡胶制品">橡胶制品</option>
+                                    <option value="化学原料">化学原料</option>
+                                    <option value="化纤行业">化纤行业</option>
+                                    <option value="农药兽药">农药兽药</option>
+                                    <option value="化学制品">化学制品</option>
+                                    <option value="能源金属">能源金属</option>
+                                    <option value="有色金属">有色金属</option>
+                                    <option value="采掘行业">采掘行业</option>
+                                    <option value="燃气">燃气</option>
+                                    <option value="综合行业">综合行业</option>
+                                    <option value="工程机械">工程机械</option>
+                                    <option value="银行">银行</option>
+                                    <option value="铁路公路">铁路公路</option>
+                                    <option value="石油行业">石油行业</option>
+                                    <option value="公用事业">公用事业</option>
+                                    <option value="电机">电机</option>
+                                    <option value="通信服务">通信服务</option>
+                                    <option value="钢铁行业">钢铁行业</option>
+                                    <option value="电力行业">电力行业</option>
+                                    <option value="电网设备">电网设备</option>
+                                    <option value="煤炭行业">煤炭行业</option>
+                                    <option value="电源设备">电源设备</option>
+                                    <option value="航天航空">航天航空</option>
+                                </select>                                
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <span class="input-group-text">自定义股票</span>
+                                <input type="text" class="form-control" id="custom-stocks" placeholder="多个股票代码用逗号分隔">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <span class="input-group-text">最低分数</span>
+                                <input type="number" class="form-control" id="min-score" value="60" min="0" max="100">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> 扫描
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <h5 class="mb-0">扫描结果</h5>
+                    <div>
+                        <span class="badge bg-primary ms-2" id="result-count">0</span>
+                        <button class="btn btn-sm btn-outline-primary ms-2" id="export-btn" style="display: none;">
+                            <i class="fas fa-download"></i> 导出结果
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="scan-loading" class="text-center py-5" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2" id="scan-message">正在扫描市场，请稍候...</p>
+                        <div class="progress mt-3" style="height: 5px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                        </div>
+                        <button id="cancel-scan-btn" class="btn btn-outline-secondary mt-3">
+                            <i class="fas fa-times"></i> 取消扫描
+                        </button>
+                    </div>
+
+                    <!-- 添加错误重试区域 -->
+                    <div id="scan-error-retry" class="text-center mt-3" style="display: none;">
+                        <button id="scan-retry-button" class="btn btn-primary mt-2">
+                            <i class="fas fa-sync-alt"></i> 重试扫描
+                        </button>
+                        <p class="text-muted small mt-2">
+                            已超负载
+                        </p>
+                    </div>
+
+                    <div id="scan-results">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>代码</th>
+                                    <th>名称</th>
+                                    <th>行业</th>
+                                    <th>得分</th>
+                                    <th>价格</th>
+                                    <th>涨跌幅</th>
+                                    <th>RSI</th>
+                                    <th>MA趋势</th>
+                                    <th>成交量</th>
+                                    <th>建议</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table">
+                                <tr>
+                                    <td colspan="11" class="text-center">暂无数据，请开始扫描</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // 表单提交
+        $('#scan-form').submit(function(e) {
+            e.preventDefault();
+
+            // 获取股票列表
+            let stockList = [];
+
+            // 获取指数股票
+            const indexCode = $('#index-selector').val();
+            if (indexCode) {
+                fetchIndexStocks(indexCode);
+                return;
+            }
+
+            // 获取行业股票
+            const industry = $('#industry-selector').val();
+            if (industry) {
+                fetchIndustryStocks(industry);
+                return;
+            }
+
+            // 获取自定义股票
+            const customStocks = $('#custom-stocks').val().trim();
+            if (customStocks) {
+                stockList = customStocks.split(',').map(s => s.trim());
+                scanMarket(stockList);
+            } else {
+                showError('请至少选择一种方式获取股票列表');
+            }
+        });
+
+        // 指数选择变化
+        $('#index-selector').change(function() {
+            if ($(this).val()) {
+                $('#industry-selector').val('');
+            }
+        });
+
+        // 行业选择变化
+        $('#industry-selector').change(function() {
+            if ($(this).val()) {
+                $('#index-selector').val('');
+            }
+        });
+
+        // 导出结果
+        $('#export-btn').click(function() {
+            exportToCSV();
+        });
+
+        // 获取指数成分股
+        function fetchIndexStocks(indexCode) {
+            $('#scan-loading').show();
+            $('#scan-results').hide();
+
+            $.ajax({
+                url: `/api/index_stocks?index_code=${indexCode}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    const stockList = response.stock_list;
+                    if (stockList && stockList.length > 0) {
+                        // 保存最近的扫描列表用于重试
+                        window.lastScanList = stockList;
+
+                        scanMarket(stockList);
+                    } else {
+                        $('#scan-loading').hide();
+                        $('#scan-results').show();
+                        showError('获取指数成分股失败，或成分股列表为空');
+                    }
+                },
+                error: function(error) {
+                    $('#scan-loading').hide();
+                    $('#scan-results').show();
+                    showError('获取指数成分股失败: ' + (error.responseJSON ? error.responseJSON.error : error.statusText));
+                }
+            });
+        }
+
+        // 获取行业成分股
+        function fetchIndustryStocks(industry) {
+            $('#scan-loading').show();
+            $('#scan-results').hide();
+
+            $.ajax({
+                url: `/api/industry_stocks?industry=${encodeURIComponent(industry)}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    const stockList = response.stock_list;
+                    if (stockList && stockList.length > 0) {
+                        // 保存最近的扫描列表用于重试
+                        window.lastScanList = stockList;
+
+                        scanMarket(stockList);
+                    } else {
+                        $('#scan-loading').hide();
+                        $('#scan-results').show();
+                        showError('获取行业成分股失败，或成分股列表为空');
+                    }
+                },
+                error: function(error) {
+                    $('#scan-loading').hide();
+                    $('#scan-results').show();
+                    showError('获取行业成分股失败: ' + (error.responseJSON ? error.responseJSON.error : error.statusText));
+                }
+            });
+        }
+
+        // 扫描市场
+        function scanMarket(stockList) {
+            $('#scan-loading').show();
+            $('#scan-results').hide();
+            $('#scan-error-retry').hide();
+
+            // 添加处理时间计数器
+            let processingTime = 0;
+            let stockCount = stockList.length;
+
+            // 保存上次扫描列表
+            window.lastScanList = stockList;
+
+            // 更新扫描提示消息
+            $('#scan-message').html(`正在准备扫描${stockCount}只股票，请稍候...`);
+
+            const minScore = parseInt($('#min-score').val() || 60);
+
+            // 第一步：启动扫描任务
+            $.ajax({
+                url: '/api/start_market_scan',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    stock_list: stockList,
+                    min_score: minScore,
+                    market_type: 'A'
+                }),
+                success: function(response) {
+                    const taskId = response.task_id;
+
+                    if (!taskId) {
+                        showError('启动扫描任务失败：未获取到任务ID');
+                        $('#scan-loading').hide();
+                        $('#scan-results').show();
+                        $('#scan-error-retry').show();
+                        return;
+                    }
+
+                    // 启动轮询任务状态
+                    pollScanStatus(taskId, processingTime);
+                },
+                error: function(xhr, status, error) {
+                    $('#scan-loading').hide();
+                    $('#scan-results').show();
+
+                    let errorMsg = '启动扫描任务失败';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMsg += ': ' + xhr.responseJSON.error;
+                    } else if (error) {
+                        errorMsg += ': ' + error;
+                    }
+
+                    showError(errorMsg);
+                    $('#scan-error-retry').show();
+                }
+            });
+        }
+
+        // 轮询扫描任务状态
+        function pollScanStatus(taskId, startTime) {
+            let elapsedTime = startTime || 0;
+            let pollInterval;
+
+            // 立即执行一次，然后设置定时器
+            checkStatus();
+
+            function checkStatus() {
+                $.ajax({
+                    url: `/api/scan_status/${taskId}`,
+                    type: 'GET',
+                    success: function(response) {
+                        // 更新计时和进度
+                        elapsedTime++;
+                        const progress = response.progress || 0;
+
+                        // 更新进度消息
+                        $('#scan-message').html(`正在扫描市场...<br>
+                            进度: ${progress}% 完成<br>
+                            已处理 ${Math.round(response.total * progress / 100)} / ${response.total} 只股票<br>
+                            耗时: ${elapsedTime}秒`);
+
+                        // 检查任务状态
+                        if (response.status === 'completed') {
+                            // 扫描完成，停止轮询
+                            clearInterval(pollInterval);
+
+                            // 显示结果
+                            renderResults(response.result || []);
+                            $('#scan-loading').hide();
+                            $('#scan-results').show();
+
+                            // 如果结果为空，显示提示
+                            if (!response.result || response.result.length === 0) {
+                                $('#results-table').html('<tr><td colspan="11" class="text-center">未找到符合条件的股票</td></tr>');
+                                $('#result-count').text('0');
+                                $('#export-btn').hide();
+                            }
+
+                        } else if (response.status === 'failed') {
+                            // 扫描失败，停止轮询
+                            clearInterval(pollInterval);
+
+                            $('#scan-loading').hide();
+                            $('#scan-results').show();
+
+                            showError('扫描任务失败: ' + (response.error || '未知错误'));
+                            $('#scan-error-retry').show();
+
+                        } else {
+                            // 任务仍在进行中，继续轮询
+                            // 轮询间隔根据进度动态调整
+                            if (!pollInterval) {
+                                pollInterval = setInterval(checkStatus, 2000);
+                            }
+                        }
+                    },
+                    error: function(xhr, status, error) {
+
+                        // 尝试继续轮询
+                        if (!pollInterval) {
+                            pollInterval = setInterval(checkStatus, 3000);
+                        }
+
+                        // 更新进度消息
+                        $('#scan-message').html(`正在扫描市场...<br>
+                            无法获取最新进度<br>
+                            耗时: ${elapsedTime}秒`);
+                    }
+                });
+            }
+        }
+
+        // 取消扫描任务
+        function cancelScan(taskId) {
+            $.ajax({
+                url: `/api/cancel_scan/${taskId}`,
+                type: 'POST',
+                success: function(response) {
+                    $('#scan-loading').hide();
+                    $('#scan-results').show();
+                    showError('扫描任务已取消');
+                    $('#scan-error-retry').show();
+                },
+                error: function(xhr, status, error) {
+                    console.error('取消扫描任务失败:', error);
+                }
+            });
+        }
+
+        // 渲染扫描结果
+        function renderResults(results) {
+            if (!results || results.length === 0) {
+                $('#results-table').html('<tr><td colspan="11" class="text-center">未找到符合条件的股票</td></tr>');
+                $('#result-count').text('0');
+                $('#export-btn').hide();
+                return;
+            }
+
+            let html = '';
+            results.forEach(result => {
+                // 获取股票评分的颜色类
+                const scoreClass = getScoreColorClass(result.score);
+
+                // 获取MA趋势的类和图标
+                const maTrendClass = getTrendColorClass(result.ma_trend);
+                const maTrendIcon = getTrendIcon(result.ma_trend);
+
+                // 获取价格变动的类和图标
+                const priceChangeClass = result.price_change >= 0 ? 'trend-up' : 'trend-down';
+                const priceChangeIcon = result.price_change >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+
+                html += `
+                    <tr>
+                        <td>${result.stock_code}</td>
+                        <td>${result.stock_name || '未知'}</td>
+                        <td>${result.industry || '-'}</td>
+                        <td><span class="badge ${scoreClass}">${result.score}</span></td>
+                        <td>${formatNumber(result.price)}</td>
+                        <td class="${priceChangeClass}">${priceChangeIcon} ${formatPercent(result.price_change)}</td>
+                        <td>${formatNumber(result.rsi)}</td>
+                        <td class="${maTrendClass}">${maTrendIcon} ${result.ma_trend}</td>
+                        <td>${result.volume_status}</td>
+                        <td>${result.recommendation}</td>
+                        <td>
+                            <a href="/stock_detail/${result.stock_code}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-chart-line"></i> 详情
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#results-table').html(html);
+            $('#result-count').text(results.length);
+            $('#export-btn').show();
+        }
+
+        // 导出到CSV
+        function exportToCSV() {
+            // 获取表格数据
+            const table = document.querySelector('#scan-results table');
+            let csv = [];
+            let rows = table.querySelectorAll('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                let row = [], cols = rows[i].querySelectorAll('td, th');
+
+                for (let j = 0; j < cols.length - 1; j++) { // 跳过最后一列（操作列）
+                    // 获取单元格的文本内容，去除HTML标签
+                    let text = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/,/g, '，');
+                    row.push(text);
+                }
+
+                csv.push(row.join(','));
+            }
+
+            // 下载CSV文件
+            const csvString = csv.join('\n');
+            const filename = '市场扫描结果_' + new Date().toISOString().slice(0, 10) + '.csv';
+
+            const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+
+            link.style.display = 'none';
+            document.body.appendChild(link);
+
+            link.click();
+
+            document.body.removeChild(link);
+        }
+    });
+
+
+    // 添加到script部分
+    let currentTaskId = null;  // 存储当前任务ID
+
+    // 取消按钮点击事件
+    $('#cancel-scan-btn').click(function() {
+        if (currentTaskId) {
+            cancelScan(currentTaskId);
+        } else {
+            $('#scan-loading').hide();
+            $('#scan-results').show();
+        }
+    });
+
+    // 修改启动成功处理
+    function handleStartSuccess(response) {
+        const taskId = response.task_id;
+        currentTaskId = taskId;  // 保存当前任务ID
+
+        if (!taskId) {
+            showError('启动扫描任务失败：未获取到任务ID');
+            $('#scan-loading').hide();
+            $('#scan-results').show();
+            $('#scan-error-retry').show();
+            return;
+        }
+
+        // 启动轮询任务状态
+        pollScanStatus(taskId, 0);
+    }
+
+</script>
+{% endblock %}

@@ -1,0 +1,449 @@
+{% extends "layout.html" %}
+
+{% block title %}情景预测 - {{ stock_code }} - 智能分析系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+    <div id="alerts-container"></div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header py-2">
+                    <h5 class="mb-0">多情景预测</h5>
+                </div>
+                <div class="card-body py-2">
+                    <form id="scenario-form" class="row g-2">
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">股票代码</span>
+                                <input type="text" class="form-control" id="stock-code" placeholder="例如: 600519" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">市场</span>
+                                <select class="form-select" id="market-type">
+                                    <option value="A" selected>A股</option>
+                                    <option value="HK">港股</option>
+                                    <option value="US">美股</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">预测天数</span>
+                                <select class="form-select" id="days">
+                                    <option value="30">30天</option>
+                                    <option value="60" selected>60天</option>
+                                    <option value="90">90天</option>
+                                    <option value="180">180天</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="fas fa-chart-line"></i> 预测
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-panel" class="text-center py-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 mb-0">正在生成预测结果...</p>
+        <p class="text-muted small mt-2">
+            <i class="fas fa-info-circle"></i>
+            AI分析需要一些时间，请耐心等待
+        </p>
+    </div>
+
+    <div id="scenario-result" style="display: none;">
+        <div class="row g-3 mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header py-2">
+                        <h5 class="mb-0">价格预测图</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="price-prediction-chart" style="height: 400px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header py-2 bg-success text-white">
+                        <h5 class="mb-0">乐观情景</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <h6>目标价</h6>
+                                <h3 id="optimistic-price" class="text-success">--</h3>
+                            </div>
+                            <div>
+                                <h6>预期涨幅</h6>
+                                <h3 id="optimistic-change" class="text-success">--</h3>
+                            </div>
+                        </div>
+                        <p id="optimistic-analysis" class="small"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header py-2 bg-primary text-white">
+                        <h5 class="mb-0">中性情景</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <h6>目标价</h6>
+                                <h3 id="neutral-price" class="text-primary">--</h3>
+                            </div>
+                            <div>
+                                <h6>预期涨幅</h6>
+                                <h3 id="neutral-change" class="text-primary">--</h3>
+                            </div>
+                        </div>
+                        <p id="neutral-analysis" class="small"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header py-2 bg-danger text-white">
+                        <h5 class="mb-0">悲观情景</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <h6>目标价</h6>
+                                <h3 id="pessimistic-price" class="text-danger">--</h3>
+                            </div>
+                            <div>
+                                <h6>预期涨幅</h6>
+                                <h3 id="pessimistic-change" class="text-danger">--</h3>
+                            </div>
+                        </div>
+                        <p id="pessimistic-analysis" class="small"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header py-2">
+                        <h5 class="mb-0">风险与机会</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-danger"><i class="fas fa-exclamation-triangle"></i> 风险因素</h6>
+                                <ul id="risk-factors" class="small"></ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-success"><i class="fas fa-lightbulb"></i> 有利因素</h6>
+                                <ul id="opportunity-factors" class="small"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('#scenario-form').submit(function(e) {
+            e.preventDefault();
+            const stockCode = $('#stock-code').val().trim();
+            const marketType = $('#market-type').val();
+            const days = $('#days').val();
+
+            if (!stockCode) {
+                showError('请输入股票代码！');
+                return;
+            }
+
+            fetchScenarioPrediction(stockCode, marketType, days);
+        });
+    });
+
+    function fetchScenarioPrediction(stockCode, marketType, days) {
+        $('#loading-panel').show();
+        $('#scenario-result').hide();
+
+        $.ajax({
+            url: '/api/scenario_predict',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                stock_code: stockCode,
+                market_type: marketType,
+                days: parseInt(days)
+            }),
+            success: function(response) {
+                $('#loading-panel').hide();
+                renderScenarioPrediction(response, stockCode);
+                $('#scenario-result').show();
+            },
+            error: function(xhr, status, error) {
+                $('#loading-panel').hide();
+                let errorMsg = '获取情景预测失败';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg += ': ' + xhr.responseJSON.error;
+                } else if (error) {
+                    errorMsg += ': ' + error;
+                }
+                showError(errorMsg);
+            }
+        });
+    }
+
+    function renderScenarioPrediction(data, stockCode) {
+    // 设置乐观情景数据
+    $('#optimistic-price').text('¥' + formatNumber(data.optimistic.target_price, 2));
+    $('#optimistic-change').text(formatPercent(data.optimistic.change_percent, 2));
+    $('#optimistic-analysis').text(data.optimistic_analysis || '暂无分析');
+
+    // 设置中性情景数据
+    $('#neutral-price').text('¥' + formatNumber(data.neutral.target_price, 2));
+    $('#neutral-change').text(formatPercent(data.neutral.change_percent, 2));
+    $('#neutral-analysis').text(data.neutral_analysis || '暂无分析');
+
+    // 设置悲观情景数据
+    $('#pessimistic-price').text('¥' + formatNumber(data.pessimistic.target_price, 2));
+    $('#pessimistic-change').text(formatPercent(data.pessimistic.change_percent, 2));
+    $('#pessimistic-analysis').text(data.pessimistic_analysis || '暂无分析');
+
+    // 设置风险与机会因素 - 使用API返回的数据
+    if (data.risk_factors && Array.isArray(data.risk_factors)) {
+        // 使用API返回的风险因素
+        $('#risk-factors').html('');
+        data.risk_factors.forEach(factor => {
+            $('#risk-factors').append(`<li>${factor}</li>`);
+        });
+    } else {
+        // 如果API没有返回风险因素，使用默认值
+        setDefaultRiskFactors();
+    }
+
+    if (data.opportunity_factors && Array.isArray(data.opportunity_factors)) {
+        // 使用API返回的机会因素
+        $('#opportunity-factors').html('');
+        data.opportunity_factors.forEach(factor => {
+            $('#opportunity-factors').append(`<li>${factor}</li>`);
+        });
+    } else {
+        // 如果API没有返回机会因素，使用默认值
+        setDefaultOpportunityFactors();
+    }
+
+    // 渲染价格预测图表
+    renderPricePredictionChart(data);
+}
+
+    // 将原来的 setDefaultRiskOpportunityFactors 函数拆分为两个函数
+    function setDefaultRiskFactors() {
+        // 示例风险因素
+        const riskFactors = [
+            '宏观经济下行压力增大',
+            '行业政策收紧可能性',
+            '原材料价格上涨',
+            '市场竞争加剧',
+            '技术迭代风险'
+        ];
+
+        // 填充HTML
+        $('#risk-factors').html('');
+        riskFactors.forEach(factor => {
+            $('#risk-factors').append(`<li>${factor}</li>`);
+        });
+    }
+
+    function setDefaultOpportunityFactors() {
+        // 示例有利因素
+        const opportunityFactors = [
+            '行业景气度持续向好',
+            '公司新产品上市',
+            '成本控制措施见效',
+            '产能扩张计划',
+            '国际市场开拓机会'
+        ];
+
+        // 填充HTML
+        $('#opportunity-factors').html('');
+        opportunityFactors.forEach(factor => {
+            $('#opportunity-factors').append(`<li>${factor}</li>`);
+        });
+    }
+
+    // 保留原函数，但内部调用新的拆分函数
+    function setDefaultRiskOpportunityFactors() {
+        setDefaultRiskFactors();
+        setDefaultOpportunityFactors();
+    }
+    
+    function setDefaultRiskOpportunityFactors() {
+        // 示例风险因素
+        const riskFactors = [
+            '宏观经济下行压力增大',
+            '行业政策收紧可能性',
+            '原材料价格上涨',
+            '市场竞争加剧',
+            '技术迭代风险'
+        ];
+
+        // 示例有利因素
+        const opportunityFactors = [
+            '行业景气度持续向好',
+            '公司新产品上市',
+            '成本控制措施见效',
+            '产能扩张计划',
+            '国际市场开拓机会'
+        ];
+
+        // 填充HTML
+        $('#risk-factors').html('');
+        riskFactors.forEach(factor => {
+            $('#risk-factors').append(`<li>${factor}</li>`);
+        });
+
+        $('#opportunity-factors').html('');
+        opportunityFactors.forEach(factor => {
+            $('#opportunity-factors').append(`<li>${factor}</li>`);
+        });
+    }
+
+    function renderPricePredictionChart(data) {
+        // 准备数据
+        const currentPrice = data.current_price;
+
+        // 提取日期和价格路径
+        const dates = Object.keys(data.optimistic.path);
+        const optimisticPrices = Object.values(data.optimistic.path);
+        const neutralPrices = Object.values(data.neutral.path);
+        const pessimisticPrices = Object.values(data.pessimistic.path);
+
+        const options = {
+            series: [
+                {
+                    name: '乐观情景',
+                    data: optimisticPrices.map((price, i) => ({
+                        x: new Date(dates[i]),
+                        y: price
+                    }))
+                },
+                {
+                    name: '中性情景',
+                    data: neutralPrices.map((price, i) => ({
+                        x: new Date(dates[i]),
+                        y: price
+                    }))
+                },
+                {
+                    name: '悲观情景',
+                    data: pessimisticPrices.map((price, i) => ({
+                        x: new Date(dates[i]),
+                        y: price
+                    }))
+                }
+            ],
+            chart: {
+                height: 400,
+                type: 'line',
+                zoom: {
+                    enabled: true
+                },
+                toolbar: {
+                    show: true
+                }
+            },
+            colors: ['#20E647', '#2E93fA', '#FF4560'],
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                curve: 'smooth',
+                width: [3, 3, 3]
+            },
+            title: {
+                text: '多情景预测',
+                align: 'left'
+            },
+            grid: {
+                borderColor: '#e7e7e7',
+                row: {
+                    colors: ['#f3f3f3', 'transparent'],
+                    opacity: 0.5
+                },
+            },
+            markers: {
+                size: 1
+            },
+            xaxis: {
+                type: 'datetime',
+                title: {
+                    text: '日期'
+                }
+            },
+            yaxis: {
+                title: {
+                    text: '价格 (¥)'
+                },
+                labels: {
+                    formatter: function(val) {
+                        return formatNumber(val, 2);
+                    }
+                }
+            },
+            legend: {
+                position: 'top',
+                horizontalAlign: 'right'
+            },
+            tooltip: {
+                shared: true,
+                intersect: false,
+                y: {
+                    formatter: function(value) {
+                        return '¥' + formatNumber(value, 2);
+                    }
+                }
+            },
+            annotations: {
+                yaxis: [
+                    {
+                        y: currentPrice,
+                        borderColor: '#000',
+                        label: {
+                            borderColor: '#000',
+                            style: {
+                                color: '#fff',
+                                background: '#000'
+                            },
+                            text: '当前价格: ¥' + formatNumber(currentPrice, 2)
+                        }
+                    }
+                ]
+            }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#price-prediction-chart"), options);
+        chart.render();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,650 @@
+{% extends "layout.html" %}
+
+{% block title %}智能仪表盘 - 智能分析系统{% endblock %}
+
+{% block content %}
+<div class="page-transition">
+    <!-- Enhanced Material Design 3 分析表单 -->
+    <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+        <div class="md3-card-header">
+            <h2 class="md3-card-title">
+                <i class="material-icons">analytics</i> 智能股票分析
+            </h2>
+            <p class="md3-card-subtitle">输入股票代码开始全方位分析</p>
+        </div>
+        <div class="md3-card-body">
+            <form id="analysis-form" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 20px; align-items: end;">
+                <div class="md3-text-field md3-text-field-outlined">
+                    <input type="text" class="md3-text-field-input" id="stock-code" placeholder=" " required>
+                    <label class="md3-text-field-label">股票代码</label>
+                    <div class="md3-text-field-supporting-text">例如：000001、AAPL、0700.HK</div>
+                </div>
+
+                <div class="md3-text-field md3-text-field-outlined">
+                    <select class="md3-text-field-input" id="market-type">
+                        <option value="A" selected>A股</option>
+                        <option value="HK">港股</option>
+                        <option value="US">美股</option>
+                    </select>
+                    <label class="md3-text-field-label">市场类型</label>
+                </div>
+
+                <div class="md3-text-field md3-text-field-outlined">
+                    <select class="md3-text-field-input" id="analysis-period">
+                        <option value="1m">1个月</option>
+                        <option value="3m">3个月</option>
+                        <option value="6m">6个月</option>
+                        <option value="1y" selected>1年</option>
+                    </select>
+                    <label class="md3-text-field-label">分析周期</label>
+                </div>
+
+                <button type="submit" class="md3-button md3-button-filled md3-button-large">
+                    <i class="material-icons">trending_up</i> 开始分析
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 分析结果区域 -->
+    <div id="analysis-result" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+            <!-- 股票概要卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-left">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">info</i> 股票概要
+                    </h3>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 32px;">
+                        <div style="flex: 1;">
+                            <h2 id="stock-name" style="margin: 0 0 8px 0; font-family: var(--md-sys-typescale-headline-large-font); font-size: 28px; font-weight: 500; color: var(--md-sys-color-on-surface);"></h2>
+                            <p id="stock-info" style="margin: 0; color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);"></p>
+                        </div>
+                        <div class="md3-stock-price">
+                            <div id="stock-price" class="md3-stock-price-current md3-financial-value-large"></div>
+                            <div id="price-change" class="md3-stock-price-change"></div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+                        <div>
+                            <div style="margin-bottom: 24px;">
+                                <span style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-label-large-font); font-size: var(--md-sys-typescale-label-large-size); font-weight: 500;">综合评分</span>
+                                <div style="margin-top: 12px;">
+                                    <span id="total-score" class="md3-score-indicator md3-score-good" style="font-size: 18px; padding: 12px 20px;"></span>
+                                </div>
+                            </div>
+                            <div>
+                                <span style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-label-large-font); font-size: var(--md-sys-typescale-label-large-size); font-weight: 500;">投资建议</span>
+                                <p id="recommendation" style="margin: 12px 0 0 0; font-weight: 500; color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-body-large-font);"></p>
+                            </div>
+                        </div>
+                        <div>
+                            <span style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-label-large-font); font-size: var(--md-sys-typescale-label-large-size); font-weight: 500; margin-bottom: 12px; display: block;">技术面指标</span>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">RSI</span>
+                                    <span id="rsi-value" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">MA趋势</span>
+                                    <span id="ma-trend"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">MACD信号</span>
+                                    <span id="macd-signal"></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">波动率</span>
+                                    <span id="volatility" class="md3-financial-value" style="color: var(--md-sys-color-on-surface);"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 多维度评分卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-right">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">radar</i> 多维度评分
+                    </h3>
+                </div>
+                <div class="md3-card-body">
+                    <div id="radar-chart" style="height: 240px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 价格图表卡片 -->
+        <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+            <div class="md3-card-header">
+                <h3 class="md3-card-title">
+                    <i class="material-icons">candlestick_chart</i> 价格与技术指标
+                </h3>
+                <p class="md3-card-subtitle">K线图表与技术分析指标</p>
+            </div>
+            <div class="md3-card-body" style="padding: 0;">
+                <div id="price-chart" style="height: 450px;"></div>
+            </div>
+        </div>
+
+        <!-- 支撑压力位和AI分析 -->
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 32px;">
+            <!-- 支撑与压力位卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-left">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">layers</i> 支撑与压力位
+                    </h3>
+                    <p class="md3-card-subtitle">关键价格水平分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div style="overflow-x: auto;">
+                        <table class="md3-data-table">
+                            <thead>
+                                <tr>
+                                    <th>类型</th>
+                                    <th>价格</th>
+                                    <th>距离</th>
+                                </tr>
+                            </thead>
+                            <tbody id="support-resistance-table">
+                                <!-- 支撑压力位数据将在JS中动态填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI分析建议卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-right">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">psychology</i> AI分析建议
+                    </h3>
+                    <p class="md3-card-subtitle">人工智能深度分析与投资建议</p>
+                </div>
+                <div class="md3-card-body">
+                    <div id="ai-analysis" style="color: var(--md-sys-color-on-surface); line-height: 1.7; font-family: var(--md-sys-typescale-body-large-font);">
+                        <!-- AI分析结果将在JS中动态填充 -->
+                        <div style="display: flex; justify-content: center; align-items: center; height: 240px; flex-direction: column; gap: 16px;">
+                            <div class="md3-progress-indicator"></div>
+                            <span style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font);">AI正在分析中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let stockData = [];
+    let analysisResult = null;
+
+    // 提交表单进行分析
+    $('#analysis-form').submit(function(e) {
+        e.preventDefault();
+        const stockCode = $('#stock-code').val().trim();
+        const marketType = $('#market-type').val();
+        const period = $('#analysis-period').val();
+
+        if (!stockCode) {
+            showError('请输入股票代码！');
+            return;
+        }
+
+        // 重定向到股票详情页
+        window.location.href = `/stock_detail/${stockCode}?market_type=${marketType}&period=${period}`;
+    });
+
+    // Format AI analysis text
+    function formatAIAnalysis(text) {
+        if (!text) return '';
+
+        // First, make the text safe for HTML
+        const safeText = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+        // Replace basic Markdown elements
+        let formatted = safeText
+            // Bold text with ** or __
+            .replace(/\*\*(.*?)\*\*/g, '<strong class="keyword">$1</strong>')
+            .replace(/__(.*?)__/g, '<strong>$1</strong>')
+
+            // Italic text with * or _
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/_(.*?)_/g, '<em>$1</em>')
+
+            // Headers
+            .replace(/^# (.*?)$/gm, '<h4 class="mt-3 mb-2">$1</h4>')
+            .replace(/^## (.*?)$/gm, '<h5 class="mt-2 mb-2">$1</h5>')
+
+            // Apply special styling to financial terms
+            .replace(/支撑位/g, '<span class="keyword">支撑位</span>')
+            .replace(/压力位/g, '<span class="keyword">压力位</span>')
+            .replace(/趋势/g, '<span class="keyword">趋势</span>')
+            .replace(/均线/g, '<span class="keyword">均线</span>')
+            .replace(/MACD/g, '<span class="term">MACD</span>')
+            .replace(/RSI/g, '<span class="term">RSI</span>')
+            .replace(/KDJ/g, '<span class="term">KDJ</span>')
+
+            // Highlight price patterns and movements
+            .replace(/([上涨升])/g, '<span class="trend-up">$1</span>')
+            .replace(/([下跌降])/g, '<span class="trend-down">$1</span>')
+            .replace(/(买入|做多|多头|突破)/g, '<span class="trend-up">$1</span>')
+            .replace(/(卖出|做空|空头|跌破)/g, '<span class="trend-down">$1</span>')
+
+            // Highlight price values (matches patterns like 31.25, 120.50)
+            .replace(/(\d+\.\d{2})/g, '<span class="price">$1</span>')
+
+            // Convert line breaks to paragraph tags
+            .replace(/\n\n+/g, '</p><p class="analysis-para">')
+            .replace(/\n/g, '<br>');
+
+        // Wrap in paragraph tags for consistent styling
+        return '<p class="analysis-para">' + formatted + '</p>';
+    }
+
+    // 获取股票数据
+    function fetchStockData(stockCode, marketType, period) {
+        showLoading();
+
+        $.ajax({
+            url: `/api/stock_data?stock_code=${stockCode}&market_type=${marketType}&period=${period}`,
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+
+                // 检查response是否有data属性
+                if (!response.data) {
+                    hideLoading();
+                    showError('响应格式不正确: 缺少data字段');
+                    return;
+                }
+
+                if (response.data.length === 0) {
+                    hideLoading();
+                    showError('未找到股票数据');
+                    return;
+                }
+
+                stockData = response.data;
+
+                // 获取增强分析数据
+                fetchEnhancedAnalysis(stockCode, marketType);
+            },
+            error: function(xhr, status, error) {
+                hideLoading();
+
+                let errorMsg = '获取股票数据失败';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg += ': ' + xhr.responseJSON.error;
+                } else if (error) {
+                    errorMsg += ': ' + error;
+                }
+                showError(errorMsg);
+            }
+        });
+    }
+
+    // 获取增强分析数据
+    function fetchEnhancedAnalysis(stockCode, marketType) {
+
+        $.ajax({
+            url: '/api/enhanced_analysis?_=' + new Date().getTime(),
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                stock_code: stockCode,
+                market_type: marketType
+            }),
+            success: function(response) {
+
+                if (!response.result) {
+                    hideLoading();
+                    showError('增强分析响应格式不正确');
+                    return;
+                }
+
+                analysisResult = response.result;
+                renderAnalysisResult();
+                hideLoading();
+                $('#analysis-result').show();
+            },
+            error: function(xhr, status, error) {
+                hideLoading();
+
+                let errorMsg = '获取分析数据失败';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg += ': ' + xhr.responseJSON.error;
+                } else if (error) {
+                    errorMsg += ': ' + error;
+                }
+                showError(errorMsg);
+            }
+        });
+    }
+
+    // 渲染分析结果
+    function renderAnalysisResult() {
+        if (!analysisResult) return;
+
+        // 渲染股票基本信息
+        $('#stock-name').text(analysisResult.basic_info.stock_name + ' (' + analysisResult.basic_info.stock_code + ')');
+        $('#stock-info').text(analysisResult.basic_info.industry + ' | ' + analysisResult.basic_info.analysis_date);
+
+        // 渲染价格信息
+        $('#stock-price').text('¥' + formatNumber(analysisResult.price_data.current_price, 2));
+        const priceChangeClass = analysisResult.price_data.price_change >= 0 ? 'md3-text-success' : 'md3-text-error';
+        const priceChangeIcon = analysisResult.price_data.price_change >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+        $('#price-change').html(`<span class="${priceChangeClass}">${priceChangeIcon} ${formatNumber(analysisResult.price_data.price_change_value, 2)} (${formatPercent(analysisResult.price_data.price_change, 2)})</span>`);
+
+        // 渲染评分和建议
+        const scoreClass = getMD3ScoreColorClass(analysisResult.scores.total_score);
+        $('#total-score').text(analysisResult.scores.total_score).removeClass().addClass(`md3-badge ${scoreClass}`);
+        $('#recommendation').text(analysisResult.recommendation.action);
+
+        // 渲染技术指标
+        $('#rsi-value').text(formatNumber(analysisResult.technical_analysis.indicators.rsi, 2));
+
+        const maTrendClass = getMD3TrendColorClass(analysisResult.technical_analysis.trend.ma_trend);
+        const maTrendIcon = getTrendIcon(analysisResult.technical_analysis.trend.ma_trend);
+        $('#ma-trend').html(`<span class="${maTrendClass}">${maTrendIcon} ${analysisResult.technical_analysis.trend.ma_status}</span>`);
+
+        const macdSignal = analysisResult.technical_analysis.indicators.macd > analysisResult.technical_analysis.indicators.macd_signal ? 'BUY' : 'SELL';
+        const macdClass = macdSignal === 'BUY' ? 'md3-text-success' : 'md3-text-error';
+        const macdIcon = macdSignal === 'BUY' ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
+        $('#macd-signal').html(`<span class="${macdClass}">${macdIcon} ${macdSignal}</span>`);
+
+        $('#volatility').text(formatPercent(analysisResult.technical_analysis.indicators.volatility, 2));
+
+        // 渲染支撑压力位
+        let supportResistanceHtml = '';
+
+        // 渲染压力位
+        if (analysisResult.technical_analysis.support_resistance.resistance &&
+            analysisResult.technical_analysis.support_resistance.resistance.short_term &&
+            analysisResult.technical_analysis.support_resistance.resistance.short_term.length > 0) {
+            const resistance = analysisResult.technical_analysis.support_resistance.resistance.short_term[0];
+            const distance = ((resistance - analysisResult.price_data.current_price) / analysisResult.price_data.current_price * 100).toFixed(2);
+            supportResistanceHtml += `
+                <tr style="border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+                    <td style="padding: 12px 8px;"><span class="md3-badge md3-badge-error">短期压力</span></td>
+                    <td style="padding: 12px 8px;">${formatNumber(resistance, 2)}</td>
+                    <td style="padding: 12px 8px;">+${distance}%</td>
+                </tr>
+            `;
+        }
+
+        if (analysisResult.technical_analysis.support_resistance.resistance &&
+            analysisResult.technical_analysis.support_resistance.resistance.medium_term &&
+            analysisResult.technical_analysis.support_resistance.resistance.medium_term.length > 0) {
+            const resistance = analysisResult.technical_analysis.support_resistance.resistance.medium_term[0];
+            const distance = ((resistance - analysisResult.price_data.current_price) / analysisResult.price_data.current_price * 100).toFixed(2);
+            supportResistanceHtml += `
+                <tr style="border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+                    <td style="padding: 12px 8px;"><span class="md3-badge md3-badge-warning">中期压力</span></td>
+                    <td style="padding: 12px 8px;">${formatNumber(resistance, 2)}</td>
+                    <td style="padding: 12px 8px;">+${distance}%</td>
+                </tr>
+            `;
+        }
+
+        // 渲染支撑位
+        if (analysisResult.technical_analysis.support_resistance.support &&
+            analysisResult.technical_analysis.support_resistance.support.short_term &&
+            analysisResult.technical_analysis.support_resistance.support.short_term.length > 0) {
+            const support = analysisResult.technical_analysis.support_resistance.support.short_term[0];
+            const distance = ((support - analysisResult.price_data.current_price) / analysisResult.price_data.current_price * 100).toFixed(2);
+            supportResistanceHtml += `
+                <tr style="border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+                    <td style="padding: 12px 8px;"><span class="md3-badge md3-badge-success">短期支撑</span></td>
+                    <td style="padding: 12px 8px;">${formatNumber(support, 2)}</td>
+                    <td style="padding: 12px 8px;">${distance}%</td>
+                </tr>
+            `;
+        }
+
+        if (analysisResult.technical_analysis.support_resistance.support &&
+            analysisResult.technical_analysis.support_resistance.support.medium_term &&
+            analysisResult.technical_analysis.support_resistance.support.medium_term.length > 0) {
+            const support = analysisResult.technical_analysis.support_resistance.support.medium_term[0];
+            const distance = ((support - analysisResult.price_data.current_price) / analysisResult.price_data.current_price * 100).toFixed(2);
+            supportResistanceHtml += `
+                <tr style="border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+                    <td style="padding: 12px 8px;"><span class="md3-badge md3-badge-primary">中期支撑</span></td>
+                    <td style="padding: 12px 8px;">${formatNumber(support, 2)}</td>
+                    <td style="padding: 12px 8px;">${distance}%</td>
+                </tr>
+            `;
+        }
+
+        $('#support-resistance-table').html(supportResistanceHtml);
+
+        // 渲染AI分析
+        $('#ai-analysis').html(formatAIAnalysis(analysisResult.ai_analysis));
+
+        // 绘制雷达图
+        renderRadarChart();
+
+        // 绘制价格图表
+        renderPriceChart();
+    }
+
+    // 绘制雷达图
+    function renderRadarChart() {
+        if (!analysisResult) return;
+
+        const options = {
+            series: [{
+                name: '评分',
+                data: [
+                    analysisResult.scores.trend_score || 0,
+                    analysisResult.scores.indicators_score || 0,
+                    analysisResult.scores.support_resistance_score || 0,
+                    analysisResult.scores.volatility_volume_score || 0
+                ]
+            }],
+            chart: {
+                height: 200,
+                type: 'radar',
+                toolbar: {
+                    show: false
+                }
+            },
+            title: {
+                text: '多维度技术分析评分',
+                style: {
+                    fontSize: '14px'
+                }
+            },
+            xaxis: {
+                categories: ['趋势分析', '技术指标', '支撑压力位', '波动与成交量']
+            },
+            yaxis: {
+                max: 10,
+                min: 0
+            },
+            fill: {
+                opacity: 0.5,
+                colors: ['#4e73df']
+            },
+            markers: {
+                size: 4
+            }
+        };
+
+        // 清除旧图表
+        $('#radar-chart').empty();
+
+        const chart = new ApexCharts(document.querySelector("#radar-chart"), options);
+        chart.render();
+    }
+
+    // 绘制价格图表
+    function renderPriceChart() {
+        if (!stockData || stockData.length === 0) return;
+
+        // 准备价格数据
+        const seriesData = [];
+
+        // 添加蜡烛图数据
+        const candleData = stockData.map(item => ({
+            x: new Date(item.date),
+            y: [item.open, item.high, item.low, item.close]
+        }));
+        seriesData.push({
+            name: '价格',
+            type: 'candlestick',
+            data: candleData
+        });
+
+        // 添加均线数据
+        const ma5Data = stockData.map(item => ({
+            x: new Date(item.date),
+            y: item.MA5
+        }));
+        seriesData.push({
+            name: 'MA5',
+            type: 'line',
+            data: ma5Data
+        });
+
+        const ma20Data = stockData.map(item => ({
+            x: new Date(item.date),
+            y: item.MA20
+        }));
+        seriesData.push({
+            name: 'MA20',
+            type: 'line',
+            data: ma20Data
+        });
+
+        const ma60Data = stockData.map(item => ({
+            x: new Date(item.date),
+            y: item.MA60
+        }));
+        seriesData.push({
+            name: 'MA60',
+            type: 'line',
+            data: ma60Data
+        });
+
+        // 创建图表
+        const options = {
+            series: seriesData,
+            chart: {
+                height: 400,
+                type: 'candlestick',
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            title: {
+                text: `${analysisResult.basic_info.stock_name} (${analysisResult.basic_info.stock_code}) 价格走势`,
+                align: 'left',
+                style: {
+                    fontSize: '14px'
+                }
+            },
+            xaxis: {
+                type: 'datetime'
+            },
+            yaxis: {
+                tooltip: {
+                    enabled: true
+                },
+                labels: {
+                    formatter: function(value) {
+                        return formatNumber(value, 2);  // 统一使用2位小数
+                    }
+                }
+            },
+            tooltip: {
+                shared: true,
+                custom: [
+                    function({ seriesIndex, dataPointIndex, w }) {
+                        if (seriesIndex === 0) {
+                            const o = w.globals.seriesCandleO[seriesIndex][dataPointIndex];
+                            const h = w.globals.seriesCandleH[seriesIndex][dataPointIndex];
+                            const l = w.globals.seriesCandleL[seriesIndex][dataPointIndex];
+                            const c = w.globals.seriesCandleC[seriesIndex][dataPointIndex];
+
+                            return `
+                                <div class="apexcharts-tooltip-candlestick">
+                                    <div>开盘: <span>${formatNumber(o, 2)}</span></div>
+                                    <div>最高: <span>${formatNumber(h, 2)}</span></div>
+                                    <div>最低: <span>${formatNumber(l, 2)}</span></div>
+                                    <div>收盘: <span>${formatNumber(c, 2)}</span></div>
+                                </div>
+                            `;
+                        }
+                        return '';
+                    }
+                ]
+            },
+            plotOptions: {
+                candlestick: {
+                    colors: {
+                        upward: '#2E7D32',  // Material Design 3 Success Color
+                        downward: '#D32F2F'  // Material Design 3 Error Color
+                    }
+                }
+            },
+            colors: ['#1565C0', '#00695C', '#F57C00', '#D32F2F', '#2E7D32']  // MD3 Color Palette
+        };
+
+        // 清除旧图表
+        $('#price-chart').empty();
+
+        const chart = new ApexCharts(document.querySelector("#price-chart"), options);
+        chart.render();
+    }
+
+    // Enhanced Material Design 3 辅助函数
+    function getMD3ScoreColorClass(score) {
+        if (score >= 80) return 'md3-score-excellent';
+        if (score >= 60) return 'md3-score-good';
+        if (score >= 40) return 'md3-score-fair';
+        return 'md3-score-poor';
+    }
+
+    function getMD3TrendColorClass(trend) {
+        return trend === 'UP' ? 'trend-up' : 'trend-down';
+    }
+
+    function getTrendIcon(trend) {
+        return trend === 'UP' ? '<i class="material-icons">trending_up</i>' : '<i class="material-icons">trending_down</i>';
+    }
+
+    function formatFinancialValue(value, decimals = 2) {
+        if (value === null || value === undefined) return '-';
+        return parseFloat(value).toFixed(decimals);
+    }
+
+    function formatPercentageChange(value, decimals = 2) {
+        if (value === null || value === undefined) return '-';
+        const formatted = parseFloat(value).toFixed(decimals);
+        const sign = value >= 0 ? '+' : '';
+        return `${sign}${formatted}%`;
+    }
+</script>
+{% endblock %}

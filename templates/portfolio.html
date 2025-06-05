@@ -1,0 +1,602 @@
+
+{% extends "layout.html" %}
+
+{% block title %}投资组合 - 智能分析系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div id="alerts-container"></div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <h5 class="mb-0">我的投资组合</h5>
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addStockModal">
+                        <i class="fas fa-plus"></i> 添加股票
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="portfolio-empty" class="text-center py-4">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <p>您的投资组合还是空的，请添加股票</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStockModal">
+                            <i class="fas fa-plus"></i> 添加股票
+                        </button>
+                    </div>
+
+                    <div id="portfolio-content" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>代码</th>
+                                        <th>名称</th>
+                                        <th>行业</th>
+                                        <th>持仓比例</th>
+                                        <th>当前价格</th>
+                                        <th>今日涨跌</th>
+                                        <th>综合评分</th>
+                                        <th>建议</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="portfolio-table">
+                                    <!-- 投资组合数据将在JS中动态填充 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="portfolio-analysis" class="row mb-4" style="display: none;">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">投资组合评分</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <div id="portfolio-score-chart"></div>
+                            <h4 id="portfolio-score" class="mt-2">--</h4>
+                            <p class="text-muted">综合评分</p>
+                        </div>
+                        <div class="col-md-8">
+                            <h5 class="mb-3">维度评分</h5>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>技术面</span>
+                                    <span id="technical-score">--/40</span>
+                                </div>
+                                <div class="progress">
+                                    <div id="technical-progress" class="progress-bar bg-info" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>基本面</span>
+                                    <span id="fundamental-score">--/40</span>
+                                </div>
+                                <div class="progress">
+                                    <div id="fundamental-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>资金面</span>
+                                    <span id="capital-flow-score">--/20</span>
+                                </div>
+                                <div class="progress">
+                                    <div id="capital-flow-progress" class="progress-bar bg-warning" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">行业分布</h5>
+                </div>
+                <div class="card-body">
+                    <div id="industry-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="portfolio-recommendations" class="row mb-4" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">投资建议</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group" id="recommendations-list">
+                        <!-- 投资建议将在JS中动态填充 -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加股票模态框 -->
+<div class="modal fade" id="addStockModal" tabindex="-1" aria-labelledby="addStockModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addStockModalLabel">添加股票到投资组合</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-stock-form">
+                    <div class="mb-3">
+                        <label for="add-stock-code" class="form-label">股票代码</label>
+                        <input type="text" class="form-control" id="add-stock-code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add-stock-weight" class="form-label">持仓比例 (%)</label>
+                        <input type="number" class="form-control" id="add-stock-weight" min="1" max="100" value="10" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="add-stock-btn">添加</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 投资组合数据
+    let portfolio = [];
+    let portfolioAnalysis = null;
+
+    $(document).ready(function() {
+        // 从本地存储加载投资组合
+        loadPortfolio();
+
+        // 添加股票按钮点击事件
+        $('#add-stock-btn').click(function() {
+            addStockToPortfolio();
+        });
+    });
+
+    // 从本地存储加载投资组合
+    function loadPortfolio() {
+        const savedPortfolio = localStorage.getItem('portfolio');
+        if (savedPortfolio) {
+            portfolio = JSON.parse(savedPortfolio);
+            renderPortfolio(); // 先用缓存数据渲染一次，避免白屏
+            
+            // 为每个股票获取最新数据
+            portfolio.forEach((stock, index) => {
+                fetchStockData(stock.stock_code);
+            });
+        }
+    }
+
+    // 渲染投资组合
+    function renderPortfolio() {
+        if (portfolio.length === 0) {
+            $('#portfolio-empty').show();
+            $('#portfolio-content').hide();
+            $('#portfolio-analysis').hide();
+            $('#portfolio-recommendations').hide();
+            return;
+        }
+
+        $('#portfolio-empty').hide();
+        $('#portfolio-content').show();
+        $('#portfolio-analysis').show();
+        $('#portfolio-recommendations').show();
+
+        let html = '';
+        portfolio.forEach((stock, index) => {
+            const scoreClass = getScoreColorClass(stock.score || 0);
+            const priceChangeClass = (stock.price_change || 0) >= 0 ? 'trend-up' : 'trend-down';
+            const priceChangeIcon = (stock.price_change || 0) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+
+            // 显示加载状态或实际数据
+            const stockName = stock.loading ?
+                '<span class="text-muted"><i class="fas fa-spinner fa-pulse"></i> 加载中...</span>' :
+                (stock.stock_name || '未知');
+
+            const industryDisplay = stock.industry || '-';
+
+            html += `
+                <tr>
+                    <td>${stock.stock_code}</td>
+                    <td>${stockName}</td>
+                    <td>${industryDisplay}</td>
+                    <td>${stock.weight}%</td>
+                    <td>${stock.price ? formatNumber(stock.price, 2) : '-'}</td>
+                    <td class="${priceChangeClass}">${stock.price_change ? (priceChangeIcon + ' ' + formatPercent(stock.price_change, 2)) : '-'}</td>
+                    <td><span class="badge ${scoreClass}">${stock.score || '-'}</span></td>
+                    <td>${stock.recommendation || '-'}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="/stock_detail/${stock.stock_code}" class="btn btn-outline-primary">
+                                <i class="fas fa-chart-line"></i>
+                            </a>
+                            <button type="button" class="btn btn-outline-danger" onclick="removeStock(${index})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        $('#portfolio-table').html(html);
+    }
+
+    // 添加股票到投资组合
+    function addStockToPortfolio() {
+        const stockCode = $('#add-stock-code').val().trim();
+        const weight = parseInt($('#add-stock-weight').val() || 10);
+
+        if (!stockCode) {
+            showError('请输入股票代码');
+            return;
+        }
+
+        // 检查是否已存在
+        const existingIndex = portfolio.findIndex(s => s.stock_code === stockCode);
+        if (existingIndex >= 0) {
+            showError('此股票已在投资组合中');
+            return;
+        }
+
+        // 添加到投资组合
+        portfolio.push({
+            stock_code: stockCode,
+            weight: weight,
+            stock_name: '加载中...',
+            industry: '-',
+            price: null,
+            price_change: null,
+            score: null,
+            recommendation: null,
+            loading: true,
+            isNew: true  // 标记为新添加的股票
+        });
+
+        savePortfolio();
+        $('#addStockModal').modal('hide');
+        $('#add-stock-form')[0].reset();
+        fetchStockData(stockCode);
+    }
+
+    // 添加重试加载功能
+    function retryFetchStockData(stockCode) {
+        showInfo(`正在重新获取 ${stockCode} 的数据...`);
+        fetchStockData(stockCode);
+    }
+
+    // 在渲染函数中添加重试按钮
+    html += `
+        <tr>
+            <td>${stock.stock_code}</td>
+            <td>${stockName} ${stock.stock_name === '获取失败' ?
+                `<button class="btn btn-sm btn-link p-0 ml-2" onclick="retryFetchStockData('${stock.stock_code}')">
+                    <i class="fas fa-sync-alt"></i> 重试
+                </button>` : ''}
+            </td>
+            ...
+    `;
+
+    // 获取股票数据
+    function fetchStockData(stockCode) {
+        const index = portfolio.findIndex(s => s.stock_code === stockCode);
+        if (index < 0) return;
+
+        // 显示加载状态
+        portfolio[index].loading = true;
+        savePortfolio();
+        renderPortfolio();
+
+        $.ajax({
+            url: '/analyze',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                stock_codes: [stockCode],
+                market_type: 'A'
+            }),
+            success: function(response) {
+                if (response.results && response.results.length > 0) {
+                    const result = response.results[0];
+
+                    portfolio[index].stock_name = result.stock_name || '未知';
+                    portfolio[index].industry = result.industry || '未知';
+                    portfolio[index].price = result.price || 0;
+                    portfolio[index].price_change = result.price_change || 0;
+                    portfolio[index].score = result.score || 0;
+                    portfolio[index].recommendation = result.recommendation || '-';
+                    portfolio[index].loading = false;
+
+                    savePortfolio();
+                    analyzePortfolio();
+                    
+                    // 只在添加新股票时显示成功消息
+                    if (portfolio[index].isNew) {
+                        showSuccess(`已添加 ${result.stock_name || stockCode} 到投资组合`);
+                        portfolio[index].isNew = false;
+                    }
+                } else {
+                    portfolio[index].stock_name = '数据获取失败';
+                    portfolio[index].loading = false;
+                    savePortfolio();
+                    renderPortfolio();
+                    showError(`获取股票 ${stockCode} 数据失败`);
+                }
+            },
+            error: function(error) {
+                portfolio[index].stock_name = '获取失败';
+                portfolio[index].loading = false;
+                savePortfolio();
+                renderPortfolio();
+                showError(`获取股票 ${stockCode} 数据失败`);
+            }
+        });
+    }
+
+    // 从投资组合中移除股票
+    function removeStock(index) {
+        if (confirm('确定要从投资组合中移除此股票吗？')) {
+            portfolio.splice(index, 1);
+            savePortfolio();
+            renderPortfolio();
+            analyzePortfolio();
+        }
+    }
+
+    // 保存投资组合到本地存储
+    function savePortfolio() {
+        localStorage.setItem('portfolio', JSON.stringify(portfolio));
+        renderPortfolio();
+    }
+
+
+    // 分析投资组合
+    function analyzePortfolio() {
+        if (portfolio.length === 0) return;
+
+        // 计算投资组合评分
+        let totalScore = 0;
+        let totalWeight = 0;
+        let industriesMap = {};
+
+        portfolio.forEach(stock => {
+            if (stock.score) {
+                totalScore += stock.score * stock.weight;
+                totalWeight += stock.weight;
+
+                // 统计行业分布
+                const industry = stock.industry || '其他';
+                if (industriesMap[industry]) {
+                    industriesMap[industry] += stock.weight;
+                } else {
+                    industriesMap[industry] = stock.weight;
+                }
+            }
+        });
+
+        // 确保总权重不为零
+        if (totalWeight > 0) {
+            const portfolioScore = Math.round(totalScore / totalWeight);
+
+            // 更新评分显示
+            $('#portfolio-score').text(portfolioScore);
+
+            // 简化的维度评分计算
+            const technicalScore = Math.round(portfolioScore * 0.4);
+            const fundamentalScore = Math.round(portfolioScore * 0.4);
+            const capitalFlowScore = Math.round(portfolioScore * 0.2);
+
+            $('#technical-score').text(technicalScore + '/40');
+            $('#fundamental-score').text(fundamentalScore + '/40');
+            $('#capital-flow-score').text(capitalFlowScore + '/20');
+
+            $('#technical-progress').css('width', (technicalScore / 40 * 100) + '%');
+            $('#fundamental-progress').css('width', (fundamentalScore / 40 * 100) + '%');
+            $('#capital-flow-progress').css('width', (capitalFlowScore / 20 * 100) + '%');
+
+            // 更新投资组合评分图表
+            renderPortfolioScoreChart(portfolioScore);
+
+            // 更新行业分布图表
+            renderIndustryChart(industriesMap);
+
+            // 生成投资建议
+            generateRecommendations(portfolioScore);
+        }
+    }
+
+    // 渲染投资组合评分图表
+    function renderPortfolioScoreChart(score) {
+        const options = {
+            series: [score],
+            chart: {
+                height: 150,
+                type: 'radialBar',
+            },
+            plotOptions: {
+                radialBar: {
+                    hollow: {
+                        size: '70%',
+                    },
+                    dataLabels: {
+                        show: false
+                    }
+                }
+            },
+            colors: [getScoreColor(score)],
+            stroke: {
+                lineCap: 'round'
+            }
+        };
+
+        // 清除旧图表
+        $('#portfolio-score-chart').empty();
+
+        const chart = new ApexCharts(document.querySelector("#portfolio-score-chart"), options);
+        chart.render();
+    }
+
+    // 渲染行业分布图表
+    function renderIndustryChart(industriesMap) {
+        // 转换数据格式为图表所需
+        const seriesData = [];
+        const labels = [];
+
+        for (const industry in industriesMap) {
+            if (industriesMap.hasOwnProperty(industry)) {
+                seriesData.push(industriesMap[industry]);
+                labels.push(industry);
+            }
+        }
+
+        const options = {
+            series: seriesData,
+            chart: {
+                type: 'pie',
+                height: 300
+            },
+            labels: labels,
+            responsive: [{
+                breakpoint: 480,
+                options: {
+                    chart: {
+                        height: 200
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }],
+            tooltip: {
+                y: {
+                    formatter: function(value) {
+                        return value + '%';
+                    }
+                }
+            }
+        };
+
+        // 清除旧图表
+        $('#industry-chart').empty();
+
+        const chart = new ApexCharts(document.querySelector("#industry-chart"), options);
+        chart.render();
+    }
+
+    // 生成投资建议
+    function generateRecommendations(portfolioScore) {
+        let recommendations = [];
+
+        // 根据总分生成基本建议
+        if (portfolioScore >= 80) {
+            recommendations.push({
+                text: '您的投资组合整体评级优秀，当前市场环境下建议保持较高仓位',
+                type: 'success'
+            });
+        } else if (portfolioScore >= 60) {
+            recommendations.push({
+                text: '您的投资组合整体评级良好，可以考虑适度增加仓位',
+                type: 'primary'
+            });
+        } else if (portfolioScore >= 40) {
+            recommendations.push({
+                text: '您的投资组合整体评级一般，建议持币观望，等待更好的入场时机',
+                type: 'warning'
+            });
+        } else {
+            recommendations.push({
+                text: '您的投资组合整体评级较弱，建议减仓规避风险',
+                type: 'danger'
+            });
+        }
+
+        // 检查行业集中度
+        const industries = {};
+        let totalWeight = 0;
+
+        portfolio.forEach(stock => {
+            const industry = stock.industry || '其他';
+            if (industries[industry]) {
+                industries[industry] += stock.weight;
+            } else {
+                industries[industry] = stock.weight;
+            }
+            totalWeight += stock.weight;
+        });
+
+        // 计算行业集中度
+        let maxIndustryWeight = 0;
+        let maxIndustry = '';
+
+        for (const industry in industries) {
+            if (industries[industry] > maxIndustryWeight) {
+                maxIndustryWeight = industries[industry];
+                maxIndustry = industry;
+            }
+        }
+
+        const industryConcentration = maxIndustryWeight / totalWeight;
+
+        if (industryConcentration > 0.5) {
+            recommendations.push({
+                text: `行业集中度较高，${maxIndustry}行业占比${Math.round(industryConcentration * 100)}%，建议适当分散投资降低非系统性风险`,
+                type: 'warning'
+            });
+        }
+
+        // 检查需要调整的个股
+        const weakStocks = portfolio.filter(stock => stock.score && stock.score < 40);
+        if (weakStocks.length > 0) {
+            const stockNames = weakStocks.map(s => `${s.stock_name}(${s.stock_code})`).join('、');
+            recommendations.push({
+                text: `以下个股评分较低，建议考虑调整：${stockNames}`,
+                type: 'danger'
+            });
+        }
+
+        const strongStocks = portfolio.filter(stock => stock.score && stock.score > 70);
+        if (strongStocks.length > 0 && portfolioScore < 60) {
+            const stockNames = strongStocks.map(s => `${s.stock_name}(${s.stock_code})`).join('、');
+            recommendations.push({
+                text: `以下个股表现强势，可考虑增加配置比例：${stockNames}`,
+                type: 'success'
+            });
+        }
+
+        // 渲染建议
+        let html = '';
+        recommendations.forEach(rec => {
+            html += `<li class="list-group-item list-group-item-${rec.type}">${rec.text}</li>`;
+        });
+
+        $('#recommendations-list').html(html);
+    }
+
+    // 获取评分颜色
+    function getScoreColor(score) {
+        if (score >= 80) return '#28a745'; // 绿色
+        if (score >= 60) return '#007bff'; // 蓝色
+        if (score >= 40) return '#ffc107'; // 黄色
+        return '#dc3545'; // 红色
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  stockanal_sys:
+    build: .
+    ports:
+      - "8888:8888"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - FLASK_APP=web_server.py
+    volumes:
+    #  - sqlite_data:/app/data # 如果需要持久化数据，请使用sqlite_data 在env文件中设置USE_DATABASE=True
+      - .env:/app/.env # 环境变量.env文件
+    depends_on:
+      - redis
+  # redis 缓存
+  redis:
+    image: redis:6.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
+  #sqlite_data: 
