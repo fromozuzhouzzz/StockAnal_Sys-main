@@ -321,7 +321,72 @@
         --md-sys-color-on-warning: #FFFFFF;
         --md-sys-color-warning-container: #E65100;
         --md-sys-color-on-warning-container: #FFE0B2;
+
+        /* Info Colors - Dark */
+        --md-sys-color-info: #42A5F5;
+        --md-sys-color-on-info: #FFFFFF;
+        --md-sys-color-info-container: #0D47A1;
+        --md-sys-color-on-info-container: #E3F2FD;
     }
+}
+
+/* Manual Dark Theme Override */
+[data-theme="dark"] {
+    /* Primary Colors - Dark Financial Blue */
+    --md-sys-color-primary: #90CAF9;
+    --md-sys-color-on-primary: #0D47A1;
+    --md-sys-color-primary-container: #1565C0;
+    --md-sys-color-on-primary-container: #E3F2FD;
+
+    /* Secondary Colors - Dark Professional Gray */
+    --md-sys-color-secondary: #B0BEC5;
+    --md-sys-color-on-secondary: #263238;
+    --md-sys-color-secondary-container: #37474F;
+    --md-sys-color-on-secondary-container: #ECEFF1;
+
+    /* Tertiary Colors - Dark Teal */
+    --md-sys-color-tertiary: #80CBC4;
+    --md-sys-color-on-tertiary: #004D40;
+    --md-sys-color-tertiary-container: #00695C;
+    --md-sys-color-on-tertiary-container: #E0F2F1;
+
+    /* Surface Colors - Dark */
+    --md-sys-color-surface: #121212;
+    --md-sys-color-on-surface: #E0E0E0;
+    --md-sys-color-surface-variant: #1E1E1E;
+    --md-sys-color-on-surface-variant: #BDBDBD;
+    --md-sys-color-surface-container: #1F1F1F;
+    --md-sys-color-surface-container-low: #1A1A1A;
+    --md-sys-color-surface-container-high: #242424;
+    --md-sys-color-surface-container-highest: #2A2A2A;
+
+    /* Outline Colors - Dark */
+    --md-sys-color-outline: #757575;
+    --md-sys-color-outline-variant: #424242;
+
+    /* Error Colors - Dark */
+    --md-sys-color-error: #EF5350;
+    --md-sys-color-on-error: #FFFFFF;
+    --md-sys-color-error-container: #B71C1C;
+    --md-sys-color-on-error-container: #FFCDD2;
+
+    /* Success Colors - Dark */
+    --md-sys-color-success: #66BB6A;
+    --md-sys-color-on-success: #FFFFFF;
+    --md-sys-color-success-container: #1B5E20;
+    --md-sys-color-on-success-container: #C8E6C9;
+
+    /* Warning Colors - Dark */
+    --md-sys-color-warning: #FFA726;
+    --md-sys-color-on-warning: #FFFFFF;
+    --md-sys-color-warning-container: #E65100;
+    --md-sys-color-on-warning-container: #FFE0B2;
+
+    /* Info Colors - Dark */
+    --md-sys-color-info: #42A5F5;
+    --md-sys-color-on-info: #FFFFFF;
+    --md-sys-color-info-container: #0D47A1;
+    --md-sys-color-on-info-container: #E3F2FD;
 }
 
 /* Enhanced Base Styles */
@@ -667,6 +732,26 @@ body {
 
 .md3-icon-button-filled:hover {
     box-shadow: var(--md-sys-elevation-level1);
+}
+
+/* Theme Switcher Styles */
+.md3-theme-switcher {
+    display: flex;
+    align-items: center;
+}
+
+.md3-theme-switcher .md3-icon-button {
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.md3-theme-switcher .md3-icon-button:hover {
+    background-color: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    transform: scale(1.1);
+}
+
+.md3-theme-switcher .md3-icon-button:active {
+    transform: scale(0.95);
 }
 
 /* Enhanced Material Design 3 Form Fields */

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能分析系统 - 主题切换演示</title>
+    <!-- Enhanced Google Fonts for Material Design 3 -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Material Design Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="static/md3-styles.css">
+    <style>
+        /* 演示页面特定样式 */
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .demo-section {
+            margin-bottom: 40px;
+        }
+        
+        .demo-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--md-sys-color-primary);
+        }
+        
+        .demo-description {
+            margin-bottom: 20px;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+    </style>
+</head>
+<body>
+    <!-- Enhanced Material Design 3 Top Navigation -->
+    <nav class="md3-navbar">
+        <a class="md3-navbar-brand" href="/">
+            <i class="material-icons">trending_up</i>
+            智能分析系统
+        </a>
+
+        <div class="md3-navbar-nav">
+            <div class="md3-nav-item">
+                <a class="md3-nav-link active" href="/">
+                    <i class="material-icons">home</i> 主页
+                </a>
+            </div>
+            <div class="md3-nav-item">
+                <a class="md3-nav-link" href="/risk_monitor">
+                    <i class="material-icons">warning</i> 风险监控
+                </a>
+            </div>
+        </div>
+        
+        <!-- 主题切换开关 -->
+        <div class="md3-theme-switcher" style="margin-left: auto;">
+            <button id="global-theme-toggle" class="md3-icon-button" title="切换主题">
+                <i class="material-icons" id="global-theme-icon">light_mode</i>
+            </button>
+        </div>
+    </nav>
+
+    <div class="demo-container">
+        <div class="demo-section">
+            <h1 class="demo-title">主题切换功能演示</h1>
+            <p class="demo-description">
+                点击右上角的主题切换按钮，可以在明亮模式和暗黑模式之间切换。主题设置会自动保存到本地存储。
+            </p>
+        </div>
+
+        <div class="demo-section">
+            <h2 class="demo-title">个股风险分析页面重新设计</h2>
+            <p class="demo-description">
+                以下是重新设计的个股风险分析结果页面，采用Material Design 3设计系统，布局更紧凑，内容更有条理。
+            </p>
+
+            <!-- 模拟个股风险分析结果 -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+                <!-- 风险概览卡片 -->
+                <div class="md3-card md3-card-elevated md3-animate-slide-in-left">
+                    <div class="md3-card-header">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div>
+                                <h3 class="md3-card-title">
+                                    <i class="material-icons">shield</i> 风险概览
+                                </h3>
+                            </div>
+                            <span class="md3-badge md3-badge-high">中等风险</span>
+                        </div>
+                    </div>
+                    <div class="md3-card-body">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 32px;">
+                            <div style="flex: 1;">
+                                <h2 style="margin: 0 0 8px 0; font-family: var(--md-sys-typescale-headline-large-font); font-size: 28px; font-weight: 500; color: var(--md-sys-color-on-surface);">000001</h2>
+                                <p style="margin: 0; color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);">平安银行 - 银行业</p>
+                            </div>
+                            <div>
+                                <div style="height: 140px; width: 140px; background: var(--md-sys-color-primary-container); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <span style="font-size: 24px; font-weight: 600; color: var(--md-sys-color-on-primary-container);">65</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 16px;">风险预警</h4>
+                            <div class="md3-alert md3-alert-warning">
+                                <i class="material-icons">warning</i>
+                                <div class="md3-alert-content">
+                                    <div class="md3-alert-title">波动率风险</div>
+                                    <div class="md3-alert-message">当前波动率较高，建议关注市场动向</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 风险构成卡片 -->
+                <div class="md3-card md3-card-elevated md3-animate-slide-in-right">
+                    <div class="md3-card-header">
+                        <h3 class="md3-card-title">
+                            <i class="material-icons">radar</i> 风险构成
+                        </h3>
+                        <p class="md3-card-subtitle">多维度风险评估雷达图</p>
+                    </div>
+                    <div class="md3-card-body">
+                        <div style="height: 280px; background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-medium); display: flex; align-items: center; justify-content: center;">
+                            <span style="color: var(--md-sys-color-on-surface-variant);">雷达图区域</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Material Design 3 风险指标详情 -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                <!-- 波动率风险卡片 -->
+                <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.1s;">
+                    <div class="md3-card-header">
+                        <h3 class="md3-card-title">
+                            <i class="material-icons">trending_up</i> 波动率风险
+                        </h3>
+                        <p class="md3-card-subtitle">价格波动性分析</p>
+                    </div>
+                    <div class="md3-card-body">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div>
+                                <div class="md3-metrics-grid" style="grid-template-columns: 1fr; gap: 12px;">
+                                    <div class="md3-metric-item">
+                                        <div class="md3-metric-label">当前波动率</div>
+                                        <div class="md3-metric-value">2.45%</div>
+                                    </div>
+                                    <div class="md3-metric-item">
+                                        <div class="md3-metric-label">变化率</div>
+                                        <div class="md3-metric-value">+0.32%</div>
+                                    </div>
+                                    <div class="md3-metric-item">
+                                        <div class="md3-metric-label">风险等级</div>
+                                        <div class="md3-metric-value">中等</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 16px;">
+                                    <div class="md3-body-small" style="color: var(--md-sys-color-on-surface-variant);">波动率处于正常范围内，但需要持续关注</div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="height: 180px; background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-medium); display: flex; align-items: center; justify-content: center;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">波动率图表</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 趋势风险卡片 -->
+                <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.2s;">
+                    <div class="md3-card-header">
+                        <h3 class="md3-card-title">
+                            <i class="material-icons">show_chart</i> 趋势风险
+                        </h3>
+                        <p class="md3-card-subtitle">价格趋势分析</p>
+                    </div>
+                    <div class="md3-card-body">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div>
+                                <div class="md3-metrics-grid" style="grid-template-columns: 1fr; gap: 12px;">
+                                    <div class="md3-metric-item">
+                                        <div class="md3-metric-label">当前趋势</div>
+                                        <div class="md3-metric-value">上升</div>
+                                    </div>
+                                    <div class="md3-metric-item">
+                                        <div class="md3-metric-label">均线关系</div>
+                                        <div class="md3-metric-value">多头排列</div>
+                                    </div>
+                                    <div class="md3-metric-item">
+                                        <div class="md3-metric-label">风险等级</div>
+                                        <div class="md3-metric-value">低</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 16px;">
+                                    <div class="md3-body-small" style="color: var(--md-sys-color-on-surface-variant);">趋势向好，短期内风险较低</div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="height: 180px; background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-medium); display: flex; align-items: center; justify-content: center;">
+                                    <span style="color: var(--md-sys-color-on-surface-variant);">趋势图表</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 主题切换功能
+        function initThemeToggle() {
+            const themeToggle = document.getElementById('global-theme-toggle');
+            const themeIcon = document.getElementById('global-theme-icon');
+            const body = document.body;
+            
+            // 从localStorage获取保存的主题
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            
+            // 应用保存的主题
+            if (savedTheme === 'dark') {
+                body.setAttribute('data-theme', 'dark');
+                themeIcon.textContent = 'dark_mode';
+                themeToggle.title = '切换到浅色模式';
+            } else {
+                body.removeAttribute('data-theme');
+                themeIcon.textContent = 'light_mode';
+                themeToggle.title = '切换到深色模式';
+            }
+            
+            // 主题切换事件
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = body.getAttribute('data-theme');
+                
+                if (currentTheme === 'dark') {
+                    // 切换到浅色模式
+                    body.removeAttribute('data-theme');
+                    themeIcon.textContent = 'light_mode';
+                    themeToggle.title = '切换到深色模式';
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    // 切换到深色模式
+                    body.setAttribute('data-theme', 'dark');
+                    themeIcon.textContent = 'dark_mode';
+                    themeToggle.title = '切换到浅色模式';
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        }
+
+        // 页面加载完成后初始化主题切换
+        document.addEventListener('DOMContentLoaded', function() {
+            initThemeToggle();
+        });
+    </script>
+</body>
+</html>

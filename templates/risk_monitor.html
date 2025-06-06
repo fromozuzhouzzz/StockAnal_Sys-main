@@ -125,90 +125,150 @@
             </div>
         </div>
 
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">波动率风险</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>波动率指标</h6>
-                                <p><span class="text-muted">当前波动率:</span> <span id="current-volatility" class="fw-bold"></span></p>
-                                <p><span class="text-muted">变化率:</span> <span id="volatility-change" class="fw-bold"></span></p>
-                                <p><span class="text-muted">风险等级:</span> <span id="volatility-risk-level" class="fw-bold"></span></p>
-                                <p class="small text-muted" id="volatility-comment"></p>
+        <!-- Enhanced Material Design 3 风险指标详情 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- 波动率风险卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.1s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">trending_up</i> 波动率风险
+                    </h3>
+                    <p class="md3-card-subtitle">价格波动性分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <div class="md3-metrics-grid" style="grid-template-columns: 1fr; gap: 12px;">
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">当前波动率</div>
+                                    <div id="current-volatility" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">变化率</div>
+                                    <div id="volatility-change" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">风险等级</div>
+                                    <div id="volatility-risk-level" class="md3-metric-value"></div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <div id="volatility-chart" style="height: 150px;"></div>
+                            <div style="margin-top: 16px;">
+                                <div class="md3-body-small" style="color: var(--md-sys-color-on-surface-variant);" id="volatility-comment"></div>
                             </div>
+                        </div>
+                        <div>
+                            <div id="volatility-chart" style="height: 180px;"></div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">趋势风险</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>趋势指标</h6>
-                                <p><span class="text-muted">当前趋势:</span> <span id="current-trend" class="fw-bold"></span></p>
-                                <p><span class="text-muted">均线关系:</span> <span id="ma-relationship" class="fw-bold"></span></p>
-                                <p><span class="text-muted">风险等级:</span> <span id="trend-risk-level" class="fw-bold"></span></p>
-                                <p class="small text-muted" id="trend-comment"></p>
+
+            <!-- 趋势风险卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.2s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">show_chart</i> 趋势风险
+                    </h3>
+                    <p class="md3-card-subtitle">价格趋势分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <div class="md3-metrics-grid" style="grid-template-columns: 1fr; gap: 12px;">
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">当前趋势</div>
+                                    <div id="current-trend" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">均线关系</div>
+                                    <div id="ma-relationship" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">风险等级</div>
+                                    <div id="trend-risk-level" class="md3-metric-value"></div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <div id="trend-chart" style="height: 150px;"></div>
+                            <div style="margin-top: 16px;">
+                                <div class="md3-body-small" style="color: var(--md-sys-color-on-surface-variant);" id="trend-comment"></div>
                             </div>
+                        </div>
+                        <div>
+                            <div id="trend-chart" style="height: 180px;"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">反转风险</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>反转信号</h6>
-                                <p><span class="text-muted">反转信号数:</span> <span id="reversal-signals" class="fw-bold"></span></p>
-                                <p><span class="text-muted">可能方向:</span> <span id="reversal-direction" class="fw-bold"></span></p>
-                                <p><span class="text-muted">风险等级:</span> <span id="reversal-risk-level" class="fw-bold"></span></p>
-                                <p class="small text-muted" id="reversal-comment"></p>
+        <!-- Enhanced Material Design 3 风险指标详情 - 第二行 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- 反转风险卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.3s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">swap_vert</i> 反转风险
+                    </h3>
+                    <p class="md3-card-subtitle">价格反转信号分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <div class="md3-metrics-grid" style="grid-template-columns: 1fr; gap: 12px;">
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">反转信号数</div>
+                                    <div id="reversal-signals" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">可能方向</div>
+                                    <div id="reversal-direction" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">风险等级</div>
+                                    <div id="reversal-risk-level" class="md3-metric-value"></div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <div id="reversal-chart" style="height: 150px;"></div>
+                            <div style="margin-top: 16px;">
+                                <div class="md3-body-small" style="color: var(--md-sys-color-on-surface-variant);" id="reversal-comment"></div>
                             </div>
+                        </div>
+                        <div>
+                            <div id="reversal-chart" style="height: 180px;"></div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header py-2">
-                        <h5 class="mb-0">成交量风险</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>成交量指标</h6>
-                                <p><span class="text-muted">成交量比率:</span> <span id="volume-ratio" class="fw-bold"></span></p>
-                                <p><span class="text-muted">成交量模式:</span> <span id="volume-pattern" class="fw-bold"></span></p>
-                                <p><span class="text-muted">风险等级:</span> <span id="volume-risk-level" class="fw-bold"></span></p>
-                                <p class="small text-muted" id="volume-comment"></p>
+
+            <!-- 成交量风险卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.4s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">bar_chart</i> 成交量风险
+                    </h3>
+                    <p class="md3-card-subtitle">成交量异常分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <div class="md3-metrics-grid" style="grid-template-columns: 1fr; gap: 12px;">
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">成交量比率</div>
+                                    <div id="volume-ratio" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">成交量模式</div>
+                                    <div id="volume-pattern" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">风险等级</div>
+                                    <div id="volume-risk-level" class="md3-metric-value"></div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <div id="volume-chart" style="height: 150px;"></div>
+                            <div style="margin-top: 16px;">
+                                <div class="md3-body-small" style="color: var(--md-sys-color-on-surface-variant);" id="volume-comment"></div>
                             </div>
+                        </div>
+                        <div>
+                            <div id="volume-chart" style="height: 180px;"></div>
                         </div>
                     </div>
                 </div>
@@ -218,21 +278,6 @@
 
     <!-- Enhanced Material Design 3 投资组合风险分析结果 -->
     <div id="portfolio-risk-result" style="display: none;" class="md3-animate-fade-in">
-        <!-- 主题切换按钮 -->
-        <div class="md3-theme-switcher-container" style="margin-bottom: 24px;">
-            <div class="md3-card md3-card-outlined" style="padding: 16px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <i class="material-icons" style="color: var(--md-sys-color-primary);">palette</i>
-                    <span class="md3-body-medium">界面主题</span>
-                </div>
-                <div class="md3-theme-toggle">
-                    <button id="theme-toggle-btn" class="md3-button md3-button-outlined" style="padding: 8px 16px; min-height: 36px;">
-                        <i class="material-icons" id="theme-icon">light_mode</i>
-                        <span id="theme-text" style="margin-left: 8px;">浅色模式</span>
-                    </button>
-                </div>
-            </div>
-        </div>
 
         <!-- Enhanced Material Design 3 风险概览区域 -->
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
@@ -450,23 +495,6 @@
 }
 
 /* Enhanced Material Design 3 Portfolio Risk Analysis Styles */
-.md3-theme-switcher-container {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background-color: var(--md-sys-color-surface);
-    padding: 8px 0;
-    margin: -8px 0 16px 0;
-}
-
-.md3-theme-toggle button {
-    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
-}
-
-.md3-theme-toggle button:hover {
-    background-color: var(--md-sys-color-primary-container);
-    color: var(--md-sys-color-on-primary-container);
-}
 
 .md3-metric-item {
     padding: 16px;
