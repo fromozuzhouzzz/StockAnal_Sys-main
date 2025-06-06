@@ -73,15 +73,15 @@
                     <table class="md3-data-table">
                         <thead>
                             <tr>
-                                <th>序号</th>
-                                <th>概念/行业</th>
-                                <th>行业指数</th>
-                                <th>涨跌幅</th>
-                                <th>流入资金(亿)</th>
-                                <th>流出资金(亿)</th>
-                                <th>净额(亿)</th>
-                                <th>公司家数</th>
-                                <th>操作</th>
+                                <th style="text-align: center;">序号</th>
+                                <th style="text-align: left;">概念/行业</th>
+                                <th style="text-align: right;">行业指数</th>
+                                <th style="text-align: center;">涨跌幅</th>
+                                <th style="text-align: right;">流入资金(亿)</th>
+                                <th style="text-align: right;">流出资金(亿)</th>
+                                <th style="text-align: right;">净额(亿)</th>
+                                <th style="text-align: center;">公司家数</th>
+                                <th style="text-align: center;">操作</th>
                             </tr>
                         </thead>
                         <tbody id="concept-flow-table">
@@ -107,13 +107,13 @@
                     <table class="md3-data-table">
                         <thead>
                             <tr>
-                                <th>代码</th>
-                                <th>名称</th>
-                                <th>最新价</th>
-                                <th>涨跌幅</th>
-                                <th>主力净流入</th>
-                                <th>主力净流入占比</th>
-                                <th>操作</th>
+                                <th style="text-align: center;">代码</th>
+                                <th style="text-align: left;">名称</th>
+                                <th style="text-align: right;">最新价</th>
+                                <th style="text-align: center;">涨跌幅</th>
+                                <th style="text-align: right;">主力净流入</th>
+                                <th style="text-align: right;">主力净流入占比</th>
+                                <th style="text-align: center;">操作</th>
                             </tr>
                         </thead>
                         <tbody id="concept-stocks-table">
@@ -183,18 +183,18 @@
                     <table class="md3-data-table">
                         <thead>
                             <tr>
-                                <th>序号</th>
-                                <th>代码</th>
-                                <th>名称</th>
-                                <th>最新价</th>
-                                <th>涨跌幅</th>
-                                <th>主力净流入</th>
-                                <th>主力净流入占比</th>
-                                <th>超大单净流入</th>
-                                <th>大单净流入</th>
-                                <th>中单净流入</th>
-                                <th>小单净流入</th>
-                                <th>操作</th>
+                                <th style="text-align: center;">序号</th>
+                                <th style="text-align: center;">代码</th>
+                                <th style="text-align: left;">名称</th>
+                                <th style="text-align: right;">最新价</th>
+                                <th style="text-align: center;">涨跌幅</th>
+                                <th style="text-align: right;">主力净流入</th>
+                                <th style="text-align: right;">主力净流入占比</th>
+                                <th style="text-align: right;">超大单净流入</th>
+                                <th style="text-align: right;">大单净流入</th>
+                                <th style="text-align: right;">中单净流入</th>
+                                <th style="text-align: right;">小单净流入</th>
+                                <th style="text-align: center;">操作</th>
                             </tr>
                         </thead>
                         <tbody id="individual-rank-table">
@@ -332,23 +332,24 @@
             html = '<tr><td colspan="9" class="text-center">暂无数据</td></tr>';
         } else {
             data.forEach((item, index) => {
-                const changeClass = parseFloat(item.change_percent) >= 0 ? 'md3-text-bull' : 'md3-text-bear';
-                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="material-icons">arrow_upward</i>' : '<i class="material-icons">arrow_downward</i>';
+                // 使用中国股市习惯：上涨红色向上箭头，下跌绿色向下箭头
+                const changeClass = parseFloat(item.change_percent) >= 0 ? 'trend-up' : 'trend-down';
+                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
 
-                const netFlowClass = parseFloat(item.net_flow) >= 0 ? 'md3-text-bull' : 'md3-text-bear';
-                const netFlowIcon = parseFloat(item.net_flow) >= 0 ? '<i class="material-icons">arrow_upward</i>' : '<i class="material-icons">arrow_downward</i>';
+                const netFlowClass = parseFloat(item.net_flow) >= 0 ? 'trend-up' : 'trend-down';
+                const netFlowIcon = parseFloat(item.net_flow) >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
 
                 html += `
                     <tr>
-                        <td>${item.rank}</td>
+                        <td style="text-align: center;">${item.rank}</td>
                         <td><a href="javascript:void(0)" onclick="loadConceptStocks('${item.sector}')">${item.sector}</a></td>
-                        <td>${formatNumber(item.sector_index, 2)}</td>
-                        <td class="${changeClass}">${changeIcon} ${formatPercent(item.change_percent)}</td>
-                        <td>${formatNumber(item.inflow, 2)}</td>
-                        <td>${formatNumber(item.outflow, 2)}</td>
-                        <td class="${netFlowClass}">${netFlowIcon} ${formatNumber(item.net_flow, 2)}</td>
-                        <td>${item.company_count}</td>
-                        <td>
+                        <td style="text-align: right;">${formatNumber(item.sector_index, 2)}</td>
+                        <td class="${changeClass}" style="text-align: center;">${changeIcon} ${formatPercent(item.change_percent)}</td>
+                        <td style="text-align: right;">${formatNumber(item.inflow, 2)}</td>
+                        <td style="text-align: right;">${formatNumber(item.outflow, 2)}</td>
+                        <td class="${netFlowClass}" style="text-align: right;">${netFlowIcon} ${formatNumber(item.net_flow, 2)}</td>
+                        <td style="text-align: center;">${item.company_count}</td>
+                        <td style="text-align: center;">
                             <button class="md3-button md3-button-outlined md3-button-small" onclick="loadConceptStocks('${item.sector}')">
                                 <i class="material-icons">search</i>
                             </button>
@@ -370,26 +371,27 @@
             html = '<tr><td colspan="7" class="text-center">暂无数据</td></tr>';
         } else {
             data.forEach((item) => {
+                // 使用中国股市习惯：上涨红色向上箭头，下跌绿色向下箭头
                 const changeClass = parseFloat(item.change_percent) >= 0 ? 'trend-up' : 'trend-down';
-                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
 
                 const netFlowClass = parseFloat(item.main_net_inflow) >= 0 ? 'trend-up' : 'trend-down';
-                const netFlowIcon = parseFloat(item.main_net_inflow) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+                const netFlowIcon = parseFloat(item.main_net_inflow) >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
 
                 html += `
                     <tr>
-                        <td>${item.code}</td>
-                        <td>${item.name}</td>
-                        <td>${formatNumber(item.price, 2)}</td>
-                        <td class="${changeClass}">${changeIcon} ${formatPercent(item.change_percent)}</td>
-                        <td class="${netFlowClass}">${netFlowIcon} ${formatMoney(item.main_net_inflow)}</td>
-                        <td class="${netFlowClass}">${formatPercent(item.main_net_inflow_percent)}</td>
-                        <td>
-                            <a href="/stock_detail/${item.code}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-chart-line"></i>
+                        <td style="text-align: center;">${item.code}</td>
+                        <td style="text-align: left;">${item.name}</td>
+                        <td style="text-align: right;">${formatNumber(item.price, 2)}</td>
+                        <td class="${changeClass}" style="text-align: center;">${changeIcon} ${formatPercent(item.change_percent)}</td>
+                        <td class="${netFlowClass}" style="text-align: right;">${netFlowIcon} ${formatMoney(item.main_net_inflow)}</td>
+                        <td class="${netFlowClass}" style="text-align: right;">${formatPercent(item.main_net_inflow_percent)}</td>
+                        <td style="text-align: center; white-space: nowrap;">
+                            <a href="/stock_detail/${item.code}" class="md3-button md3-button-outlined md3-button-small" style="margin-right: 4px;">
+                                <i class="material-icons">trending_up</i>
                             </a>
-                            <button class="btn btn-sm btn-outline-info" onclick="loadIndividualFundFlow('${item.code}')">
-                                <i class="fas fa-money-bill-wave"></i>
+                            <button class="md3-button md3-button-outlined md3-button-small" onclick="loadIndividualFundFlow('${item.code}')">
+                                <i class="material-icons">account_balance</i>
                             </button>
                         </td>
                     </tr>
@@ -469,7 +471,7 @@
             <tr>
                 <td>涨跌幅：</td>
                 <td class="${recent.change_percent >= 0 ? 'trend-up' : 'trend-down'}">
-                    ${recent.change_percent >= 0 ? '↑' : '↓'} ${formatPercent(recent.change_percent)}
+                    ${recent.change_percent >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>'} ${formatPercent(recent.change_percent)}
                 </td>
                 <td>分析周期：</td>
                 <td>${summary.recent_days}天</td>
@@ -477,11 +479,11 @@
             <tr>
                 <td>主力净流入：</td>
                 <td class="${summary.total_main_net_inflow >= 0 ? 'trend-up' : 'trend-down'}">
-                    ${summary.total_main_net_inflow >= 0 ? '↑' : '↓'} ${formatMoney(summary.total_main_net_inflow)}
+                    ${summary.total_main_net_inflow >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>'} ${formatMoney(summary.total_main_net_inflow)}
                 </td>
                 <td>净流入占比：</td>
                 <td class="${summary.avg_main_net_inflow_percent >= 0 ? 'trend-up' : 'trend-down'}">
-                    ${summary.avg_main_net_inflow_percent >= 0 ? '↑' : '↓'} ${formatPercent(summary.avg_main_net_inflow_percent)}
+                    ${summary.avg_main_net_inflow_percent >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>'} ${formatPercent(summary.avg_main_net_inflow_percent)}
                 </td>
             </tr>
             <tr>
@@ -671,31 +673,32 @@
             html = '<tr><td colspan="12" class="text-center">暂无数据</td></tr>';
         } else {
             data.forEach((item) => {
+                // 使用中国股市习惯：上涨红色向上箭头，下跌绿色向下箭头
                 const changeClass = parseFloat(item.change_percent) >= 0 ? 'trend-up' : 'trend-down';
-                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
 
                 const mainNetClass = parseFloat(item.main_net_inflow) >= 0 ? 'trend-up' : 'trend-down';
-                const mainNetIcon = parseFloat(item.main_net_inflow) >= 0 ? '<i class="fas fa-caret-up"></i>' : '<i class="fas fa-caret-down"></i>';
+                const mainNetIcon = parseFloat(item.main_net_inflow) >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
 
                 html += `
                     <tr>
-                        <td>${item.rank}</td>
-                        <td>${item.code}</td>
-                        <td>${item.name}</td>
-                        <td>${formatNumber(item.price, 2)}</td>
-                        <td class="${changeClass}">${changeIcon} ${formatPercent(item.change_percent)}</td>
-                        <td class="${mainNetClass}">${mainNetIcon} ${formatMoney(item.main_net_inflow)}</td>
-                        <td class="${mainNetClass}">${formatPercent(item.main_net_inflow_percent)}</td>
-                        <td>${formatMoney(item.super_large_net_inflow)}</td>
-                        <td>${formatMoney(item.large_net_inflow)}</td>
-                        <td>${formatMoney(item.medium_net_inflow)}</td>
-                        <td>${formatMoney(item.small_net_inflow)}</td>
-                        <td>
-                            <a href="/stock_detail/${item.code}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-chart-line"></i>
+                        <td style="text-align: center;">${item.rank}</td>
+                        <td style="text-align: center;">${item.code}</td>
+                        <td style="text-align: left;">${item.name}</td>
+                        <td style="text-align: right;">${formatNumber(item.price, 2)}</td>
+                        <td class="${changeClass}" style="text-align: center;">${changeIcon} ${formatPercent(item.change_percent)}</td>
+                        <td class="${mainNetClass}" style="text-align: right;">${mainNetIcon} ${formatMoney(item.main_net_inflow)}</td>
+                        <td class="${mainNetClass}" style="text-align: right;">${formatPercent(item.main_net_inflow_percent)}</td>
+                        <td style="text-align: right;">${formatMoney(item.super_large_net_inflow)}</td>
+                        <td style="text-align: right;">${formatMoney(item.large_net_inflow)}</td>
+                        <td style="text-align: right;">${formatMoney(item.medium_net_inflow)}</td>
+                        <td style="text-align: right;">${formatMoney(item.small_net_inflow)}</td>
+                        <td style="text-align: center; white-space: nowrap;">
+                            <a href="/stock_detail/${item.code}" class="md3-button md3-button-outlined md3-button-small" style="margin-right: 4px;">
+                                <i class="material-icons">trending_up</i>
                             </a>
-                            <button class="btn btn-sm btn-outline-info" onclick="loadIndividualFundFlow('${item.code}')">
-                                <i class="fas fa-money-bill-wave"></i>
+                            <button class="md3-button md3-button-outlined md3-button-small" onclick="loadIndividualFundFlow('${item.code}')">
+                                <i class="material-icons">account_balance</i>
                             </button>
                         </td>
                     </tr>
@@ -751,6 +754,20 @@
         }
 
         return value.toFixed(2) + '%';
+    }
+
+    // 格式化数字
+    function formatNumber(value, decimals = 2) {
+        if (value === null || value === undefined) {
+            return '--';
+        }
+
+        value = parseFloat(value);
+        if (isNaN(value)) {
+            return '--';
+        }
+
+        return value.toFixed(decimals);
     }
 
     document.addEventListener('DOMContentLoaded', function() {

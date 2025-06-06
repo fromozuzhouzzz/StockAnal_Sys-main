@@ -1012,19 +1012,21 @@ form[style*="grid-template-columns"] .md3-button {
     line-height: var(--md-sys-typescale-financial-large-line-height);
 }
 
-/* Enhanced Trend Indicators */
+/* Enhanced Trend Indicators - 中国股市习惯：上涨红色，下跌绿色 */
 .trend-up {
-    color: var(--md-sys-color-success);
+    color: #d32f2f; /* 红色表示上涨 */
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    font-weight: 500;
 }
 
 .trend-down {
-    color: var(--md-sys-color-error);
+    color: #2e7d32; /* 绿色表示下跌 */
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    font-weight: 500;
 }
 
 .trend-neutral {
@@ -1103,16 +1105,45 @@ form[style*="grid-template-columns"] .md3-button {
     color: var(--md-sys-color-on-surface-variant);
     border-bottom: 1px solid var(--md-sys-color-outline-variant);
     background-color: var(--md-sys-color-surface-container-high);
+    white-space: nowrap;
+    vertical-align: middle;
 }
 
 .md3-data-table td {
     padding: 12px;
     border-bottom: 1px solid var(--md-sys-color-outline-variant);
     color: var(--md-sys-color-on-surface);
+    vertical-align: middle;
+    white-space: nowrap;
 }
 
 .md3-data-table tr:hover {
     background-color: var(--md-sys-color-surface-container-high);
+}
+
+/* 资金流向表格特定样式 */
+.md3-data-table .financial-number {
+    text-align: right;
+    font-family: var(--md-sys-typescale-financial-medium-font);
+    font-weight: 500;
+}
+
+.md3-data-table .center-align {
+    text-align: center;
+}
+
+.md3-data-table .left-align {
+    text-align: left;
+}
+
+.md3-data-table .action-buttons {
+    text-align: center;
+    white-space: nowrap;
+    min-width: 120px;
+}
+
+.md3-data-table .action-buttons .md3-button {
+    margin: 0 2px;
 }
 
 /* Progress Indicators */
