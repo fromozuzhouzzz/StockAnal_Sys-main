@@ -530,6 +530,11 @@ def fundamental():
 def capital_flow():
     return render_template('capital_flow.html')
 
+# 修复验证页面
+@app.route('/test_fix')
+def test_fix():
+    return render_template('test_fix.html')
+
 
 # 情景预测页面
 @app.route('/scenario_predict')

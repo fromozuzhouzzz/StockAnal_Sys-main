@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>缓存清理指南</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .step {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+        }
+        .keyboard-shortcut {
+            background: #343a40;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="color: #1976d2; text-align: center;">🔧 服务器更新问题解决指南</h1>
+        
+        <div class="warning">
+            <h3>⚠️ 问题描述</h3>
+            <p>本地测试页面显示正常，但服务器上的更改没有生效。这通常是缓存问题导致的。</p>
+        </div>
+
+        <h2>🚀 立即解决方案</h2>
+
+        <div class="step">
+            <h3>步骤1: 强制刷新浏览器</h3>
+            <p><strong>Windows/Linux:</strong> <span class="keyboard-shortcut">Ctrl + F5</span> 或 <span class="keyboard-shortcut">Ctrl + Shift + R</span></p>
+            <p><strong>Mac:</strong> <span class="keyboard-shortcut">Cmd + Shift + R</span></p>
+            <p><strong>或者:</strong> 打开开发者工具(F12) → 右键刷新按钮 → 选择"清空缓存并硬性重新加载"</p>
+        </div>
+
+        <div class="step">
+            <h3>步骤2: 清除浏览器缓存</h3>
+            <p><strong>Chrome:</strong> 设置 → 隐私设置和安全性 → 清除浏览数据 → 选择"缓存的图片和文件"</p>
+            <p><strong>Firefox:</strong> 设置 → 隐私与安全 → Cookie和网站数据 → 清除数据</p>
+            <p><strong>快捷方式:</strong> <span class="keyboard-shortcut">Ctrl + Shift + Delete</span></p>
+        </div>
+
+        <div class="step">
+            <h3>步骤3: 检查文件是否正确上传</h3>
+            <p>确认以下文件已经上传到服务器:</p>
+            <ul>
+                <li><code>templates/capital_flow.html</code></li>
+                <li><code>static/md3-styles.css</code></li>
+            </ul>
+            <p>可以通过SSH或FTP工具检查文件的修改时间是否是最新的。</p>
+        </div>
+
+        <div class="step">
+            <h3>步骤4: 重启Web服务</h3>
+            <p>如果使用的是Flask/Django等Python应用，需要重启服务:</p>
+            <ul>
+                <li><strong>Railway/Render:</strong> 重新部署应用</li>
+                <li><strong>本地服务器:</strong> 重启Python进程</li>
+                <li><strong>Docker:</strong> 重启容器</li>
+            </ul>
+        </div>
+
+        <h2>🔍 高级排查方法</h2>
+
+        <div class="step">
+            <h3>方法1: 添加版本号参数</h3>
+            <p>在CSS和JS文件后添加版本号参数，强制浏览器重新加载:</p>
+            <code>static/md3-styles.css?v=20241201</code>
+        </div>
+
+        <div class="step">
+            <h3>方法2: 检查网络请求</h3>
+            <p>打开浏览器开发者工具(F12) → Network标签 → 刷新页面 → 查看CSS/JS文件是否返回304(缓存)还是200(新内容)</p>
+        </div>
+
+        <div class="step">
+            <h3>方法3: 直接访问文件</h3>
+            <p>直接在浏览器中访问CSS文件，检查内容是否已更新:</p>
+            <code>https://your-domain.com/static/md3-styles.css</code>
+        </div>
+
+        <div class="success">
+            <h3>✅ 验证修复是否成功</h3>
+            <p>修复成功后，您应该看到:</p>
+            <ul>
+                <li>涨跌幅列只显示一个值(箭头+百分比)</li>
+                <li>主力净流入列显示正确的资金数据</li>
+                <li>操作列显示两个按钮</li>
+                <li>所有列都正确对齐</li>
+            </ul>
+        </div>
+
+        <h2>🛡️ 预防措施</h2>
+
+        <div class="step">
+            <h3>1. 添加缓存控制头</h3>
+            <p>在Web服务器配置中为静态文件添加适当的缓存控制头。</p>
+        </div>
+
+        <div class="step">
+            <h3>2. 使用版本控制</h3>
+            <p>为CSS和JS文件添加版本号或哈希值，确保更新时强制刷新。</p>
+        </div>
+
+        <div class="step">
+            <h3>3. 设置开发环境</h3>
+            <p>在开发环境中禁用缓存，便于调试和测试。</p>
+        </div>
+
+        <div style="text-align: center; margin-top: 32px; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+            <p><strong>💡 提示:</strong> 如果以上方法都不起作用，请检查是否在正确的服务器环境中，或者联系服务器管理员确认部署状态。</p>
+        </div>
+    </div>
+</body>
+</html>
