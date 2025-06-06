@@ -171,16 +171,16 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td style="text-align: center;">000001</td>
-                            <td style="text-align: left;">平安银行</td>
-                            <td style="text-align: right;">12.34</td>
-                            <td class="trend-up" style="text-align: center;">
+                            <td style="text-align: center; white-space: nowrap;">000001</td>
+                            <td style="text-align: left; white-space: nowrap;">平安银行</td>
+                            <td style="text-align: right; white-space: nowrap;">12.34</td>
+                            <td class="trend-up" style="text-align: center; white-space: nowrap;">
                                 <i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 1.23%
                             </td>
-                            <td class="trend-up" style="text-align: right;">
+                            <td class="trend-up" style="text-align: right; white-space: nowrap;">
                                 <i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 12.35 亿
                             </td>
-                            <td class="trend-up" style="text-align: right;">2.34%</td>
+                            <td class="trend-up" style="text-align: right; white-space: nowrap;">2.34%</td>
                             <td style="text-align: center; white-space: nowrap;">
                                 <button class="md3-button" style="margin-right: 4px;">
                                     <i class="material-icons">trending_up</i>
@@ -191,16 +191,16 @@
                             </td>
                         </tr>
                         <tr>
-                            <td style="text-align: center;">000002</td>
-                            <td style="text-align: left;">万科A</td>
-                            <td style="text-align: right;">23.45</td>
-                            <td class="trend-down" style="text-align: center;">
+                            <td style="text-align: center; white-space: nowrap;">000002</td>
+                            <td style="text-align: left; white-space: nowrap;">万科A</td>
+                            <td style="text-align: right; white-space: nowrap;">23.45</td>
+                            <td class="trend-down" style="text-align: center; white-space: nowrap;">
                                 <i class="material-icons" style="color: #2e7d32;">arrow_downward</i> -0.87%
                             </td>
-                            <td class="trend-down" style="text-align: right;">
+                            <td class="trend-down" style="text-align: right; white-space: nowrap;">
                                 <i class="material-icons" style="color: #2e7d32;">arrow_downward</i> -9.88 亿
                             </td>
-                            <td class="trend-down" style="text-align: right;">-1.56%</td>
+                            <td class="trend-down" style="text-align: right; white-space: nowrap;">-1.56%</td>
                             <td style="text-align: center; white-space: nowrap;">
                                 <button class="md3-button" style="margin-right: 4px;">
                                     <i class="material-icons">trending_up</i>
@@ -224,7 +224,28 @@
                 <li><strong>按钮样式统一：</strong>将所有按钮统一为Material Design 3风格，确保操作列宽度一致</li>
                 <li><strong>表格样式优化：</strong>添加了white-space: nowrap防止文本换行，vertical-align: middle确保垂直居中</li>
                 <li><strong>图标更新：</strong>使用Material Icons的arrow_upward和arrow_downward替代原来的灰色图标</li>
+                <li><strong>数据清理：</strong>添加了数据清理逻辑，移除可能的换行符和多余空格，确保每个单元格只显示一个值</li>
+                <li><strong>调试功能：</strong>添加了控制台调试信息，帮助识别数据格式问题</li>
             </ul>
+        </div>
+
+        <!-- 问题分析 -->
+        <div class="test-section">
+            <div class="test-title">问题分析与解决方案</div>
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                <h4 style="color: #856404; margin: 0 0 12px 0;">🔍 发现的问题</h4>
+                <p style="color: #856404; margin: 0;">根据您的截图，"涨跌幅"列显示了三行内容，这表明数据中可能包含了换行符或某个字段的值格式不正确。</p>
+            </div>
+            <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; padding: 16px;">
+                <h4 style="color: #0c5460; margin: 0 0 12px 0;">✅ 解决方案</h4>
+                <ul style="color: #0c5460; margin: 0; padding-left: 20px;">
+                    <li>添加数据清理函数，移除换行符和制表符</li>
+                    <li>确保每个数据字段都经过parseFloat或String处理</li>
+                    <li>为所有单元格添加white-space: nowrap样式</li>
+                    <li>将HTML构建为单行，避免模板字符串中的换行</li>
+                    <li>添加调试信息帮助识别数据问题</li>
+                </ul>
+            </div>
         </div>
     </div>
 </body>

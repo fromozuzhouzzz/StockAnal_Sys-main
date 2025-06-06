@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>表格调试页面</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .md3-data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .md3-data-table th {
+            padding: 16px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 2px solid #e0e0e0;
+            background-color: #f8f9fa;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        .md3-data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #333;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        .md3-data-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .trend-up {
+            color: #d32f2f;
+            font-weight: 500;
+        }
+        .trend-down {
+            color: #2e7d32;
+            font-weight: 500;
+        }
+        .md3-button {
+            padding: 8px 16px;
+            border: 1px solid #1976d2;
+            background: transparent;
+            color: #1976d2;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+        .debug-info {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .problem-demo {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .solution-demo {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; color: #1976d2; margin-bottom: 32px;">表格列对齐问题调试</h1>
+        
+        <div class="debug-info">
+            <h3>🔍 问题分析</h3>
+            <p>根据您的截图，"涨跌幅"列显示了多行内容，这通常是由以下原因造成的：</p>
+            <ul>
+                <li>数据中包含换行符 (\n, \r, \t)</li>
+                <li>某个字段的值包含了多个数据</li>
+                <li>HTML模板字符串格式问题</li>
+                <li>CSS样式冲突</li>
+            </ul>
+        </div>
+
+        <div class="problem-demo">
+            <h3>❌ 问题演示 - 可能的错误情况</h3>
+            <table class="md3-data-table">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">代码</th>
+                        <th style="text-align: left;">名称</th>
+                        <th style="text-align: right;">最新价</th>
+                        <th style="text-align: center;">涨跌幅</th>
+                        <th style="text-align: right;">主力净流入</th>
+                        <th style="text-align: right;">主力净流入占比</th>
+                        <th style="text-align: center;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="text-align: center;">000001</td>
+                        <td style="text-align: left;">平安银行</td>
+                        <td style="text-align: right;">12.34</td>
+                        <td style="text-align: center;">
+                            <!-- 模拟问题：多行内容 -->
+                            <i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 1.23%<br>
+                            <i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 12.35亿<br>
+                            2.34%
+                        </td>
+                        <td style="text-align: right;">
+                            <!-- 这里应该显示按钮，但被挤到了涨跌幅列 -->
+                            <button class="md3-button">
+                                <i class="material-icons">trending_up</i>
+                            </button>
+                        </td>
+                        <td style="text-align: right;"><!-- 空 --></td>
+                        <td style="text-align: center;"><!-- 空 --></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="solution-demo">
+            <h3>✅ 修复后 - 正确的表格</h3>
+            <table class="md3-data-table">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">代码</th>
+                        <th style="text-align: left;">名称</th>
+                        <th style="text-align: right;">最新价</th>
+                        <th style="text-align: center;">涨跌幅</th>
+                        <th style="text-align: right;">主力净流入</th>
+                        <th style="text-align: right;">主力净流入占比</th>
+                        <th style="text-align: center;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="test-table">
+                    <!-- 将通过JavaScript填充 -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="debug-info">
+            <h3>🛠️ 修复方案</h3>
+            <ol>
+                <li><strong>数据清理：</strong>移除所有换行符和制表符</li>
+                <li><strong>单行HTML：</strong>确保HTML模板为单行格式</li>
+                <li><strong>样式控制：</strong>添加 white-space: nowrap</li>
+                <li><strong>调试信息：</strong>在控制台查看数据结构</li>
+            </ol>
+            <button onclick="testTableRender()" style="background: #4caf50; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; margin-top: 16px;">
+                测试表格渲染
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 模拟数据
+        const testData = [
+            {
+                code: "000001",
+                name: "平安银行",
+                price: 12.34,
+                change_percent: 1.23,
+                main_net_inflow: 1234567890,
+                main_net_inflow_percent: 2.34
+            },
+            {
+                code: "000002",
+                name: "万科A",
+                price: 23.45,
+                change_percent: -0.87,
+                main_net_inflow: -987654321,
+                main_net_inflow_percent: -1.56
+            }
+        ];
+
+        function formatNumber(value, decimals = 2) {
+            return parseFloat(value).toFixed(decimals);
+        }
+
+        function formatPercent(value) {
+            return parseFloat(value).toFixed(2) + '%';
+        }
+
+        function formatMoney(value) {
+            value = parseFloat(value);
+            if (Math.abs(value) >= 1e8) {
+                return (value / 1e8).toFixed(2) + ' 亿';
+            } else if (Math.abs(value) >= 1e4) {
+                return (value / 1e4).toFixed(2) + ' 万';
+            } else {
+                return value.toFixed(2) + ' 元';
+            }
+        }
+
+        function testTableRender() {
+            console.log('开始测试表格渲染...');
+            
+            let html = '';
+            testData.forEach((item, index) => {
+                console.log(`处理数据 ${index}:`, item);
+
+                // 数据清理
+                const cleanCode = String(item.code || '').trim().replace(/[\r\n\t]/g, '');
+                const cleanName = String(item.name || '').trim().replace(/[\r\n\t]/g, '');
+                const cleanPrice = parseFloat(item.price) || 0;
+                const cleanChangePercent = parseFloat(item.change_percent) || 0;
+                const cleanMainNetInflow = parseFloat(item.main_net_inflow) || 0;
+                const cleanMainNetInflowPercent = parseFloat(item.main_net_inflow_percent) || 0;
+
+                console.log(`清理后数据 ${index}:`, {
+                    cleanCode, cleanName, cleanPrice, cleanChangePercent, 
+                    cleanMainNetInflow, cleanMainNetInflowPercent
+                });
+
+                // 颜色和图标
+                const changeClass = cleanChangePercent >= 0 ? 'trend-up' : 'trend-down';
+                const changeIcon = cleanChangePercent >= 0 ? 
+                    '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : 
+                    '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
+
+                const netFlowClass = cleanMainNetInflow >= 0 ? 'trend-up' : 'trend-down';
+                const netFlowIcon = cleanMainNetInflow >= 0 ? 
+                    '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : 
+                    '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
+
+                // 单行HTML构建
+                const rowHtml = `<tr><td style="text-align: center; white-space: nowrap;">${cleanCode}</td><td style="text-align: left; white-space: nowrap;">${cleanName}</td><td style="text-align: right; white-space: nowrap;">${formatNumber(cleanPrice, 2)}</td><td class="${changeClass}" style="text-align: center; white-space: nowrap;">${changeIcon} ${formatPercent(cleanChangePercent)}</td><td class="${netFlowClass}" style="text-align: right; white-space: nowrap;">${netFlowIcon} ${formatMoney(cleanMainNetInflow)}</td><td class="${netFlowClass}" style="text-align: right; white-space: nowrap;">${formatPercent(cleanMainNetInflowPercent)}</td><td style="text-align: center; white-space: nowrap;"><button class="md3-button" style="margin-right: 4px;"><i class="material-icons">trending_up</i></button><button class="md3-button"><i class="material-icons">account_balance</i></button></td></tr>`;
+
+                html += rowHtml;
+            });
+
+            console.log('最终HTML:', html);
+            document.getElementById('test-table').innerHTML = html;
+            console.log('表格渲染完成！');
+        }
+
+        // 页面加载时自动测试
+        document.addEventListener('DOMContentLoaded', function() {
+            testTableRender();
+        });
+    </script>
+</body>
+</html>

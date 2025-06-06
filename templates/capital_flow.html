@@ -366,39 +366,46 @@
     function renderConceptStocks(data, sector) {
         $('#concept-stocks-title').text(`${sector} 成分股`);
 
+        // 调试信息
+        console.log('renderConceptStocks data:', data);
+
         let html = '';
         if (!data || data.length === 0) {
             html = '<tr><td colspan="7" class="text-center">暂无数据</td></tr>';
         } else {
-            data.forEach((item) => {
+            data.forEach((item, index) => {
+                // 调试每个数据项
+                console.log(`Item ${index}:`, item);
+
+                // 确保数据清洁，移除可能的换行符和多余空格
+                const cleanCode = String(item.code || '').trim().replace(/[\r\n\t]/g, '');
+                const cleanName = String(item.name || '').trim().replace(/[\r\n\t]/g, '');
+                const cleanPrice = parseFloat(item.price) || 0;
+                const cleanChangePercent = parseFloat(item.change_percent) || 0;
+                const cleanMainNetInflow = parseFloat(item.main_net_inflow) || 0;
+                const cleanMainNetInflowPercent = parseFloat(item.main_net_inflow_percent) || 0;
+
+                // 调试清理后的数据
+                console.log(`Cleaned data ${index}:`, {
+                    cleanCode, cleanName, cleanPrice, cleanChangePercent,
+                    cleanMainNetInflow, cleanMainNetInflowPercent
+                });
+
                 // 使用中国股市习惯：上涨红色向上箭头，下跌绿色向下箭头
-                const changeClass = parseFloat(item.change_percent) >= 0 ? 'trend-up' : 'trend-down';
-                const changeIcon = parseFloat(item.change_percent) >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
+                const changeClass = cleanChangePercent >= 0 ? 'trend-up' : 'trend-down';
+                const changeIcon = cleanChangePercent >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
 
-                const netFlowClass = parseFloat(item.main_net_inflow) >= 0 ? 'trend-up' : 'trend-down';
-                const netFlowIcon = parseFloat(item.main_net_inflow) >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
+                const netFlowClass = cleanMainNetInflow >= 0 ? 'trend-up' : 'trend-down';
+                const netFlowIcon = cleanMainNetInflow >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
 
-                html += `
-                    <tr>
-                        <td style="text-align: center;">${item.code}</td>
-                        <td style="text-align: left;">${item.name}</td>
-                        <td style="text-align: right;">${formatNumber(item.price, 2)}</td>
-                        <td class="${changeClass}" style="text-align: center;">${changeIcon} ${formatPercent(item.change_percent)}</td>
-                        <td class="${netFlowClass}" style="text-align: right;">${netFlowIcon} ${formatMoney(item.main_net_inflow)}</td>
-                        <td class="${netFlowClass}" style="text-align: right;">${formatPercent(item.main_net_inflow_percent)}</td>
-                        <td style="text-align: center; white-space: nowrap;">
-                            <a href="/stock_detail/${item.code}" class="md3-button md3-button-outlined md3-button-small" style="margin-right: 4px;">
-                                <i class="material-icons">trending_up</i>
-                            </a>
-                            <button class="md3-button md3-button-outlined md3-button-small" onclick="loadIndividualFundFlow('${item.code}')">
-                                <i class="material-icons">account_balance</i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
+                // 构建单行HTML，确保没有换行符
+                const rowHtml = `<tr><td style="text-align: center; white-space: nowrap;">${cleanCode}</td><td style="text-align: left; white-space: nowrap;">${cleanName}</td><td style="text-align: right; white-space: nowrap;">${formatNumber(cleanPrice, 2)}</td><td class="${changeClass}" style="text-align: center; white-space: nowrap;">${changeIcon} ${formatPercent(cleanChangePercent)}</td><td class="${netFlowClass}" style="text-align: right; white-space: nowrap;">${netFlowIcon} ${formatMoney(cleanMainNetInflow)}</td><td class="${netFlowClass}" style="text-align: right; white-space: nowrap;">${formatPercent(cleanMainNetInflowPercent)}</td><td style="text-align: center; white-space: nowrap;"><a href="/stock_detail/${cleanCode}" class="md3-button md3-button-outlined md3-button-small" style="margin-right: 4px;"><i class="material-icons">trending_up</i></a><button class="md3-button md3-button-outlined md3-button-small" onclick="loadIndividualFundFlow('${cleanCode}')"><i class="material-icons">account_balance</i></button></td></tr>`;
+
+                html += rowHtml;
             });
         }
 
+        console.log('Final HTML:', html);
         $('#concept-stocks-table').html(html);
     }
 
