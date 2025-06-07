@@ -640,9 +640,8 @@
 
         document.body.removeChild(link);
     }
-    });
 
-    // 取消按钮点击事件 - 移到document ready内部
+    // 取消按钮点击事件
     $(document).ready(function() {
         $('#cancel-scan-btn').click(function() {
             if (currentTaskId) {
