@@ -783,6 +783,18 @@
             return trend === 'UP' ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
         }
 
+        // Material Design 3 相关函数
+        function getMD3ScoreColorClass(score) {
+            if (score >= 80) return 'md3-badge-success';
+            if (score >= 60) return 'md3-badge-primary';
+            if (score >= 40) return 'md3-badge-warning';
+            return 'md3-badge-danger';
+        }
+
+        function getMD3TrendColorClass(trend) {
+            return trend === 'UP' ? 'md3-text-bull' : 'md3-text-bear';
+        }
+
         // 主题切换功能
         function initThemeToggle() {
             const themeToggle = document.getElementById('global-theme-toggle');

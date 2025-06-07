@@ -8,7 +8,7 @@
 
 import numpy as np
 import pandas as pd
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from stock_analyzer import StockAnalyzer
 from us_stock_service import USStockService
 import threading
@@ -517,6 +517,12 @@ def portfolio():
 @app.route('/market_scan')
 def market_scan():
     return render_template('market_scan.html')
+
+
+@app.route('/test_scan')
+def test_scan():
+    """测试扫描页面"""
+    return send_from_directory('.', 'test_scan_simple.html')
 
 
 # 基本面分析页面

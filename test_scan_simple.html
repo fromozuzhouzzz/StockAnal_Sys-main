@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>市场扫描测试</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>市场扫描功能测试</h1>
+    
+    <div>
+        <h3>测试自定义股票扫描</h3>
+        <input type="text" id="test-stocks" value="000001,000002" placeholder="输入股票代码，用逗号分隔">
+        <button onclick="testScan()">开始测试扫描</button>
+    </div>
+    
+    <div id="test-results" style="margin-top: 20px;">
+        <h3>测试结果</h3>
+        <div id="test-output"></div>
+    </div>
+
+    <script>
+        function testScan() {
+            const stocks = $('#test-stocks').val().split(',').map(s => s.trim());
+            $('#test-output').html('正在启动扫描任务...');
+            
+            $.ajax({
+                url: '/api/start_market_scan',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    stock_list: stocks,
+                    min_score: 60,
+                    market_type: 'A'
+                }),
+                success: function(response) {
+                    const taskId = response.task_id;
+                    $('#test-output').html(`任务启动成功，任务ID: ${taskId}<br>正在轮询状态...`);
+                    
+                    // 轮询状态
+                    let pollCount = 0;
+                    const maxPolls = 10;
+                    
+                    function checkStatus() {
+                        if (pollCount >= maxPolls) {
+                            $('#test-output').append('<br>轮询超时');
+                            return;
+                        }
+                        
+                        $.ajax({
+                            url: `/api/scan_status/${taskId}`,
+                            type: 'GET',
+                            success: function(status) {
+                                pollCount++;
+                                $('#test-output').append(`<br>轮询 ${pollCount}: 状态=${status.status}, 进度=${status.progress}%`);
+                                
+                                if (status.status === 'completed') {
+                                    $('#test-output').append(`<br>✓ 扫描完成！找到 ${status.result ? status.result.length : 0} 只符合条件的股票`);
+                                } else if (status.status === 'failed') {
+                                    $('#test-output').append(`<br>✗ 扫描失败: ${status.error}`);
+                                } else {
+                                    setTimeout(checkStatus, 2000);
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                $('#test-output').append(`<br>✗ 状态查询失败: ${error}`);
+                            }
+                        });
+                    }
+                    
+                    setTimeout(checkStatus, 1000);
+                },
+                error: function(xhr, status, error) {
+                    $('#test-output').html(`✗ 任务启动失败: ${error}`);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
