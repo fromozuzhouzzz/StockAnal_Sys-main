@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>概念成分股表格测试</title>
+    <link rel="stylesheet" href="static/md3-styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 40px;
+        }
+        .test-title {
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--md-sys-color-primary);
+        }
+        .test-description {
+            margin-bottom: 20px;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">概念成分股表格对齐测试</h1>
+        <p class="test-description">此页面用于测试概念成分股表格的列对齐修复效果</p>
+
+        <div class="test-section">
+            <div class="md3-card md3-card-elevated">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">business</i> 人工智能 成分股
+                    </h3>
+                    <p class="md3-card-subtitle">概念板块内个股资金流向详情</p>
+                </div>
+                <div class="md3-card-body" style="padding: 0;">
+                    <div style="overflow-x: auto;">
+                        <table class="md3-data-table" id="concept-stocks-table">
+                            <thead>
+                                <tr>
+                                    <th style="text-align: center;">代码</th>
+                                    <th style="text-align: left;">名称</th>
+                                    <th style="text-align: right;">最新价</th>
+                                    <th style="text-align: center;">涨跌幅</th>
+                                    <th style="text-align: right;">主力净流入</th>
+                                    <th style="text-align: right;">主力净流入占比</th>
+                                    <th style="text-align: center;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="test-table-body">
+                                <!-- 测试数据 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <button onclick="loadTestData()" class="md3-button md3-button-filled">
+                <i class="material-icons">refresh</i>
+                加载测试数据
+            </button>
+            <button onclick="clearTable()" class="md3-button md3-button-outlined">
+                <i class="material-icons">clear</i>
+                清空表格
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 格式化函数
+        function formatNumber(num, decimals = 2) {
+            if (num === null || num === undefined || isNaN(num)) return '0.00';
+            return parseFloat(num).toFixed(decimals);
+        }
+
+        function formatPercent(num) {
+            if (num === null || num === undefined || isNaN(num)) return '0.00%';
+            return parseFloat(num).toFixed(2) + '%';
+        }
+
+        function formatMoney(num) {
+            if (num === null || num === undefined || isNaN(num)) return '0.00万';
+            const absNum = Math.abs(num);
+            if (absNum >= 10000) {
+                return (num / 10000).toFixed(2) + '万';
+            } else if (absNum >= 1000) {
+                return (num / 1000).toFixed(2) + '千';
+            } else {
+                return num.toFixed(2);
+            }
+        }
+
+        // 测试数据
+        const testData = [
+            {
+                code: '000001',
+                name: '平安银行',
+                price: 12.45,
+                change_percent: 2.34,
+                main_net_inflow: 15678.90,
+                main_net_inflow_percent: 3.45
+            },
+            {
+                code: '000002',
+                name: '万科A',
+                price: 18.76,
+                change_percent: -1.23,
+                main_net_inflow: -8765.43,
+                main_net_inflow_percent: -2.10
+            },
+            {
+                code: '600036',
+                name: '招商银行',
+                price: 45.67,
+                change_percent: 0.89,
+                main_net_inflow: 23456.78,
+                main_net_inflow_percent: 1.67
+            },
+            {
+                code: '000858',
+                name: '五粮液',
+                price: 189.34,
+                change_percent: -0.45,
+                main_net_inflow: -12345.67,
+                main_net_inflow_percent: -0.78
+            },
+            {
+                code: '600519',
+                name: '贵州茅台',
+                price: 1678.90,
+                change_percent: 1.23,
+                main_net_inflow: 45678.90,
+                main_net_inflow_percent: 2.34
+            }
+        ];
+
+        function loadTestData() {
+            let html = '';
+            
+            testData.forEach((item, index) => {
+                const cleanCode = String(item.code || '').trim();
+                const cleanName = String(item.name || '').trim();
+                const cleanPrice = parseFloat(item.price) || 0;
+                const cleanChangePercent = parseFloat(item.change_percent) || 0;
+                const cleanMainNetInflow = parseFloat(item.main_net_inflow) || 0;
+                const cleanMainNetInflowPercent = parseFloat(item.main_net_inflow_percent) || 0;
+
+                const changeIcon = cleanChangePercent >= 0 ? 
+                    '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : 
+                    '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
+
+                const netFlowIcon = cleanMainNetInflow >= 0 ? 
+                    '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : 
+                    '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
+
+                html += `
+                    <tr>
+                        <td class="force-center">${cleanCode}</td>
+                        <td class="force-left">${cleanName}</td>
+                        <td class="force-right">${formatNumber(cleanPrice, 2)}</td>
+                        <td class="force-center">
+                            <span style="color: ${cleanChangePercent >= 0 ? '#d32f2f' : '#2e7d32'}; font-weight: 500;">
+                                ${changeIcon} ${formatPercent(cleanChangePercent)}
+                            </span>
+                        </td>
+                        <td class="force-right">
+                            <span style="color: ${cleanMainNetInflow >= 0 ? '#d32f2f' : '#2e7d32'}; font-weight: 500;">
+                                ${netFlowIcon} ${formatMoney(cleanMainNetInflow)}
+                            </span>
+                        </td>
+                        <td class="force-right">
+                            <span style="color: ${cleanMainNetInflowPercent >= 0 ? '#d32f2f' : '#2e7d32'}; font-weight: 500;">
+                                ${formatPercent(cleanMainNetInflowPercent)}
+                            </span>
+                        </td>
+                        <td class="force-center action-buttons">
+                            <a href="#" class="md3-button md3-button-outlined md3-button-small" style="margin-right: 4px;">
+                                <i class="material-icons">trending_up</i>
+                            </a>
+                            <button class="md3-button md3-button-outlined md3-button-small">
+                                <i class="material-icons">account_balance</i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            $('#test-table-body').html(html);
+            console.log('测试数据已加载');
+        }
+
+        function clearTable() {
+            $('#test-table-body').html('');
+            console.log('表格已清空');
+        }
+
+        // 页面加载时自动加载测试数据
+        $(document).ready(function() {
+            loadTestData();
+        });
+    </script>
+</body>
+</html>

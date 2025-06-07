@@ -468,15 +468,90 @@
                 const netFlowClass = cleanMainNetInflow >= 0 ? 'trend-up' : 'trend-down';
                 const netFlowIcon = cleanMainNetInflow >= 0 ? '<i class="material-icons" style="color: #d32f2f;">arrow_upward</i>' : '<i class="material-icons" style="color: #2e7d32;">arrow_downward</i>';
 
-                // 构建单行HTML，确保没有换行符
-                const rowHtml = `<tr><td style="text-align: center; white-space: nowrap;">${cleanCode}</td><td style="text-align: left; white-space: nowrap;">${cleanName}</td><td style="text-align: right; white-space: nowrap;">${formatNumber(cleanPrice, 2)}</td><td class="${changeClass}" style="text-align: center; white-space: nowrap;">${changeIcon} ${formatPercent(cleanChangePercent)}</td><td class="${netFlowClass}" style="text-align: right; white-space: nowrap;">${netFlowIcon} ${formatMoney(cleanMainNetInflow)}</td><td class="${netFlowClass}" style="text-align: right; white-space: nowrap;">${formatPercent(cleanMainNetInflowPercent)}</td><td style="text-align: center; white-space: nowrap;"><a href="/stock_detail/${cleanCode}" class="md3-button md3-button-outlined md3-button-small" style="margin-right: 4px;"><i class="material-icons">trending_up</i></a><button class="md3-button md3-button-outlined md3-button-small" onclick="loadIndividualFundFlow('${cleanCode}')"><i class="material-icons">account_balance</i></button></td></tr>`;
-
-                html += rowHtml;
+                // 构建表格行HTML，使用更清晰的格式和强制对齐样式
+                html += `
+                    <tr>
+                        <td class="force-center">${cleanCode}</td>
+                        <td class="force-left">${cleanName}</td>
+                        <td class="force-right">${formatNumber(cleanPrice, 2)}</td>
+                        <td class="force-center ${changeClass}">
+                            <span style="color: ${cleanChangePercent >= 0 ? '#d32f2f' : '#2e7d32'}; font-weight: 500;">
+                                ${changeIcon} ${formatPercent(cleanChangePercent)}
+                            </span>
+                        </td>
+                        <td class="force-right ${netFlowClass}">
+                            <span style="color: ${cleanMainNetInflow >= 0 ? '#d32f2f' : '#2e7d32'}; font-weight: 500;">
+                                ${netFlowIcon} ${formatMoney(cleanMainNetInflow)}
+                            </span>
+                        </td>
+                        <td class="force-right ${netFlowClass}">
+                            <span style="color: ${cleanMainNetInflowPercent >= 0 ? '#d32f2f' : '#2e7d32'}; font-weight: 500;">
+                                ${formatPercent(cleanMainNetInflowPercent)}
+                            </span>
+                        </td>
+                        <td class="force-center action-buttons">
+                            <a href="/stock_detail/${cleanCode}" class="md3-button md3-button-outlined md3-button-small" style="margin-right: 4px;">
+                                <i class="material-icons">trending_up</i>
+                            </a>
+                            <button class="md3-button md3-button-outlined md3-button-small" onclick="loadIndividualFundFlow('${cleanCode}')">
+                                <i class="material-icons">account_balance</i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
             });
         }
 
         console.log('Final HTML:', html);
         $('#concept-stocks-table').html(html);
+
+        // 强制应用表格对齐样式
+        setTimeout(() => {
+            $('#concept-stocks-table tr').each(function() {
+                $(this).find('td').each(function(index) {
+                    const $td = $(this);
+                    switch(index) {
+                        case 0: // 代码
+                            $td.addClass('force-center').css({
+                                'text-align': 'center !important',
+                                'white-space': 'nowrap'
+                            });
+                            break;
+                        case 1: // 名称
+                            $td.addClass('force-left').css({
+                                'text-align': 'left !important',
+                                'white-space': 'nowrap'
+                            });
+                            break;
+                        case 2: // 最新价
+                            $td.addClass('force-right').css({
+                                'text-align': 'right !important',
+                                'white-space': 'nowrap'
+                            });
+                            break;
+                        case 3: // 涨跌幅
+                            $td.addClass('force-center').css({
+                                'text-align': 'center !important',
+                                'white-space': 'nowrap'
+                            });
+                            break;
+                        case 4: // 主力净流入
+                        case 5: // 主力净流入占比
+                            $td.addClass('force-right').css({
+                                'text-align': 'right !important',
+                                'white-space': 'nowrap'
+                            });
+                            break;
+                        case 6: // 操作
+                            $td.addClass('force-center action-buttons').css({
+                                'text-align': 'center !important',
+                                'white-space': 'nowrap'
+                            });
+                            break;
+                    }
+                });
+            });
+        }, 100);
     }
 
     // 渲染个股资金流向
