@@ -1015,22 +1015,22 @@ form[style*="grid-template-columns"] .md3-button {
 /* Enhanced Trend Indicators - 中国股市习惯：上涨红色，下跌绿色 */
 .trend-up {
     color: #d32f2f; /* 红色表示上涨 */
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
     font-weight: 500;
 }
 
 .trend-down {
     color: #2e7d32; /* 绿色表示下跌 */
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
     font-weight: 500;
 }
 
 .trend-neutral {
     color: var(--md-sys-color-on-surface-variant);
+}
+
+/* 只在非表格环境中使用flex布局 */
+.trend-up:not(.md3-data-table *),
+.trend-down:not(.md3-data-table *),
+.trend-neutral:not(.md3-data-table *) {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -1100,7 +1100,6 @@ form[style*="grid-template-columns"] .md3-button {
 
 .md3-data-table th {
     padding: 16px 12px;
-    text-align: left;
     font-weight: var(--md-sys-typescale-label-large-weight);
     color: var(--md-sys-color-on-surface-variant);
     border-bottom: 1px solid var(--md-sys-color-outline-variant);
@@ -1144,6 +1143,151 @@ form[style*="grid-template-columns"] .md3-button {
 
 .md3-data-table .action-buttons .md3-button {
     margin: 0 2px;
+}
+
+/* 确保内联样式优先级 - 移除默认text-align以让内联样式生效 */
+.md3-data-table th[style*="text-align"],
+.md3-data-table td[style*="text-align"] {
+    text-align: inherit !important;
+}
+
+/* 更强的选择器确保对齐生效 */
+table.md3-data-table th[style*="center"],
+table.md3-data-table td[style*="center"] {
+    text-align: center !important;
+}
+
+table.md3-data-table th[style*="right"],
+table.md3-data-table td[style*="right"] {
+    text-align: right !important;
+}
+
+table.md3-data-table th[style*="left"],
+table.md3-data-table td[style*="left"] {
+    text-align: left !important;
+}
+
+/* 修复表格中trend类的对齐问题 */
+.md3-data-table .trend-up,
+.md3-data-table .trend-down {
+    display: inline !important;
+    width: 100%;
+    justify-content: inherit !important;
+}
+
+.md3-data-table td.trend-up,
+.md3-data-table td.trend-down {
+    text-align: inherit !important;
+}
+
+/* 强制表格对齐 - 最高优先级 */
+.md3-data-table td[style*="center"] {
+    text-align: center !important;
+    justify-content: center !important;
+}
+
+.md3-data-table td[style*="right"] {
+    text-align: right !important;
+    justify-content: flex-end !important;
+}
+
+.md3-data-table td[style*="left"] {
+    text-align: left !important;
+    justify-content: flex-start !important;
+}
+
+/* 覆盖所有可能的flex样式 */
+.md3-data-table td * {
+    display: inline !important;
+}
+
+/* 专门的表格对齐类 - 最高优先级 */
+.force-center {
+    text-align: center !important;
+    display: table-cell !important;
+    vertical-align: middle !important;
+}
+
+.force-right {
+    text-align: right !important;
+    display: table-cell !important;
+    vertical-align: middle !important;
+}
+
+.force-left {
+    text-align: left !important;
+    display: table-cell !important;
+    vertical-align: middle !important;
+}
+
+/* 确保表格单元格内容不使用flex布局 */
+.force-center *,
+.force-right *,
+.force-left * {
+    display: inline !important;
+}
+
+/* 最终解决方案 - 强制表格对齐 */
+#concept-flow-table td {
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    color: var(--md-sys-color-on-surface);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+#concept-flow-table td span {
+    display: inline !important;
+}
+
+#concept-flow-table td i {
+    display: inline !important;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+/* 终极解决方案 - 使用最高优先级强制对齐 */
+table#concept-flow-table tbody tr td:nth-child(1) {
+    text-align: center !important;
+}
+
+table#concept-flow-table tbody tr td:nth-child(2) {
+    text-align: left !important;
+}
+
+table#concept-flow-table tbody tr td:nth-child(3) {
+    text-align: right !important;
+}
+
+table#concept-flow-table tbody tr td:nth-child(4) {
+    text-align: center !important;
+}
+
+table#concept-flow-table tbody tr td:nth-child(5) {
+    text-align: right !important;
+}
+
+table#concept-flow-table tbody tr td:nth-child(6) {
+    text-align: right !important;
+}
+
+table#concept-flow-table tbody tr td:nth-child(7) {
+    text-align: right !important;
+}
+
+table#concept-flow-table tbody tr td:nth-child(8) {
+    text-align: center !important;
+}
+
+table#concept-flow-table tbody tr td:nth-child(9) {
+    text-align: center !important;
+}
+
+/* 确保所有内容都是inline显示 */
+table#concept-flow-table tbody tr td * {
+    display: inline !important;
+    flex-direction: unset !important;
+    align-items: unset !important;
+    justify-content: unset !important;
 }
 
 /* Progress Indicators */

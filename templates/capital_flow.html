@@ -3,6 +3,38 @@
 {% block title %}资金流向 - 智能分析系统{% endblock %}
 
 {% block content %}
+<style>
+/* 强制表格对齐 - 页面级别最高优先级 */
+#concept-flow-table tbody tr td:nth-child(1) { text-align: center !important; }
+#concept-flow-table tbody tr td:nth-child(2) { text-align: left !important; }
+#concept-flow-table tbody tr td:nth-child(3) { text-align: right !important; }
+#concept-flow-table tbody tr td:nth-child(4) { text-align: center !important; }
+#concept-flow-table tbody tr td:nth-child(5) { text-align: right !important; }
+#concept-flow-table tbody tr td:nth-child(6) { text-align: right !important; }
+#concept-flow-table tbody tr td:nth-child(7) { text-align: right !important; }
+#concept-flow-table tbody tr td:nth-child(8) { text-align: center !important; }
+#concept-flow-table tbody tr td:nth-child(9) { text-align: center !important; }
+
+#concept-flow-table tbody tr td {
+    padding: 12px !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant) !important;
+    color: var(--md-sys-color-on-surface) !important;
+    white-space: nowrap !important;
+}
+
+#concept-flow-table tbody tr td * {
+    display: inline !important;
+    flex-direction: unset !important;
+    align-items: unset !important;
+    justify-content: unset !important;
+}
+
+#concept-flow-table tbody tr td i {
+    vertical-align: middle !important;
+    margin-right: 4px !important;
+}
+</style>
 <div class="page-transition">
     <!-- Enhanced Material Design 3 分析表单 -->
     <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
@@ -341,15 +373,15 @@
 
                 html += `
                     <tr>
-                        <td style="text-align: center;">${item.rank}</td>
+                        <td>${item.rank}</td>
                         <td><a href="javascript:void(0)" onclick="loadConceptStocks('${item.sector}')">${item.sector}</a></td>
-                        <td style="text-align: right;">${formatNumber(item.sector_index, 2)}</td>
-                        <td class="${changeClass}" style="text-align: center;">${changeIcon} ${formatPercent(item.change_percent)}</td>
-                        <td style="text-align: right;">${formatNumber(item.inflow, 2)}</td>
-                        <td style="text-align: right;">${formatNumber(item.outflow, 2)}</td>
-                        <td class="${netFlowClass}" style="text-align: right;">${netFlowIcon} ${formatNumber(item.net_flow, 2)}</td>
-                        <td style="text-align: center;">${item.company_count}</td>
-                        <td style="text-align: center;">
+                        <td>${formatNumber(item.sector_index, 2)}</td>
+                        <td><span style="color: ${parseFloat(item.change_percent) >= 0 ? '#d32f2f' : '#2e7d32'}; font-weight: 500;">${changeIcon} ${formatPercent(item.change_percent)}</span></td>
+                        <td>${formatNumber(item.inflow, 2)}</td>
+                        <td>${formatNumber(item.outflow, 2)}</td>
+                        <td><span style="color: ${parseFloat(item.net_flow) >= 0 ? '#d32f2f' : '#2e7d32'}; font-weight: 500;">${netFlowIcon} ${formatNumber(item.net_flow, 2)}</span></td>
+                        <td>${item.company_count}</td>
+                        <td>
                             <button class="md3-button md3-button-outlined md3-button-small" onclick="loadConceptStocks('${item.sector}')">
                                 <i class="material-icons">search</i>
                             </button>
@@ -360,6 +392,44 @@
         }
 
         $('#concept-flow-table').html(html);
+
+        // 强制设置表格对齐
+        setTimeout(() => {
+            $('#concept-flow-table tr').each(function() {
+                $(this).find('td').each(function(index) {
+                    const $td = $(this);
+                    switch(index) {
+                        case 0: // 序号
+                        case 3: // 涨跌幅
+                        case 7: // 公司家数
+                        case 8: // 操作
+                            $td.css({
+                                'text-align': 'center',
+                                'display': 'table-cell',
+                                'vertical-align': 'middle'
+                            });
+                            break;
+                        case 1: // 概念/行业
+                            $td.css({
+                                'text-align': 'left',
+                                'display': 'table-cell',
+                                'vertical-align': 'middle'
+                            });
+                            break;
+                        case 2: // 行业指数
+                        case 4: // 流入资金
+                        case 5: // 流出资金
+                        case 6: // 净额
+                            $td.css({
+                                'text-align': 'right',
+                                'display': 'table-cell',
+                                'vertical-align': 'middle'
+                            });
+                            break;
+                    }
+                });
+            });
+        }, 100);
     }
 
     // 渲染概念成分股

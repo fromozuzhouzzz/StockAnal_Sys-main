@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>表格对齐测试</title>
+    <link rel="stylesheet" href="static/md3-styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <div style="padding: 20px;">
+        <h2>资金流向表格对齐测试</h2>
+        
+        <div class="md3-card md3-card-elevated">
+            <div class="md3-card-header">
+                <h3 class="md3-card-title">概念资金流向</h3>
+            </div>
+            <div class="md3-card-body" style="padding: 0;">
+                <div style="overflow-x: auto;">
+                    <table class="md3-data-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center;">序号</th>
+                                <th style="text-align: left;">概念/行业</th>
+                                <th style="text-align: right;">行业指数</th>
+                                <th style="text-align: center;">涨跌幅</th>
+                                <th style="text-align: right;">流入资金(亿)</th>
+                                <th style="text-align: right;">流出资金(亿)</th>
+                                <th style="text-align: right;">净额(亿)</th>
+                                <th style="text-align: center;">公司家数</th>
+                                <th style="text-align: center;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="text-align: center;">1</td>
+                                <td><a href="javascript:void(0)">5G</a></td>
+                                <td style="text-align: right;">4078.83</td>
+                                <td style="text-align: center;"><i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 4.21%</td>
+                                <td style="text-align: right;">47.41</td>
+                                <td style="text-align: right;">7.69</td>
+                                <td style="text-align: right;"><i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 39.72</td>
+                                <td style="text-align: center;">52</td>
+                                <td style="text-align: center;">
+                                    <button class="md3-button md3-button-outlined md3-button-small">
+                                        <i class="material-icons">search</i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="text-align: center;">2</td>
+                                <td><a href="javascript:void(0)">芯片</a></td>
+                                <td style="text-align: right;">2708.43</td>
+                                <td style="text-align: center;"><i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 1.05%</td>
+                                <td style="text-align: right;">43.05</td>
+                                <td style="text-align: right;">10.50</td>
+                                <td style="text-align: right;"><i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 32.55</td>
+                                <td style="text-align: center;">40</td>
+                                <td style="text-align: center;">
+                                    <button class="md3-button md3-button-outlined md3-button-small">
+                                        <i class="material-icons">search</i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="text-align: center;">3</td>
+                                <td><a href="javascript:void(0)">人工智能</a></td>
+                                <td style="text-align: right;">4701.09</td>
+                                <td style="text-align: center;"><i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 4.39%</td>
+                                <td style="text-align: right;">42.09</td>
+                                <td style="text-align: right;">13.23</td>
+                                <td style="text-align: right;"><i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 28.86</td>
+                                <td style="text-align: center;">85</td>
+                                <td style="text-align: center;">
+                                    <button class="md3-button md3-button-outlined md3-button-small">
+                                        <i class="material-icons">search</i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <h4>说明：</h4>
+            <ul>
+                <li>序号列应该居中对齐</li>
+                <li>概念/行业列应该左对齐</li>
+                <li>行业指数列应该右对齐</li>
+                <li>涨跌幅列应该居中对齐</li>
+                <li>流入资金列应该右对齐</li>
+                <li>流出资金列应该右对齐</li>
+                <li>净额列应该右对齐</li>
+                <li>公司家数列应该居中对齐</li>
+                <li>操作列应该居中对齐</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
