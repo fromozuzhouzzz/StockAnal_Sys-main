@@ -60,12 +60,9 @@ class StockAnalyzer:
 
         # JSON匹配标志
         self.json_match_flag = True
-    def get_stock_data(self, stock_code, market_type='A', start_date=None, end_date=None, timeout=30):
-        """获取股票数据，增加超时控制"""
+    def get_stock_data(self, stock_code, market_type='A', start_date=None, end_date=None):
+        """获取股票数据"""
         import akshare as ak
-        import signal
-        import threading
-        from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
         self.logger.info(f"开始获取股票 {stock_code} 数据，市场类型: {market_type}")
 
@@ -88,100 +85,59 @@ class StockAnalyzer:
         if end_date is None:
             end_date = datetime.now().strftime('%Y%m%d')
 
-        def fetch_data():
-            """内部数据获取函数，带重试机制"""
-            max_retries = 3
-            retry_delay = 1  # 秒
-
-            for attempt in range(max_retries):
-                try:
-                    self.logger.debug(f"尝试获取股票 {stock_code} 数据，第 {attempt + 1} 次")
-
-                    # 根据市场类型获取数据
-                    if market_type == 'A':
-                        df = ak.stock_zh_a_hist(
-                            symbol=stock_code,
-                            start_date=start_date,
-                            end_date=end_date,
-                            adjust="qfq"
-                        )
-                    elif market_type == 'HK':
-                        df = ak.stock_hk_daily(
-                            symbol=stock_code,
-                            adjust="qfq"
-                        )
-                    elif market_type == 'US':
-                        df = ak.stock_us_hist(
-                            symbol=stock_code,
-                            start_date=start_date,
-                            end_date=end_date,
-                            adjust="qfq"
-                        )
-                    else:
-                        raise ValueError(f"不支持的市场类型: {market_type}")
-
-                    # 检查数据有效性
-                    if df is None or len(df) == 0:
-                        raise Exception(f"获取到的数据为空")
-
-                    # 重命名列名以匹配分析需求
-                    df = df.rename(columns={
-                        "日期": "date",
-                        "开盘": "open",
-                        "收盘": "close",
-                        "最高": "high",
-                        "最低": "low",
-                        "成交量": "volume",
-                        "成交额": "amount"
-                    })
-
-                    # 确保日期格式正确
-                    df['date'] = pd.to_datetime(df['date'])
-
-                    # 数据类型转换
-                    numeric_columns = ['open', 'close', 'high', 'low', 'volume']
-                    for col in numeric_columns:
-                        if col in df.columns:
-                            df[col] = pd.to_numeric(df[col], errors='coerce')
-
-                    # 删除空值
-                    df = df.dropna()
-
-                    if len(df) == 0:
-                        raise Exception(f"处理后数据为空")
-
-                    result = df.sort_values('date')
-                    self.logger.debug(f"成功获取股票 {stock_code} 数据，共 {len(result)} 条记录")
-                    return result
-
-                except Exception as e:
-                    error_msg = str(e)
-                    self.logger.warning(f"获取股票 {stock_code} 数据第 {attempt + 1} 次尝试失败: {error_msg}")
-
-                    # 检查是否是网络相关错误
-                    if any(keyword in error_msg.lower() for keyword in ['proxy', 'connection', 'timeout', 'network']):
-                        if attempt < max_retries - 1:
-                            self.logger.info(f"网络错误，{retry_delay} 秒后重试...")
-                            time.sleep(retry_delay)
-                            retry_delay *= 2  # 指数退避
-                            continue
-
-                    # 如果是最后一次尝试或非网络错误，直接抛出异常
-                    if attempt == max_retries - 1:
-                        raise e
-
         try:
-            # 使用线程池执行器实现超时控制
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(fetch_data)
-                try:
-                    result = future.result(timeout=timeout)
-                    # 缓存原始数据（包含datetime类型）
-                    self.data_cache[cache_key] = result.copy()
-                    return result
-                except TimeoutError:
-                    self.logger.error(f"获取股票 {stock_code} 数据超时 ({timeout}秒)")
-                    raise Exception(f"获取股票数据超时，请稍后重试")
+            # 根据市场类型获取数据
+            if market_type == 'A':
+                df = ak.stock_zh_a_hist(
+                    symbol=stock_code,
+                    start_date=start_date,
+                    end_date=end_date,
+                    adjust="qfq"
+                )
+            elif market_type == 'HK':
+                df = ak.stock_hk_daily(
+                    symbol=stock_code,
+                    adjust="qfq"
+                )
+            elif market_type == 'US':
+                df = ak.stock_us_hist(
+                    symbol=stock_code,
+                    start_date=start_date,
+                    end_date=end_date,
+                    adjust="qfq"
+                )
+            else:
+                raise ValueError(f"不支持的市场类型: {market_type}")
+
+            # 重命名列名以匹配分析需求
+            df = df.rename(columns={
+                "日期": "date",
+                "开盘": "open",
+                "收盘": "close",
+                "最高": "high",
+                "最低": "low",
+                "成交量": "volume",
+                "成交额": "amount"
+            })
+
+            # 确保日期格式正确
+            df['date'] = pd.to_datetime(df['date'])
+
+            # 数据类型转换
+            numeric_columns = ['open', 'close', 'high', 'low', 'volume']
+            for col in numeric_columns:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+
+            # 删除空值
+            df = df.dropna()
+
+            result = df.sort_values('date')
+
+            # 缓存原始数据（包含datetime类型）
+            self.data_cache[cache_key] = result.copy()
+
+            return result
 
         except Exception as e:
             self.logger.error(f"获取股票数据失败: {e}")
@@ -1595,30 +1551,17 @@ class StockAnalyzer:
     #         self.logger.error(f"快速分析股票 {stock_code} 时出错: {str(e)}")
     #         raise
 
-    def quick_analyze_stock(self, stock_code, market_type='A', timeout=20):
-        """快速分析股票，用于市场扫描，增加超时控制"""
-        start_time = time.time()
+    def quick_analyze_stock(self, stock_code, market_type='A'):
+        """快速分析股票，用于市场扫描"""
         try:
-            self.logger.info(f"开始快速分析股票: {stock_code}")
-
-            # 获取股票数据（设置较短的超时时间）
-            df = self.get_stock_data(stock_code, market_type, timeout=timeout)
-            data_time = time.time()
-            self.logger.debug(f"股票 {stock_code} 数据获取耗时: {data_time - start_time:.2f}秒")
-
-            # 检查数据有效性
-            if df is None or len(df) < 2:
-                raise Exception(f"股票 {stock_code} 数据不足，无法进行分析")
+            # 获取股票数据
+            df = self.get_stock_data(stock_code, market_type)
 
             # 计算技术指标
             df = self.calculate_indicators(df)
-            indicator_time = time.time()
-            self.logger.debug(f"股票 {stock_code} 指标计算耗时: {indicator_time - data_time:.2f}秒")
 
             # 简化评分计算
             score = self.calculate_score(df)
-            score_time = time.time()
-            self.logger.debug(f"股票 {stock_code} 评分计算耗时: {score_time - indicator_time:.2f}秒")
 
             # 获取最新数据
             latest = df.iloc[-1]
@@ -1631,9 +1574,9 @@ class StockAnalyzer:
                 industry = stock_info.get('行业', '未知')
 
                 # 添加日志
-                self.logger.debug(f"股票 {stock_code} 信息: 名称={stock_name}, 行业={industry}")
+                self.logger.info(f"股票 {stock_code} 信息: 名称={stock_name}, 行业={industry}")
             except Exception as e:
-                self.logger.warning(f"获取股票 {stock_code} 信息时出错: {str(e)}")
+                self.logger.error(f"获取股票 {stock_code} 信息时出错: {str(e)}")
                 stock_name = '未知'
                 industry = '未知'
 

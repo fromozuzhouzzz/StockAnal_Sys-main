@@ -1,0 +1,930 @@
+{% extends "layout.html" %}
+
+{% block title %}首页 - 智能分析系统{% endblock %}
+
+{% block content %}
+<style>
+    /* Enhanced Material Design 3 Finance Portal Styles */
+    .md3-finance-portal {
+        display: grid;
+        grid-template-columns: 300px 1fr 340px;
+        grid-template-rows: 1fr 90px;
+        grid-template-areas:
+            "sidebar news hotspot"
+            "footer footer footer";
+        height: calc(100vh - 72px);
+        gap: 24px;
+        padding: 24px;
+        background-color: var(--md-sys-color-surface);
+    }
+
+    .md3-portal-sidebar {
+        grid-area: sidebar;
+        background-color: var(--md-sys-color-surface-container);
+        border-radius: var(--md-sys-shape-corner-large);
+        box-shadow: var(--md-sys-elevation-level1);
+        overflow-y: auto;
+        padding: 24px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        transition: all var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+    }
+
+    .md3-portal-sidebar:hover {
+        box-shadow: var(--md-sys-elevation-level2);
+    }
+
+    .md3-portal-news {
+        grid-area: news;
+        background-color: var(--md-sys-color-surface-container);
+        border-radius: var(--md-sys-shape-corner-large);
+        box-shadow: var(--md-sys-elevation-level1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        transition: all var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+    }
+
+    .md3-portal-news:hover {
+        box-shadow: var(--md-sys-elevation-level2);
+    }
+
+    .md3-portal-hotspot {
+        grid-area: hotspot;
+        background-color: var(--md-sys-color-surface-container);
+        border-radius: var(--md-sys-shape-corner-large);
+        box-shadow: var(--md-sys-elevation-level1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--md-sys-color-outline-variant);
+        transition: all var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+    }
+
+    .md3-portal-hotspot:hover {
+        box-shadow: var(--md-sys-elevation-level2);
+    }
+
+    .md3-portal-footer {
+        grid-area: footer;
+        background-color: var(--md-sys-color-surface-container);
+        border-radius: var(--md-sys-shape-corner-large);
+        box-shadow: var(--md-sys-elevation-level1);
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .md3-section-header {
+        padding: 20px 24px 16px 24px;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--md-sys-color-surface-container-high);
+    }
+
+    .md3-section-title {
+        font-family: var(--md-sys-typescale-title-medium-font);
+        font-size: var(--md-sys-typescale-title-medium-size);
+        font-weight: var(--md-sys-typescale-title-medium-weight);
+        color: var(--md-sys-color-on-surface);
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .md3-section-title i {
+        margin-right: 12px;
+        color: var(--md-sys-color-primary);
+        font-size: 20px;
+    }
+
+    @media (max-width: 1400px) {
+        .md3-finance-portal {
+            grid-template-columns: 280px 1fr 300px;
+            gap: 20px;
+            padding: 20px;
+        }
+    }
+
+    @media (max-width: 1200px) {
+        .md3-finance-portal {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto auto auto;
+            grid-template-areas:
+                "sidebar"
+                "news"
+                "hotspot"
+                "footer";
+            height: auto;
+            gap: 16px;
+            padding: 16px;
+        }
+
+        .md3-portal-news, .md3-portal-hotspot {
+            height: 400px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .md3-finance-portal {
+            padding: 12px;
+            gap: 12px;
+        }
+
+        .md3-portal-sidebar {
+            padding: 16px;
+        }
+
+        .md3-section-header {
+            padding: 16px;
+        }
+    }
+</style>
+
+<div class="md3-finance-portal">
+    <!-- Enhanced Material Design 3 左侧导航栏 -->
+    <div class="md3-portal-sidebar md3-animate-slide-in-left">
+        <div class="md3-section-header">
+            <h3 class="md3-section-title">
+                <i class="material-icons">apps</i> 功能导航
+            </h3>
+        </div>
+        <nav style="padding: 16px 0;">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <a href="/dashboard" class="md3-button md3-button-text" style="justify-content: flex-start; width: 100%; padding: 12px 16px;">
+                    <i class="material-icons" style="margin-right: 12px;">dashboard</i> 智能仪表盘
+                </a>
+                <a href="/fundamental" class="md3-button md3-button-text" style="justify-content: flex-start; width: 100%; padding: 12px 16px;">
+                    <i class="material-icons" style="margin-right: 12px;">assessment</i> 基本面分析
+                </a>
+                <a href="/capital_flow" class="md3-button md3-button-text" style="justify-content: flex-start; width: 100%; padding: 12px 16px;">
+                    <i class="material-icons" style="margin-right: 12px;">account_balance</i> 资金流向
+                </a>
+                <a href="/market_scan" class="md3-button md3-button-text" style="justify-content: flex-start; width: 100%; padding: 12px 16px;">
+                    <i class="material-icons" style="margin-right: 12px;">search</i> 市场扫描
+                </a>
+                <a href="/scenario_predict" class="md3-button md3-button-text" style="justify-content: flex-start; width: 100%; padding: 12px 16px;">
+                    <i class="material-icons" style="margin-right: 12px;">lightbulb</i> 情景预测
+                </a>
+                <a href="/portfolio" class="md3-button md3-button-text" style="justify-content: flex-start; width: 100%; padding: 12px 16px;">
+                    <i class="material-icons" style="margin-right: 12px;">work</i> 投资组合
+                </a>
+                <a href="/qa" class="md3-button md3-button-text" style="justify-content: flex-start; width: 100%; padding: 12px 16px;">
+                    <i class="material-icons" style="margin-right: 12px;">help</i> 智能问答
+                </a>
+                <a href="/risk_monitor" class="md3-button md3-button-text" style="justify-content: flex-start; width: 100%; padding: 12px 16px;">
+                    <i class="material-icons" style="margin-right: 12px;">warning</i> 风险监控
+                </a>
+                <a href="/industry_analysis" class="md3-button md3-button-text" style="justify-content: flex-start; width: 100%; padding: 12px 16px;">
+                    <i class="material-icons" style="margin-right: 12px;">business</i> 行业分析
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Enhanced Material Design 3 中间新闻区域 -->
+    <div class="md3-portal-news md3-animate-fade-in">
+        <div class="md3-section-header">
+            <h3 class="md3-section-title">
+                <i class="material-icons">article</i> 实时快讯（来源：财联社）
+            </h3>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button class="md3-icon-button refresh-news-btn" aria-label="刷新新闻">
+                    <i class="material-icons">refresh</i>
+                </button>
+                <label style="display: flex; align-items: center; gap: 8px; color: var(--md-sys-color-on-surface-variant); font-size: 14px; cursor: pointer;">
+                    <input type="checkbox" id="only-important" style="margin: 0; accent-color: var(--md-sys-color-primary);">
+                    <span>只看重要</span>
+                </label>
+            </div>
+        </div>
+        <div class="md3-news-content" id="news-timeline" style="flex: 1; overflow-y: auto; padding: 24px;">
+            <div style="display: flex; justify-content: center; align-items: center; height: 200px; flex-direction: column; gap: 16px;">
+                <div class="md3-progress-indicator"></div>
+                <p style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);">加载新闻中...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 右侧热点区域 -->
+    <div class="md3-portal-hotspot md3-animate-slide-in-right">
+        <div class="md3-section-header">
+            <h3 class="md3-section-title">
+                <i class="material-icons">trending_up</i> 热点
+            </h3>
+        </div>
+        <div class="md3-hotspot-content" id="hotspot-list" style="flex: 1; overflow-y: auto; padding: 24px;">
+            <div style="display: flex; justify-content: center; align-items: center; height: 200px; flex-direction: column; gap: 16px;">
+                <div class="md3-progress-indicator"></div>
+                <p style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);">加载热点中...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 页脚区域 -->
+    <div class="md3-portal-footer md3-animate-fade-in">
+        <!-- 市场状态部分 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--md-sys-color-outline-variant); background-color: var(--md-sys-color-surface-container-high);">
+            <div style="display: flex; align-items: center; gap: 32px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span style="font-weight: 500; color: var(--md-sys-color-on-surface-variant); font-size: 14px; min-width: 60px;">亚太市场</span>
+                    <div style="display: flex; gap: 20px;">
+                        <div class="md3-market-status" id="china-market">
+                            <div class="md3-market-status-indicator"></div>
+                            <span>A股</span>
+                            <span class="status-text" style="margin-left: 4px; font-weight: 500;">加载中...</span>
+                        </div>
+                        <div class="md3-market-status" id="hk-market">
+                            <div class="md3-market-status-indicator"></div>
+                            <span>港股</span>
+                            <span class="status-text" style="margin-left: 4px; font-weight: 500;">加载中...</span>
+                        </div>
+                        <div class="md3-market-status" id="taiwan-market">
+                            <div class="md3-market-status-indicator"></div>
+                            <span>台股</span>
+                            <span class="status-text" style="margin-left: 4px; font-weight: 500;">加载中...</span>
+                        </div>
+                        <div class="md3-market-status" id="japan-market">
+                            <div class="md3-market-status-indicator"></div>
+                            <span>日经</span>
+                            <span class="status-text" style="margin-left: 4px; font-weight: 500;">加载中...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span style="font-weight: 500; color: var(--md-sys-color-on-surface-variant); font-size: 14px; min-width: 40px;">欧洲</span>
+                    <div style="display: flex; gap: 20px;">
+                        <div class="md3-market-status" id="uk-market">
+                            <div class="md3-market-status-indicator"></div>
+                            <span>富时</span>
+                            <span class="status-text" style="margin-left: 4px; font-weight: 500;">加载中...</span>
+                        </div>
+                        <div class="md3-market-status" id="german-market">
+                            <div class="md3-market-status-indicator"></div>
+                            <span>DAX</span>
+                            <span class="status-text" style="margin-left: 4px; font-weight: 500;">加载中...</span>
+                        </div>
+                        <div class="md3-market-status" id="france-market">
+                            <div class="md3-market-status-indicator"></div>
+                            <span>CAC</span>
+                            <span class="status-text" style="margin-left: 4px; font-weight: 500;">加载中...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span style="font-weight: 500; color: var(--md-sys-color-on-surface-variant); font-size: 14px; min-width: 40px;">美洲</span>
+                    <div style="display: flex; gap: 20px;">
+                        <div class="md3-market-status" id="us-market">
+                            <div class="md3-market-status-indicator"></div>
+                            <span>美股</span>
+                            <span class="status-text" style="margin-left: 4px; font-weight: 500;">加载中...</span>
+                        </div>
+                        <div class="md3-market-status" id="nasdaq-market">
+                            <div class="md3-market-status-indicator"></div>
+                            <span>纳指</span>
+                            <span class="status-text" style="margin-left: 4px; font-weight: 500;">加载中...</span>
+                        </div>
+                        <div class="md3-market-status" id="brazil-market">
+                            <div class="md3-market-status-indicator"></div>
+                            <span>巴西</span>
+                            <span class="status-text" style="margin-left: 4px; font-weight: 500;">加载中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 20px; color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);">
+                <span id="current-time" style="display: flex; align-items: center; gap: 6px;">
+                    <i class="material-icons" style="font-size: 16px;">schedule</i>
+                    当前时间: {{ current_time }}
+                </span>
+                <span id="refresh-time" class="refresh-time" style="display: flex; align-items: center; gap: 6px;">
+                    <i class="material-icons" style="font-size: 16px;">refresh</i>
+                    刷新: 5:00
+                </span>
+            </div>
+        </div>
+
+        <!-- 滚动新闻 -->
+        <div style="height: 48px; overflow: hidden; position: relative; background-color: var(--md-sys-color-surface-container-high); display: flex; align-items: center;" id="ticker-container">
+            <div style="padding: 0 24px; color: var(--md-sys-color-primary); font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
+                <i class="material-icons" style="font-size: 18px;">campaign</i>
+                快讯
+            </div>
+            <div class="ticker-wrapper" style="display: flex; position: absolute; left: 100px; white-space: nowrap;">
+                <div class="ticker-item" style="padding: 0 30px; line-height: 48px; color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-body-medium-font);">最新消息加载中...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Enhanced Market Status Styles */
+    .md3-market-status.md3-market-status-open .md3-market-status-indicator {
+        background-color: var(--md-sys-color-success);
+        box-shadow: 0 0 8px rgba(46, 125, 50, 0.3);
+    }
+
+    .md3-market-status.md3-market-status-closed .md3-market-status-indicator {
+        background-color: var(--md-sys-color-outline);
+    }
+
+    /* Enhanced Ticker Animation */
+    .ticker-wrapper {
+        animation: ticker 45s linear infinite;
+    }
+
+    @keyframes ticker {
+        0% { transform: translate3d(0, 0, 0); }
+        100% { transform: translate3d(-100%, 0, 0); }
+    }
+
+    /* News Timeline Enhancements */
+    .news-timeline-item {
+        padding: 16px 0;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    }
+
+    .news-timeline-item:hover {
+        background-color: var(--md-sys-color-surface-container-high);
+        padding-left: 8px;
+        padding-right: 8px;
+        margin-left: -8px;
+        margin-right: -8px;
+        border-radius: var(--md-sys-shape-corner-small);
+    }
+
+    .news-timeline-item:last-child {
+        border-bottom: none;
+    }
+
+    .news-time {
+        font-family: var(--md-sys-typescale-financial-medium-font);
+        font-size: var(--md-sys-typescale-label-medium-size);
+        color: var(--md-sys-color-primary);
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    .news-content {
+        font-family: var(--md-sys-typescale-body-medium-font);
+        font-size: var(--md-sys-typescale-body-medium-size);
+        line-height: 1.5;
+        color: var(--md-sys-color-on-surface);
+    }
+
+    /* Hotspot Item Enhancements */
+    .hotspot-item-enhanced {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    }
+
+    .hotspot-item-enhanced:hover {
+        background-color: var(--md-sys-color-surface-container-high);
+        padding-left: 8px;
+        padding-right: 8px;
+        margin-left: -8px;
+        margin-right: -8px;
+        border-radius: var(--md-sys-shape-corner-small);
+    }
+
+    .hotspot-item-enhanced:last-child {
+        border-bottom: none;
+    }
+
+    .hotspot-rank-enhanced {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: var(--md-sys-shape-corner-small);
+        font-family: var(--md-sys-typescale-label-medium-font);
+        font-size: var(--md-sys-typescale-label-medium-size);
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .hotspot-rank-enhanced.rank-top {
+        background-color: var(--md-sys-color-error-container);
+        color: var(--md-sys-color-on-error-container);
+    }
+
+    .hotspot-rank-enhanced.rank-normal {
+        background-color: var(--md-sys-color-surface-container-highest);
+        color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .hotspot-title-enhanced {
+        flex: 1;
+        font-family: var(--md-sys-typescale-body-medium-font);
+        font-size: var(--md-sys-typescale-body-medium-size);
+        line-height: 1.4;
+        color: var(--md-sys-color-on-surface);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // 快速分析按钮点击事件
+    $('#quick-analysis-btn').click(function() {
+        const stockCode = $('#quick-stock-code').val().trim();
+        const marketType = $('#quick-market-type').val();
+
+        if (!stockCode) {
+            alert('请输入股票代码');
+            return;
+        }
+
+        // 跳转到股票详情页
+        window.location.href = `/stock_detail/${stockCode}?market_type=${marketType}`;
+    });
+
+    // 回车键提交表单
+    $('#quick-stock-code').keypress(function(e) {
+        if (e.which === 13) {
+            $('#quick-analysis-btn').click();
+            return false;
+        }
+    });
+
+    // 加载最新新闻
+    loadLatestNews();
+
+    // 加载舆情热点
+    loadHotspots();
+
+    // 更新市场状态
+    updateMarketStatus();
+
+    // 启动滚动新闻
+    startTickerNews();
+
+    // 刷新按钮点击事件
+    $('.refresh-news-btn').click(function() {
+        loadLatestNews();
+    });
+
+    // 只看重要切换事件
+    $('#only-important').change(function() {
+        loadLatestNews();
+    });
+
+    // 定时刷新
+    setInterval(function() {
+        updateMarketStatus();
+        // 每5分钟自动刷新新闻
+        loadLatestNews(true); // 静默刷新
+        startTickerNews();
+    }, 300000); // 5分钟
+
+    // 每秒更新当前时间
+    setInterval(function() {
+        updateCurrentTime();
+    }, 1000);
+
+    // 每秒更新一次时间和倒计时
+    setInterval(function() {
+        updateCurrentTime();
+        updateRefreshCountdown();
+    }, 1000);
+
+
+});
+
+// 加载最新新闻函数
+function loadLatestNews(silent = false) {
+    if (!silent) {
+        $('#news-timeline').html(`
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">加载新闻中...</p>
+            </div>
+        `);
+    }
+
+    const onlyImportant = $('#only-important').is(':checked');
+
+    $.ajax({
+        url: '/api/latest_news',
+        method: 'GET',
+        data: {
+            days: 2,
+            limit: 500,
+            important: onlyImportant ? 1 : 0
+        },
+        success: function(response) {
+            if (response.success && response.news && response.news.length > 0) {
+                displayNewsTimeline(response.news);
+            } else {
+                if (!silent) {
+                    $('#news-timeline').html('<div class="alert alert-info">暂无最新新闻</div>');
+                }
+            }
+        },
+        error: function(err) {
+            console.error('获取新闻失败:', err);
+            if (!silent) {
+                $('#news-timeline').html('<div class="alert alert-danger">获取新闻失败，请稍后重试</div>');
+            }
+        }
+    });
+}
+
+// 加载舆情热点函数
+function loadHotspots() {
+    $('#hotspot-list').html(`
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">加载热点中...</p>
+        </div>
+    `);
+
+    $.ajax({
+        url: '/api/latest_news',
+        method: 'GET',
+        data: {
+            days: 1,
+            limit: 10,
+            type: 'hotspot'
+        },
+        success: function(response) {
+            if (response.success && response.news && response.news.length > 0) {
+                displayHotspots(response.news);
+            } else {
+                $('#hotspot-list').html('<div class="alert alert-info">暂无舆情热点</div>');
+            }
+        },
+        error: function(err) {
+            console.error('获取热点失败:', err);
+            $('#hotspot-list').html('<div class="alert alert-danger">获取热点失败，请稍后重试</div>');
+        }
+    });
+}
+
+// Material Design 3 热点显示函数
+function displayHotspots(hotspots) {
+    if (hotspots.length === 0) {
+        $('#hotspot-list').html(`
+            <div style="display: flex; justify-content: center; align-items: center; height: 200px; color: var(--md-sys-color-on-surface-variant);">
+                暂无舆情热点
+            </div>
+        `);
+        return;
+    }
+
+    let hotspotsHtml = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+
+    hotspots.forEach((item, index) => {
+        const isTop = index < 3;
+        const rankBgColor = isTop ? 'var(--md-sys-color-error)' : 'var(--md-sys-color-surface-container-high)';
+        const rankTextColor = isTop ? 'var(--md-sys-color-on-error)' : 'var(--md-sys-color-on-surface-variant)';
+
+        hotspotsHtml += `
+            <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--md-sys-color-outline-variant);">
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 24px;
+                    height: 24px;
+                    border-radius: var(--md-sys-shape-corner-small);
+                    background-color: ${rankBgColor};
+                    color: ${rankTextColor};
+                    font-size: 12px;
+                    font-weight: 500;
+                    flex-shrink: 0;
+                ">${index + 1}</div>
+                <div style="
+                    flex: 1;
+                    font-size: 14px;
+                    line-height: 1.4;
+                    color: var(--md-sys-color-on-surface);
+                ">${item.title || item.content}</div>
+            </div>
+        `;
+    });
+
+    hotspotsHtml += '</div>';
+
+    $('#hotspot-list').html(hotspotsHtml);
+}
+
+// Material Design 3 新闻时间线显示函数
+function displayNewsTimeline(newsList) {
+    if (newsList.length === 0) {
+        $('#news-timeline').html(`
+            <div style="display: flex; justify-content: center; align-items: center; height: 200px; color: var(--md-sys-color-on-surface-variant);">
+                暂无新闻
+            </div>
+        `);
+        return;
+    }
+
+    let timelineHtml = '<div style="padding: 16px;">';
+
+    // 首先按完整的日期时间排序，确保最新消息在最前面
+    newsList.sort((a, b) => {
+        const dateTimeA = (a.date || '') + ' ' + (a.time || '00:00');
+        const dateTimeB = (b.date || '') + ' ' + (b.time || '00:00');
+        const timeA = new Date(dateTimeA);
+        const timeB = new Date(dateTimeB);
+        return timeB - timeA;
+    });
+
+    // 按天和时间点分组
+    const newsGroups = {};
+    newsList.forEach(news => {
+        const date = news.date || '';
+        const time = news.time || '00:00';
+        const displayKey = `${date} ${time.substring(0, 5)}`;
+
+        if (!newsGroups[displayKey]) {
+            newsGroups[displayKey] = [];
+        }
+        newsGroups[displayKey].push(news);
+    });
+
+    // 获取并按时间降序排列所有组键
+    const sortedKeys = Object.keys(newsGroups).sort((a, b) => {
+        const timeA = new Date(a);
+        const timeB = new Date(b);
+        return timeB - timeA;
+    });
+
+    // 生成Material Design 3时间线HTML
+    sortedKeys.forEach((displayKey, index) => {
+        const newsItems = newsGroups[displayKey];
+        const parts = displayKey.split(' ');
+        const date = parts[0];
+        const time = parts[1];
+        const formattedDate = formatDate(date);
+
+        timelineHtml += `
+            <div style="position: relative; padding: 0 0 24px 80px; min-height: 60px;">
+                <!-- 时间标签 -->
+                <div style="position: absolute; left: 0; top: 8px; width: 60px; text-align: right;">
+                    <div style="font-weight: 500; font-size: 14px; color: var(--md-sys-color-on-surface);">${time}</div>
+                    ${formattedDate ? `<div style="font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin-top: 2px;">${formattedDate}</div>` : ''}
+                </div>
+
+                <!-- 时间线点 -->
+                <div style="position: absolute; left: 68px; top: 12px; width: 12px; height: 12px; border-radius: 50%; background-color: var(--md-sys-color-primary); z-index: 1;"></div>
+
+                <!-- 时间线 -->
+                ${index < sortedKeys.length - 1 ? `<div style="position: absolute; left: 73px; top: 20px; width: 2px; height: calc(100% - 8px); background-color: var(--md-sys-color-outline-variant);"></div>` : ''}
+
+                <!-- 新闻内容 -->
+                <div style="background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-sys-shape-corner-small); box-shadow: var(--md-sys-elevation-level1); overflow: hidden;">
+        `;
+
+        newsItems.forEach((news, newsIndex) => {
+            let contentClass = 'color: var(--md-sys-color-on-surface);';
+            // 根据内容中是否含有特定关键词添加样式
+            if (news.content && (news.content.includes('增长') || news.content.includes('上涨') || news.content.includes('利好'))) {
+                contentClass = 'color: var(--md-sys-color-success);';
+            } else if (news.content && (news.content.includes('下跌') || news.content.includes('下降') || news.content.includes('利空'))) {
+                contentClass = 'color: var(--md-sys-color-error);';
+            }
+
+            timelineHtml += `
+                <div style="padding: 12px 16px; ${newsIndex < newsItems.length - 1 ? 'border-bottom: 1px solid var(--md-sys-color-outline-variant);' : ''}">
+                    <div style="${contentClass} font-size: 14px; line-height: 1.5;">${news.content || ''}</div>
+                </div>
+            `;
+        });
+
+        timelineHtml += `
+                </div>
+            </div>
+        `;
+    });
+
+    timelineHtml += '</div>';
+
+    // 更新DOM
+    $('#news-timeline').html(timelineHtml);
+}
+
+// 日期格式化辅助函数
+function formatDate(dateStr) {
+    // 检查是否与当天日期相同
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    if (dateStr === todayStr) {
+        return '';
+    }
+    
+    // 昨天
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    if (dateStr === yesterdayStr) {
+        return '昨天';
+    }
+    
+    // 其他日期用中文格式
+    const date = new Date(dateStr);
+    return `${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+// 添加页面自动刷新功能
+let refreshCountdown = 300; // 5分钟倒计时（秒）
+
+// 更新市场状态
+function updateMarketStatus() {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const weekday = now.getDay(); // 0为周日，6为周六
+
+    // 检查是否为工作日
+    const isWeekend = weekday === 0 || weekday === 6;
+
+    // 亚太市场时区
+    // A股状态 (9:30-11:30, 13:00-15:00)
+    let chinaStatus = { open: false, text: '未开市' };
+    if (!isWeekend && ((hours === 9 && minutes >= 30) || hours === 10 || (hours === 11 && minutes <= 30) ||
+        (hours >= 13 && hours < 15))) {
+        chinaStatus = { open: true, text: '交易中' };
+    }
+
+    // 港股状态 (9:30-12:00, 13:00-16:00)
+    let hkStatus = { open: false, text: '未开市' };
+    if (!isWeekend && ((hours === 9 && minutes >= 30) || hours === 10 || hours === 11 ||
+        (hours >= 13 && hours < 16))) {
+        hkStatus = { open: true, text: '交易中' };
+    }
+
+    // 台股状态 (9:00-13:30)
+    let taiwanStatus = { open: false, text: '未开市' };
+    if (!isWeekend && ((hours === 9) || hours === 10 || hours === 11 || hours === 12 ||
+        (hours === 13 && minutes <= 30))) {
+        taiwanStatus = { open: true, text: '交易中' };
+    }
+
+    // 日本股市 (9:00-11:30, 12:30-15:00)
+    let japanStatus = { open: false, text: '未开市' };
+    if (!isWeekend && ((hours === 9) || hours === 10 || (hours === 11 && minutes <= 30) ||
+        (hours === 12 && minutes >= 30) || hours === 13 || hours === 14)) {
+        japanStatus = { open: true, text: '交易中' };
+    }
+
+    // 欧洲市场 - 需要调整时区，这里是基于欧洲夏令时(UTC+2)与北京时间(UTC+8)相差6小时计算
+    // 英国股市 (伦敦，北京时间15:00-23:30)
+    let ukStatus = { open: false, text: '未开市' };
+    if (!isWeekend && ((hours >= 15 && hours < 23) || (hours === 23 && minutes <= 30))) {
+        ukStatus = { open: true, text: '交易中' };
+    }
+
+    // 德国股市 (法兰克福，北京时间15:00-23:30)
+    let germanStatus = { open: false, text: '未开市' };
+    if (!isWeekend && ((hours >= 15 && hours < 23) || (hours === 23 && minutes <= 30))) {
+        germanStatus = { open: true, text: '交易中' };
+    }
+
+    // 法国股市 (巴黎，北京时间15:00-23:30)
+    let franceStatus = { open: false, text: '未开市' };
+    if (!isWeekend && ((hours >= 15 && hours < 23) || (hours === 23 && minutes <= 30))) {
+        franceStatus = { open: true, text: '交易中' };
+    }
+
+    // 美洲市场
+    // 美股状态 (纽约，北京时间21:30-4:00)
+    let usStatus = { open: false, text: '未开市' };
+    if ((hours >= 21 && minutes >= 30) || hours >= 22 || hours < 4) {
+        // 检查美股的工作日 (当北京时间是周六早上，美国还是周五)
+        const usDay = hours < 12 ? (weekday === 6 ? 5 : weekday - 1) : weekday;
+        if (usDay !== 0 && usDay !== 6) {
+            usStatus = { open: true, text: '交易中' };
+        }
+    }
+
+    // 纳斯达克与美股相同
+    let nasdaqStatus = usStatus;
+
+    // 巴西股市 (圣保罗，北京时间20:30-3:00)
+    let brazilStatus = { open: false, text: '未开市' };
+    if ((hours >= 20 && minutes >= 30) || hours >= 21 || hours < 3) {
+        const brazilDay = hours < 12 ? (weekday === 6 ? 5 : weekday - 1) : weekday;
+        if (brazilDay !== 0 && brazilDay !== 6) {
+            brazilStatus = { open: true, text: '交易中' };
+        }
+    }
+
+    // 更新DOM
+    updateMarketStatusUI('china-market', chinaStatus);
+    updateMarketStatusUI('hk-market', hkStatus);
+    updateMarketStatusUI('taiwan-market', taiwanStatus);
+    updateMarketStatusUI('japan-market', japanStatus);
+
+    updateMarketStatusUI('uk-market', ukStatus);
+    updateMarketStatusUI('german-market', germanStatus);
+    updateMarketStatusUI('france-market', franceStatus);
+
+    updateMarketStatusUI('us-market', usStatus);
+    updateMarketStatusUI('nasdaq-market', nasdaqStatus);
+    updateMarketStatusUI('brazil-market', brazilStatus);
+}
+
+// 更新市场状态UI
+function updateMarketStatusUI(elementId, status) {
+    const element = $(`#${elementId}`);
+    const iconElement = element.find('i');
+    const textElement = element.find('.status-text');
+
+    if (status.open) {
+        iconElement.removeClass('status-closed').addClass('status-open');
+    } else {
+        iconElement.removeClass('status-open').addClass('status-closed');
+    }
+
+    textElement.text(status.text);
+}
+
+// 更新倒计时
+function updateRefreshCountdown() {
+    refreshCountdown--;
+
+    if (refreshCountdown <= 0) {
+        // 重新加载页面
+        window.location.reload();
+        return;
+    }
+
+    const minutes = Math.floor(refreshCountdown / 60);
+    const seconds = refreshCountdown % 60;
+    $('#refresh-time').text(`刷新: ${minutes}:${seconds < 10 ? '0' + seconds : seconds}`);
+}
+
+// 更新当前时间
+function updateCurrentTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('zh-CN', { hour12: false });
+    $('#current-time span').text(timeString);
+}
+
+// 启动滚动新闻
+function startTickerNews() {
+    $.ajax({
+        url: '/api/latest_news',
+        method: 'GET',
+        data: {
+            days: 1,
+            limit: 10
+        },
+        success: function(response) {
+            if (response.success && response.news && response.news.length > 0) {
+                displayTickerNews(response.news);
+            } else {
+                $('#ticker-container .ticker-wrapper').html('<div class="ticker-item">暂无最新消息</div>');
+            }
+        },
+        error: function(err) {
+            console.error('获取滚动新闻失败:', err);
+            $('#ticker-container .ticker-wrapper').html('<div class="ticker-item">获取最新消息失败</div>');
+        }
+    });
+}
+
+// 显示滚动新闻
+function displayTickerNews(newsList) {
+    if (newsList.length === 0) {
+        $('#ticker-container .ticker-wrapper').html('<div class="ticker-item">暂无最新消息</div>');
+        return;
+    }
+
+    let tickerItems = '';
+
+    newsList.forEach(news => {
+        tickerItems += `<div class="ticker-item">${news.content || ''}</div>`;
+    });
+
+    $('#ticker-container .ticker-wrapper').html(tickerItems);
+
+    // 启动滚动效果
+    const tickerWidth = $('#ticker-container').width();
+    const wrapper = $('#ticker-container .ticker-wrapper');
+
+    wrapper.width(tickerWidth * 2);
+    wrapper.css('animation', 'ticker 30s linear infinite');
+}
+</script>
+{% endblock %}

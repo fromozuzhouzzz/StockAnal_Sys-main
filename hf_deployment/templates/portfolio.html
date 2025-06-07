@@ -1,0 +1,976 @@
+
+{% extends "layout.html" %}
+
+{% block title %}投资组合 - 智能分析系统{% endblock %}
+
+{% block head %}
+<style>
+    /* Portfolio-specific Material Design 3 enhancements */
+    .md3-portfolio-container {
+        padding: 32px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .md3-portfolio-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 32px;
+        padding: 24px 0;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .md3-portfolio-title {
+        font-family: var(--md-sys-typescale-headline-large-font);
+        font-size: var(--md-sys-typescale-headline-large-size);
+        font-weight: var(--md-sys-typescale-headline-large-weight);
+        color: var(--md-sys-color-on-surface);
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .md3-portfolio-title i {
+        margin-right: 16px;
+        color: var(--md-sys-color-primary);
+        font-size: 32px;
+    }
+
+    .md3-empty-state {
+        text-align: center;
+        padding: 64px 32px;
+        background-color: var(--md-sys-color-surface-container);
+        border-radius: var(--md-sys-shape-corner-large);
+        border: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .md3-empty-state i {
+        font-size: 64px;
+        color: var(--md-sys-color-outline);
+        margin-bottom: 24px;
+    }
+
+    .md3-empty-state h3 {
+        font-family: var(--md-sys-typescale-title-large-font);
+        font-size: var(--md-sys-typescale-title-large-size);
+        font-weight: var(--md-sys-typescale-title-large-weight);
+        color: var(--md-sys-color-on-surface);
+        margin-bottom: 16px;
+    }
+
+    .md3-empty-state p {
+        font-family: var(--md-sys-typescale-body-large-font);
+        font-size: var(--md-sys-typescale-body-large-size);
+        color: var(--md-sys-color-on-surface-variant);
+        margin-bottom: 32px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="md3-portfolio-container">
+    <div id="alerts-container"></div>
+
+    <!-- Enhanced Material Design 3 Portfolio Header -->
+    <div class="md3-portfolio-header">
+        <h1 class="md3-portfolio-title">
+            <i class="material-icons">account_balance_wallet</i>
+            我的投资组合
+        </h1>
+        <button class="md3-button md3-button-filled" data-bs-toggle="modal" data-bs-target="#addStockModal">
+            <i class="material-icons">add</i> 添加股票
+        </button>
+    </div>
+
+    <!-- Enhanced Empty State -->
+    <div id="portfolio-empty" class="md3-empty-state">
+        <i class="material-icons">folder_open</i>
+        <h3>投资组合为空</h3>
+        <p>开始构建您的专业投资组合，获取智能分析和建议</p>
+        <button class="md3-button md3-button-filled" data-bs-toggle="modal" data-bs-target="#addStockModal">
+            <i class="material-icons">add</i> 添加第一只股票
+        </button>
+    </div>
+
+    <!-- Enhanced Portfolio Content -->
+    <div id="portfolio-content" style="display: none;">
+        <div class="md3-card">
+            <div class="md3-card-header">
+                <h2 class="md3-card-title">
+                    <i class="material-icons">list</i>
+                    持仓明细
+                </h2>
+            </div>
+            <div class="md3-card-body" style="padding: 0;">
+                <div class="table-responsive">
+                    <table class="md3-table">
+                        <thead>
+                            <tr>
+                                <th>股票代码</th>
+                                <th>股票名称</th>
+                                <th>所属行业</th>
+                                <th>持仓比例</th>
+                                <th>当前价格</th>
+                                <th>今日涨跌</th>
+                                <th>综合评分</th>
+                                <th>投资建议</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portfolio-table">
+                            <!-- 投资组合数据将在JS中动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Portfolio Analysis Section -->
+    <div id="portfolio-analysis" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+            <!-- Portfolio Score Card -->
+            <div class="md3-card md3-card-elevated">
+                <div class="md3-card-header">
+                    <h2 class="md3-card-title">
+                        <i class="material-icons">analytics</i>
+                        投资组合评分
+                    </h2>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: center;">
+                        <div style="text-align: center;">
+                            <div id="portfolio-score-chart"></div>
+                            <div style="margin-top: 16px;">
+                                <div id="portfolio-score" style="font-family: var(--md-sys-typescale-financial-large-font); font-size: var(--md-sys-typescale-financial-large-size); font-weight: var(--md-sys-typescale-financial-large-weight); color: var(--md-sys-color-primary);">--</div>
+                                <div style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface-variant); margin-top: 4px;">综合评分</div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 style="font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: var(--md-sys-typescale-title-medium-weight); margin-bottom: 24px;">维度评分</h3>
+
+                            <!-- Technical Score -->
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface);">技术面</span>
+                                    <span id="technical-score" style="font-family: var(--md-sys-typescale-financial-small-font); font-size: var(--md-sys-typescale-financial-small-size); color: var(--md-sys-color-primary);">--/40</span>
+                                </div>
+                                <div style="height: 8px; background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-sys-shape-corner-small); overflow: hidden;">
+                                    <div id="technical-progress" style="height: 100%; background-color: var(--md-sys-color-tertiary); width: 0%; transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);"></div>
+                                </div>
+                            </div>
+
+                            <!-- Fundamental Score -->
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface);">基本面</span>
+                                    <span id="fundamental-score" style="font-family: var(--md-sys-typescale-financial-small-font); font-size: var(--md-sys-typescale-financial-small-size); color: var(--md-sys-color-success);">--/40</span>
+                                </div>
+                                <div style="height: 8px; background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-sys-shape-corner-small); overflow: hidden;">
+                                    <div id="fundamental-progress" style="height: 100%; background-color: var(--md-sys-color-success); width: 0%; transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);"></div>
+                                </div>
+                            </div>
+
+                            <!-- Capital Flow Score -->
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface);">资金面</span>
+                                    <span id="capital-flow-score" style="font-family: var(--md-sys-typescale-financial-small-font); font-size: var(--md-sys-typescale-financial-small-size); color: var(--md-sys-color-warning);">--/20</span>
+                                </div>
+                                <div style="height: 8px; background-color: var(--md-sys-color-surface-container-high); border-radius: var(--md-sys-shape-corner-small); overflow: hidden;">
+                                    <div id="capital-flow-progress" style="height: 100%; background-color: var(--md-sys-color-warning); width: 0%; transition: width var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Industry Distribution Card -->
+            <div class="md3-card md3-card-elevated">
+                <div class="md3-card-header">
+                    <h2 class="md3-card-title">
+                        <i class="material-icons">pie_chart</i>
+                        行业分布
+                    </h2>
+                </div>
+                <div class="md3-card-body">
+                    <div id="industry-chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investment Recommendations -->
+        <div id="portfolio-recommendations" class="md3-card">
+            <div class="md3-card-header">
+                <h2 class="md3-card-title">
+                    <i class="material-icons">lightbulb</i>
+                    智能投资建议
+                </h2>
+            </div>
+            <div class="md3-card-body">
+                <div id="recommendations-list">
+                    <!-- 投资建议将在JS中动态填充 -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced Material Design 3 Add Stock Modal -->
+<div class="modal fade" id="addStockModal" tabindex="-1" aria-labelledby="addStockModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--md-sys-shape-corner-large); border: none; box-shadow: var(--md-sys-elevation-level3);">
+            <div class="modal-header" style="background-color: var(--md-sys-color-surface-container-high); border-bottom: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large) 0 0; padding: 24px;">
+                <h5 class="modal-title" id="addStockModalLabel" style="font-family: var(--md-sys-typescale-title-large-font); font-size: var(--md-sys-typescale-title-large-size); font-weight: var(--md-sys-typescale-title-large-weight); color: var(--md-sys-color-on-surface); margin: 0; display: flex; align-items: center;">
+                    <i class="material-icons" style="margin-right: 12px; color: var(--md-sys-color-primary);">add_circle</i>
+                    添加股票到投资组合
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 24px; color: var(--md-sys-color-on-surface-variant); cursor: pointer;">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 32px; background-color: var(--md-sys-color-surface-container);">
+                <form id="add-stock-form">
+                    <!-- Stock Code Input -->
+                    <div class="md3-text-field md3-text-field-outlined" style="margin-bottom: 24px;">
+                        <input type="text" class="md3-text-field-input" id="add-stock-code" required placeholder=" ">
+                        <label for="add-stock-code" class="md3-text-field-label">股票代码</label>
+                        <div class="md3-text-field-supporting-text">
+                            <i class="material-icons" style="font-size: 16px; margin-right: 4px;">info</i>
+                            请输入6位股票代码，如：000001
+                        </div>
+                    </div>
+
+                    <!-- Weight Input -->
+                    <div class="md3-text-field md3-text-field-outlined" style="margin-bottom: 24px;">
+                        <input type="number" class="md3-text-field-input" id="add-stock-weight" min="1" max="100" value="10" required placeholder=" ">
+                        <label for="add-stock-weight" class="md3-text-field-label">持仓比例 (%)</label>
+                        <div class="md3-text-field-supporting-text">
+                            <i class="material-icons" style="font-size: 16px; margin-right: 4px;">info</i>
+                            建议单只股票持仓比例不超过20%
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="padding: 16px 32px 32px 32px; background-color: var(--md-sys-color-surface-container); border-radius: 0 0 var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large); border-top: none; display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" class="md3-button md3-button-text" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="md3-button md3-button-filled" id="add-stock-btn">
+                    <i class="material-icons">add</i> 添加股票
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 投资组合数据
+    let portfolio = [];
+    let portfolioAnalysis = null;
+
+    $(document).ready(function() {
+        // 从本地存储加载投资组合
+        loadPortfolio();
+
+        // 添加股票按钮点击事件
+        $('#add-stock-btn').click(function() {
+            addStockToPortfolio();
+        });
+    });
+
+    // 从本地存储加载投资组合
+    function loadPortfolio() {
+        const savedPortfolio = localStorage.getItem('portfolio');
+        if (savedPortfolio) {
+            portfolio = JSON.parse(savedPortfolio);
+            renderPortfolio(); // 先用缓存数据渲染一次，避免白屏
+            
+            // 为每个股票获取最新数据
+            portfolio.forEach((stock, index) => {
+                fetchStockData(stock.stock_code);
+            });
+        }
+    }
+
+    // 渲染投资组合
+    function renderPortfolio() {
+        if (portfolio.length === 0) {
+            $('#portfolio-empty').show();
+            $('#portfolio-content').hide();
+            $('#portfolio-analysis').hide();
+            $('#portfolio-recommendations').hide();
+            return;
+        }
+
+        $('#portfolio-empty').hide();
+        $('#portfolio-content').show();
+        $('#portfolio-analysis').show();
+        $('#portfolio-recommendations').show();
+
+        let html = '';
+        portfolio.forEach((stock, index) => {
+            const scoreClass = getMD3ScoreColorClass(stock.score || 0);
+            const priceChangeClass = (stock.price_change || 0) >= 0 ? 'trend-up' : 'trend-down';
+            const priceChangeIcon = (stock.price_change || 0) >= 0 ? '<i class="material-icons">trending_up</i>' : '<i class="material-icons">trending_down</i>';
+
+            // 显示加载状态或实际数据
+            const stockName = stock.loading ?
+                '<span style="color: var(--md-sys-color-on-surface-variant);"><i class="material-icons" style="font-size: 16px; animation: spin 1s linear infinite;">refresh</i> 加载中...</span>' :
+                `<span class="stock-name">${stock.stock_name || '未知'}</span>`;
+
+            const industryDisplay = stock.industry || '-';
+
+            html += `
+                <tr>
+                    <td><span class="stock-code">${stock.stock_code}</span></td>
+                    <td>${stockName}</td>
+                    <td>${industryDisplay}</td>
+                    <td class="financial-data">${stock.weight}%</td>
+                    <td class="financial-data">${stock.price ? formatNumber(stock.price, 2) : '-'}</td>
+                    <td class="${priceChangeClass} financial-data">${stock.price_change ? (priceChangeIcon + ' ' + formatPercent(stock.price_change, 2)) : '-'}</td>
+                    <td><span class="md3-badge ${scoreClass}">${stock.score || '-'}</span></td>
+                    <td>${stock.recommendation || '-'}</td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="/stock_detail/${stock.stock_code}" class="md3-icon-button" title="查看详情">
+                                <i class="material-icons">analytics</i>
+                            </a>
+                            <button type="button" class="md3-icon-button" onclick="removeStock(${index})" title="移除股票" style="color: var(--md-sys-color-error);">
+                                <i class="material-icons">delete</i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        $('#portfolio-table').html(html);
+    }
+
+    // 添加股票到投资组合
+    function addStockToPortfolio() {
+        const stockCode = $('#add-stock-code').val().trim();
+        const weight = parseInt($('#add-stock-weight').val() || 10);
+
+        if (!stockCode) {
+            showError('请输入股票代码');
+            return;
+        }
+
+        // 检查是否已存在
+        const existingIndex = portfolio.findIndex(s => s.stock_code === stockCode);
+        if (existingIndex >= 0) {
+            showError('此股票已在投资组合中');
+            return;
+        }
+
+        // 添加到投资组合
+        portfolio.push({
+            stock_code: stockCode,
+            weight: weight,
+            stock_name: '加载中...',
+            industry: '-',
+            price: null,
+            price_change: null,
+            score: null,
+            recommendation: null,
+            loading: true,
+            isNew: true  // 标记为新添加的股票
+        });
+
+        savePortfolio();
+        $('#addStockModal').modal('hide');
+        $('#add-stock-form')[0].reset();
+        fetchStockData(stockCode);
+    }
+
+    // 添加重试加载功能
+    function retryFetchStockData(stockCode) {
+        showInfo(`正在重新获取 ${stockCode} 的数据...`);
+        fetchStockData(stockCode);
+    }
+
+    // 在渲染函数中添加重试按钮
+    html += `
+        <tr>
+            <td>${stock.stock_code}</td>
+            <td>${stockName} ${stock.stock_name === '获取失败' ?
+                `<button class="btn btn-sm btn-link p-0 ml-2" onclick="retryFetchStockData('${stock.stock_code}')">
+                    <i class="fas fa-sync-alt"></i> 重试
+                </button>` : ''}
+            </td>
+            ...
+    `;
+
+    // 获取股票数据
+    function fetchStockData(stockCode) {
+        const index = portfolio.findIndex(s => s.stock_code === stockCode);
+        if (index < 0) return;
+
+        // 显示加载状态
+        portfolio[index].loading = true;
+        savePortfolio();
+        renderPortfolio();
+
+        $.ajax({
+            url: '/analyze',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                stock_codes: [stockCode],
+                market_type: 'A'
+            }),
+            success: function(response) {
+                if (response.results && response.results.length > 0) {
+                    const result = response.results[0];
+
+                    portfolio[index].stock_name = result.stock_name || '未知';
+                    portfolio[index].industry = result.industry || '未知';
+                    portfolio[index].price = result.price || 0;
+                    portfolio[index].price_change = result.price_change || 0;
+                    portfolio[index].score = result.score || 0;
+                    portfolio[index].recommendation = result.recommendation || '-';
+                    portfolio[index].loading = false;
+
+                    savePortfolio();
+                    analyzePortfolio();
+                    
+                    // 只在添加新股票时显示成功消息
+                    if (portfolio[index].isNew) {
+                        showSuccess(`已添加 ${result.stock_name || stockCode} 到投资组合`);
+                        portfolio[index].isNew = false;
+                    }
+                } else {
+                    portfolio[index].stock_name = '数据获取失败';
+                    portfolio[index].loading = false;
+                    savePortfolio();
+                    renderPortfolio();
+                    showError(`获取股票 ${stockCode} 数据失败`);
+                }
+            },
+            error: function(error) {
+                portfolio[index].stock_name = '获取失败';
+                portfolio[index].loading = false;
+                savePortfolio();
+                renderPortfolio();
+                showError(`获取股票 ${stockCode} 数据失败`);
+            }
+        });
+    }
+
+    // 从投资组合中移除股票
+    function removeStock(index) {
+        if (confirm('确定要从投资组合中移除此股票吗？')) {
+            portfolio.splice(index, 1);
+            savePortfolio();
+            renderPortfolio();
+            analyzePortfolio();
+        }
+    }
+
+    // 保存投资组合到本地存储
+    function savePortfolio() {
+        localStorage.setItem('portfolio', JSON.stringify(portfolio));
+        renderPortfolio();
+    }
+
+
+    // 分析投资组合
+    function analyzePortfolio() {
+        if (portfolio.length === 0) return;
+
+        // 计算投资组合评分
+        let totalScore = 0;
+        let totalWeight = 0;
+        let industriesMap = {};
+
+        portfolio.forEach(stock => {
+            if (stock.score) {
+                totalScore += stock.score * stock.weight;
+                totalWeight += stock.weight;
+
+                // 统计行业分布
+                const industry = stock.industry || '其他';
+                if (industriesMap[industry]) {
+                    industriesMap[industry] += stock.weight;
+                } else {
+                    industriesMap[industry] = stock.weight;
+                }
+            }
+        });
+
+        // 确保总权重不为零
+        if (totalWeight > 0) {
+            const portfolioScore = Math.round(totalScore / totalWeight);
+
+            // 更新评分显示
+            $('#portfolio-score').text(portfolioScore);
+
+            // 简化的维度评分计算
+            const technicalScore = Math.round(portfolioScore * 0.4);
+            const fundamentalScore = Math.round(portfolioScore * 0.4);
+            const capitalFlowScore = Math.round(portfolioScore * 0.2);
+
+            $('#technical-score').text(technicalScore + '/40');
+            $('#fundamental-score').text(fundamentalScore + '/40');
+            $('#capital-flow-score').text(capitalFlowScore + '/20');
+
+            $('#technical-progress').css('width', (technicalScore / 40 * 100) + '%');
+            $('#fundamental-progress').css('width', (fundamentalScore / 40 * 100) + '%');
+            $('#capital-flow-progress').css('width', (capitalFlowScore / 20 * 100) + '%');
+
+            // 更新投资组合评分图表
+            renderPortfolioScoreChart(portfolioScore);
+
+            // 更新行业分布图表
+            renderIndustryChart(industriesMap);
+
+            // 生成投资建议
+            generateRecommendations(portfolioScore);
+        }
+    }
+
+    // 渲染投资组合评分图表
+    function renderPortfolioScoreChart(score) {
+        const options = {
+            series: [score],
+            chart: {
+                height: 150,
+                type: 'radialBar',
+            },
+            plotOptions: {
+                radialBar: {
+                    hollow: {
+                        size: '70%',
+                    },
+                    dataLabels: {
+                        show: false
+                    }
+                }
+            },
+            colors: [getScoreColor(score)],
+            stroke: {
+                lineCap: 'round'
+            }
+        };
+
+        // 清除旧图表
+        $('#portfolio-score-chart').empty();
+
+        const chart = new ApexCharts(document.querySelector("#portfolio-score-chart"), options);
+        chart.render();
+    }
+
+    // 渲染行业分布图表
+    function renderIndustryChart(industriesMap) {
+        // 转换数据格式为图表所需
+        const seriesData = [];
+        const labels = [];
+
+        for (const industry in industriesMap) {
+            if (industriesMap.hasOwnProperty(industry)) {
+                seriesData.push(industriesMap[industry]);
+                labels.push(industry);
+            }
+        }
+
+        const options = {
+            series: seriesData,
+            chart: {
+                type: 'pie',
+                height: 300
+            },
+            labels: labels,
+            responsive: [{
+                breakpoint: 480,
+                options: {
+                    chart: {
+                        height: 200
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }],
+            tooltip: {
+                y: {
+                    formatter: function(value) {
+                        return value + '%';
+                    }
+                }
+            }
+        };
+
+        // 清除旧图表
+        $('#industry-chart').empty();
+
+        const chart = new ApexCharts(document.querySelector("#industry-chart"), options);
+        chart.render();
+    }
+
+    // 生成投资建议
+    function generateRecommendations(portfolioScore) {
+        let recommendations = [];
+
+        // 根据总分生成基本建议
+        if (portfolioScore >= 80) {
+            recommendations.push({
+                text: '您的投资组合整体评级优秀，当前市场环境下建议保持较高仓位',
+                type: 'success'
+            });
+        } else if (portfolioScore >= 60) {
+            recommendations.push({
+                text: '您的投资组合整体评级良好，可以考虑适度增加仓位',
+                type: 'primary'
+            });
+        } else if (portfolioScore >= 40) {
+            recommendations.push({
+                text: '您的投资组合整体评级一般，建议持币观望，等待更好的入场时机',
+                type: 'warning'
+            });
+        } else {
+            recommendations.push({
+                text: '您的投资组合整体评级较弱，建议减仓规避风险',
+                type: 'danger'
+            });
+        }
+
+        // 检查行业集中度
+        const industries = {};
+        let totalWeight = 0;
+
+        portfolio.forEach(stock => {
+            const industry = stock.industry || '其他';
+            if (industries[industry]) {
+                industries[industry] += stock.weight;
+            } else {
+                industries[industry] = stock.weight;
+            }
+            totalWeight += stock.weight;
+        });
+
+        // 计算行业集中度
+        let maxIndustryWeight = 0;
+        let maxIndustry = '';
+
+        for (const industry in industries) {
+            if (industries[industry] > maxIndustryWeight) {
+                maxIndustryWeight = industries[industry];
+                maxIndustry = industry;
+            }
+        }
+
+        const industryConcentration = maxIndustryWeight / totalWeight;
+
+        if (industryConcentration > 0.5) {
+            recommendations.push({
+                text: `行业集中度较高，${maxIndustry}行业占比${Math.round(industryConcentration * 100)}%，建议适当分散投资降低非系统性风险`,
+                type: 'warning'
+            });
+        }
+
+        // 检查需要调整的个股
+        const weakStocks = portfolio.filter(stock => stock.score && stock.score < 40);
+        if (weakStocks.length > 0) {
+            const stockNames = weakStocks.map(s => `${s.stock_name}(${s.stock_code})`).join('、');
+            recommendations.push({
+                text: `以下个股评分较低，建议考虑调整：${stockNames}`,
+                type: 'danger'
+            });
+        }
+
+        const strongStocks = portfolio.filter(stock => stock.score && stock.score > 70);
+        if (strongStocks.length > 0 && portfolioScore < 60) {
+            const stockNames = strongStocks.map(s => `${s.stock_name}(${s.stock_code})`).join('、');
+            recommendations.push({
+                text: `以下个股表现强势，可考虑增加配置比例：${stockNames}`,
+                type: 'success'
+            });
+        }
+
+        // 渲染建议 - Material Design 3 Style
+        let html = '';
+        recommendations.forEach(rec => {
+            const iconMap = {
+                success: 'check_circle',
+                primary: 'info',
+                warning: 'warning',
+                danger: 'error'
+            };
+
+            const colorMap = {
+                success: 'var(--md-sys-color-success-container)',
+                primary: 'var(--md-sys-color-primary-container)',
+                warning: 'var(--md-sys-color-warning-container)',
+                danger: 'var(--md-sys-color-error-container)'
+            };
+
+            const textColorMap = {
+                success: 'var(--md-sys-color-on-success-container)',
+                primary: 'var(--md-sys-color-on-primary-container)',
+                warning: 'var(--md-sys-color-on-warning-container)',
+                danger: 'var(--md-sys-color-on-error-container)'
+            };
+
+            html += `
+                <div style="
+                    background-color: ${colorMap[rec.type]};
+                    color: ${textColorMap[rec.type]};
+                    padding: 16px 20px;
+                    border-radius: var(--md-sys-shape-corner-medium);
+                    margin-bottom: 12px;
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 12px;
+                    font-family: var(--md-sys-typescale-body-medium-font);
+                    font-size: var(--md-sys-typescale-body-medium-size);
+                    line-height: var(--md-sys-typescale-body-medium-line-height);
+                ">
+                    <i class="material-icons" style="font-size: 20px; margin-top: 2px;">${iconMap[rec.type]}</i>
+                    <span>${rec.text}</span>
+                </div>
+            `;
+        });
+
+        $('#recommendations-list').html(html);
+    }
+
+    // Enhanced Material Design 3 Score Color Functions
+    function getMD3ScoreColorClass(score) {
+        if (score >= 80) return 'md3-score-excellent';
+        if (score >= 60) return 'md3-score-good';
+        if (score >= 40) return 'md3-score-fair';
+        return 'md3-score-poor';
+    }
+
+    // 获取评分颜色 - Material Design 3
+    function getScoreColor(score) {
+        if (score >= 80) return 'var(--md-sys-color-success)';
+        if (score >= 60) return 'var(--md-sys-color-bull)';
+        if (score >= 40) return 'var(--md-sys-color-warning)';
+        return 'var(--md-sys-color-error)';
+    }
+
+    // 格式化数字
+    function formatNumber(num, decimals = 2) {
+        if (num === null || num === undefined) return '-';
+        return parseFloat(num).toFixed(decimals);
+    }
+
+    // 格式化百分比
+    function formatPercent(num, decimals = 2) {
+        if (num === null || num === undefined) return '-';
+        const formatted = parseFloat(num).toFixed(decimals);
+        return formatted + '%';
+    }
+
+    // 显示成功消息
+    function showSuccess(message) {
+        showAlert(message, 'success');
+    }
+
+    // 显示错误消息
+    function showError(message) {
+        showAlert(message, 'error');
+    }
+
+    // 显示信息消息
+    function showInfo(message) {
+        showAlert(message, 'info');
+    }
+
+    // 通用消息显示函数
+    function showAlert(message, type) {
+        const alertContainer = $('#alerts-container');
+        const alertId = 'alert-' + Date.now();
+
+        const alertColors = {
+            success: 'var(--md-sys-color-success-container)',
+            error: 'var(--md-sys-color-error-container)',
+            info: 'var(--md-sys-color-primary-container)'
+        };
+
+        const alertTextColors = {
+            success: 'var(--md-sys-color-on-success-container)',
+            error: 'var(--md-sys-color-on-error-container)',
+            info: 'var(--md-sys-color-on-primary-container)'
+        };
+
+        const alertIcons = {
+            success: 'check_circle',
+            error: 'error',
+            info: 'info'
+        };
+
+        const alertHtml = `
+            <div id="${alertId}" class="md3-alert" style="
+                background-color: ${alertColors[type]};
+                color: ${alertTextColors[type]};
+                padding: 16px 24px;
+                border-radius: var(--md-sys-shape-corner-large);
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                box-shadow: var(--md-sys-elevation-level1);
+                animation: slideInDown 0.3s ease-out;
+            ">
+                <i class="material-icons" style="margin-right: 12px; font-size: 20px;">${alertIcons[type]}</i>
+                <span style="flex: 1; font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);">${message}</span>
+                <button onclick="$('#${alertId}').fadeOut(300, function() { $(this).remove(); })" style="
+                    background: none;
+                    border: none;
+                    color: inherit;
+                    cursor: pointer;
+                    padding: 4px;
+                    margin-left: 12px;
+                ">
+                    <i class="material-icons" style="font-size: 18px;">close</i>
+                </button>
+            </div>
+        `;
+
+        alertContainer.append(alertHtml);
+
+        // 自动移除消息
+        setTimeout(() => {
+            $(`#${alertId}`).fadeOut(300, function() {
+                $(this).remove();
+            });
+        }, 5000);
+    }
+</script>
+
+<style>
+    /* Additional animations and enhancements */
+    @keyframes slideInDown {
+        from {
+            transform: translateY(-20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* Enhanced Material Design 3 Text Fields */
+    .md3-text-field {
+        position: relative;
+        margin-bottom: 16px;
+    }
+
+    .md3-text-field-input {
+        width: 100%;
+        padding: 16px 16px 8px 16px;
+        border: 1px solid var(--md-sys-color-outline);
+        border-radius: var(--md-sys-shape-corner-small);
+        background-color: var(--md-sys-color-surface-container-high);
+        color: var(--md-sys-color-on-surface);
+        font-family: var(--md-sys-typescale-body-large-font);
+        font-size: var(--md-sys-typescale-body-large-size);
+        transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+        outline: none;
+    }
+
+    .md3-text-field-input:focus {
+        border-color: var(--md-sys-color-primary);
+        box-shadow: 0 0 0 2px var(--md-sys-color-primary-container);
+    }
+
+    .md3-text-field-label {
+        position: absolute;
+        left: 16px;
+        top: 16px;
+        color: var(--md-sys-color-on-surface-variant);
+        font-family: var(--md-sys-typescale-body-large-font);
+        font-size: var(--md-sys-typescale-body-large-size);
+        transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+        pointer-events: none;
+        background-color: var(--md-sys-color-surface-container-high);
+        padding: 0 4px;
+    }
+
+    .md3-text-field-input:focus + .md3-text-field-label,
+    .md3-text-field-input:not(:placeholder-shown) + .md3-text-field-label {
+        top: -8px;
+        left: 12px;
+        font-size: var(--md-sys-typescale-body-small-size);
+        color: var(--md-sys-color-primary);
+    }
+
+    .md3-text-field-supporting-text {
+        margin-top: 4px;
+        font-family: var(--md-sys-typescale-body-small-font);
+        font-size: var(--md-sys-typescale-body-small-size);
+        color: var(--md-sys-color-on-surface-variant);
+        display: flex;
+        align-items: center;
+    }
+
+    /* Enhanced Icon Button Styles */
+    .md3-icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--md-sys-shape-corner-full);
+        border: none;
+        background-color: transparent;
+        color: var(--md-sys-color-on-surface-variant);
+        cursor: pointer;
+        transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .md3-icon-button:hover {
+        background-color: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+    }
+
+    .md3-icon-button:active {
+        transform: scale(0.95);
+    }
+
+    /* Responsive Design Enhancements */
+    @media (max-width: 768px) {
+        .md3-portfolio-container {
+            padding: 16px;
+        }
+
+        .md3-portfolio-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .md3-portfolio-title {
+            font-size: var(--md-sys-typescale-headline-medium-size);
+        }
+
+        .md3-table th,
+        .md3-table td {
+            padding: 8px 4px;
+            font-size: 12px;
+        }
+
+        .md3-table .stock-code {
+            font-size: 11px;
+        }
+
+        .md3-icon-button {
+            width: 36px;
+            height: 36px;
+        }
+    }
+</style>
+{% endblock %}
