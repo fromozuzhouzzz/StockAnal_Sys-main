@@ -341,6 +341,7 @@
     function pollScanStatus(taskId) {
         console.log('开始轮询任务状态:', taskId);
         let elapsedTime = 0;
+        let lastKnownResult = null; // 缓存最后已知的结果
 
         function checkStatus() {
             $.ajax({
@@ -350,6 +351,11 @@
                     console.log('任务状态:', response);
                     elapsedTime++;
                     const progress = response.progress || 0;
+
+                    // 缓存结果
+                    if (response.result) {
+                        lastKnownResult = response.result;
+                    }
 
                     // 更新进度消息
                     let progressHtml = `正在扫描市场...<br>
@@ -395,17 +401,36 @@
                     console.error('轮询状态失败:', xhr, status, error);
 
                     if (xhr.status === 404) {
+                        // 任务可能已完成并被清理，检查是否有缓存的结果
+                        console.log('任务状态404，可能已完成并被清理，检查缓存结果');
                         $('#cancel-scan-btn').hide();
                         currentTaskId = null;
                         $('#scan-loading').hide();
                         $('#scan-results').show();
-                        showError('扫描任务已丢失，请重新开始扫描');
-                        $('#scan-error-retry').show();
+
+                        // 如果有缓存的结果，显示它；否则显示空结果
+                        if (lastKnownResult && lastKnownResult.length > 0) {
+                            console.log('使用缓存的结果:', lastKnownResult);
+                            renderResults(lastKnownResult);
+                            showSuccess(`扫描完成！找到 ${lastKnownResult.length} 只符合条件的股票`);
+                        } else {
+                            renderResults([]);
+                            showInfo('扫描完成，但未找到符合条件的股票');
+                        }
                         return;
                     }
 
-                    // 其他错误，继续尝试
-                    setTimeout(checkStatus, 3000);
+                    // 其他错误，继续尝试，但限制重试次数
+                    if (elapsedTime < 60) { // 最多重试60秒
+                        setTimeout(checkStatus, 3000);
+                    } else {
+                        $('#cancel-scan-btn').hide();
+                        currentTaskId = null;
+                        $('#scan-loading').hide();
+                        $('#scan-results').show();
+                        showError('扫描超时，请重新开始扫描');
+                        $('#scan-error-retry').show();
+                    }
                 }
             });
         }
