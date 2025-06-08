@@ -222,62 +222,9 @@
     // 全局变量
     let currentTaskId = null;
 
-    $(document).ready(function() {
-        // 表单提交
-        $('#scan-form').submit(function(e) {
-            e.preventDefault();
-
-            // 获取股票列表
-            let stockList = [];
-
-            // 获取指数股票
-            const indexCode = $('#index-selector').val();
-            if (indexCode) {
-                fetchIndexStocks(indexCode);
-                return;
-            }
-
-            // 获取行业股票
-            const industry = $('#industry-selector').val();
-            if (industry) {
-                fetchIndustryStocks(industry);
-                return;
-            }
-
-            // 获取自定义股票
-            const customStocks = $('#custom-stocks').val().trim();
-            if (customStocks) {
-                stockList = customStocks.split(',').map(s => s.trim());
-                scanMarket(stockList);
-            } else {
-                showError('请至少选择一种方式获取股票列表');
-            }
-        });
-
-        // 指数选择变化
-        $('#index-selector').change(function() {
-            if ($(this).val()) {
-                $('#industry-selector').val('');
-            }
-        });
-
-        // 行业选择变化
-        $('#industry-selector').change(function() {
-            if ($(this).val()) {
-                $('#index-selector').val('');
-            }
-        });
-
-        // 导出结果
-        $('#export-btn').click(function() {
-            exportToCSV();
-        });
-
-    });
-
-    // 将函数移到全局作用域
     // 获取指数成分股
     function fetchIndexStocks(indexCode) {
+        console.log('开始获取指数成分股:', indexCode);
         $('#scan-loading').show();
         $('#scan-results').hide();
 
@@ -286,11 +233,10 @@
             type: 'GET',
             dataType: 'json',
             success: function(response) {
+                console.log('指数成分股获取成功:', response);
                 const stockList = response.stock_list;
                 if (stockList && stockList.length > 0) {
-                    // 保存最近的扫描列表用于重试
                     window.lastScanList = stockList;
-
                     scanMarket(stockList);
                 } else {
                     $('#scan-loading').hide();
@@ -299,6 +245,7 @@
                 }
             },
             error: function(error) {
+                console.error('指数成分股获取失败:', error);
                 $('#scan-loading').hide();
                 $('#scan-results').show();
                 showError('获取指数成分股失败: ' + (error.responseJSON ? error.responseJSON.error : error.statusText));
@@ -308,6 +255,7 @@
 
     // 获取行业成分股
     function fetchIndustryStocks(industry) {
+        console.log('开始获取行业成分股:', industry);
         $('#scan-loading').show();
         $('#scan-results').hide();
 
@@ -316,11 +264,10 @@
             type: 'GET',
             dataType: 'json',
             success: function(response) {
+                console.log('行业成分股获取成功:', response);
                 const stockList = response.stock_list;
                 if (stockList && stockList.length > 0) {
-                    // 保存最近的扫描列表用于重试
                     window.lastScanList = stockList;
-
                     scanMarket(stockList);
                 } else {
                     $('#scan-loading').hide();
@@ -329,6 +276,7 @@
                 }
             },
             error: function(error) {
+                console.error('行业成分股获取失败:', error);
                 $('#scan-loading').hide();
                 $('#scan-results').show();
                 showError('获取行业成分股失败: ' + (error.responseJSON ? error.responseJSON.error : error.statusText));
@@ -338,23 +286,14 @@
 
     // 扫描市场
     function scanMarket(stockList) {
+        console.log('开始扫描市场，股票数量:', stockList.length);
         $('#scan-loading').show();
         $('#scan-results').hide();
         $('#scan-error-retry').hide();
 
-        // 添加处理时间计数器
-        let processingTime = 0;
-        let stockCount = stockList.length;
-
-        // 保存上次扫描列表
-        window.lastScanList = stockList;
-
-        // 更新扫描提示消息
-        $('#scan-message').html(`正在准备扫描${stockCount}只股票，请稍候...`);
-
         const minScore = parseInt($('#min-score').val() || 60);
+        $('#scan-message').html(`正在准备扫描${stockList.length}只股票，请稍候...`);
 
-        // 第一步：启动扫描任务
         $.ajax({
             url: '/api/start_market_scan',
             type: 'POST',
@@ -365,8 +304,9 @@
                 market_type: 'A'
             }),
             success: function(response) {
+                console.log('扫描任务启动成功:', response);
                 const taskId = response.task_id;
-                currentTaskId = taskId; // 保存当前任务ID
+                currentTaskId = taskId;
 
                 if (!taskId) {
                     showError('启动扫描任务失败：未获取到任务ID');
@@ -376,13 +316,11 @@
                     return;
                 }
 
-                // 显示取消按钮
                 $('#cancel-scan-btn').show();
-
-                // 启动轮询任务状态
-                pollScanStatus(taskId, processingTime);
+                pollScanStatus(taskId);
             },
             error: function(xhr, status, error) {
+                console.error('扫描任务启动失败:', xhr, status, error);
                 $('#scan-loading').hide();
                 $('#scan-results').show();
 
@@ -400,188 +338,85 @@
     }
 
     // 轮询扫描任务状态
-    function pollScanStatus(taskId, startTime) {
-        let elapsedTime = startTime || 0;
-        let pollInterval;
-
-        // 立即执行一次，然后设置定时器
-        checkStatus();
+    function pollScanStatus(taskId) {
+        console.log('开始轮询任务状态:', taskId);
+        let elapsedTime = 0;
 
         function checkStatus() {
             $.ajax({
                 url: `/api/scan_status/${taskId}`,
                 type: 'GET',
                 success: function(response) {
-                    // 更新计时和进度
+                    console.log('任务状态:', response);
                     elapsedTime++;
                     const progress = response.progress || 0;
 
                     // 更新进度消息
                     let progressHtml = `正在扫描市场...<br>
                         进度: ${progress}% 完成<br>
-                        已处理: ${response.processed || Math.round(response.total * progress / 100)} / ${response.total} 只股票<br>
+                        已处理: ${response.processed || 0} / ${response.total || 0} 只股票<br>
                         耗时: ${elapsedTime}秒`;
 
-                    // 添加详细统计信息
                     if (response.found !== undefined) {
                         progressHtml += `<br>找到符合条件: ${response.found} 只`;
-                    }
-                    if (response.failed !== undefined && response.failed > 0) {
-                        progressHtml += `<br>分析失败: ${response.failed} 只`;
-                    }
-                    if (response.timeout !== undefined && response.timeout > 0) {
-                        progressHtml += `<br>超时: ${response.timeout} 只`;
-                    }
-                    if (response.estimated_remaining !== undefined && response.estimated_remaining > 0) {
-                        progressHtml += `<br>预计剩余: ${response.estimated_remaining} 秒`;
                     }
 
                     $('#scan-message').html(progressHtml);
 
-                        // 检查任务状态
-                        if (response.status === 'completed') {
-                            // 扫描完成，停止轮询
-                            clearInterval(pollInterval);
+                    if (response.status === 'completed') {
+                        console.log('扫描完成，结果:', response.result);
+                        $('#cancel-scan-btn').hide();
+                        currentTaskId = null;
 
-                            // 隐藏取消按钮
-                            $('#cancel-scan-btn').hide();
-                            currentTaskId = null;
+                        renderResults(response.result || []);
+                        $('#scan-loading').hide();
+                        $('#scan-results').show();
 
-                            console.log('扫描任务完成，结果数量:', response.result ? response.result.length : 0);
-
-                            // 显示结果
-                            renderResults(response.result || []);
-                            $('#scan-loading').hide();
-                            $('#scan-results').show();
-
-                            // 如果结果为空，显示提示
-                            if (!response.result || response.result.length === 0) {
-                                $('#results-table').html('<tr><td colspan="11" class="text-center">未找到符合条件的股票</td></tr>');
-                                $('#result-count').text('0');
-                                $('#export-btn').hide();
-                                showInfo('扫描完成，但未找到符合条件的股票');
-                            } else {
-                                showSuccess(`扫描完成！找到 ${response.result.length} 只符合条件的股票`);
-                            }
-
-                        } else if (response.status === 'failed') {
-                            // 扫描失败，停止轮询
-                            clearInterval(pollInterval);
-
-                            // 隐藏取消按钮
-                            $('#cancel-scan-btn').hide();
-                            currentTaskId = null;
-
-                            $('#scan-loading').hide();
-                            $('#scan-results').show();
-
-                            showError('扫描任务失败: ' + (response.error || '未知错误'));
-                            $('#scan-error-retry').show();
-
-                        } else if (response.status === 'cancelled') {
-                            // 任务被取消，停止轮询
-                            clearInterval(pollInterval);
-
-                            // 隐藏取消按钮
-                            $('#cancel-scan-btn').hide();
-                            currentTaskId = null;
-
-                            $('#scan-loading').hide();
-                            $('#scan-results').show();
-
-                            showInfo('扫描任务已被取消');
-                            $('#scan-error-retry').show();
-
+                        if (!response.result || response.result.length === 0) {
+                            showInfo('扫描完成，但未找到符合条件的股票');
                         } else {
-                            // 任务仍在进行中，继续轮询
-                            // 轮询间隔根据进度动态调整
-                            if (!pollInterval) {
-                                pollInterval = setInterval(checkStatus, 2000);
-                            }
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('轮询状态失败:', {
-                            status: xhr.status,
-                            statusText: xhr.statusText,
-                            error: error,
-                            response: xhr.responseText
-                        });
-
-                        // 如果是404错误，说明任务不存在，停止轮询
-                        if (xhr.status === 404) {
-                            clearInterval(pollInterval);
-                            $('#scan-loading').hide();
-                            $('#scan-results').show();
-                            showError('扫描任务已丢失，请重新开始扫描');
-                            $('#scan-error-retry').show();
-                            $('#cancel-scan-btn').hide();
-                            currentTaskId = null;
-                            return;
+                            showSuccess(`扫描完成！找到 ${response.result.length} 只符合条件的股票`);
                         }
 
-                        // 其他错误，尝试继续轮询
-                        if (!pollInterval) {
-                            pollInterval = setInterval(checkStatus, 3000);
-                        }
+                    } else if (response.status === 'failed') {
+                        $('#cancel-scan-btn').hide();
+                        currentTaskId = null;
+                        $('#scan-loading').hide();
+                        $('#scan-results').show();
+                        showError('扫描任务失败: ' + (response.error || '未知错误'));
+                        $('#scan-error-retry').show();
 
-                        // 更新进度消息
-                        $('#scan-message').html(`正在扫描市场...<br>
-                            无法获取最新进度 (错误: ${xhr.status})<br>
-                            耗时: ${elapsedTime}秒`);
+                    } else {
+                        // 继续轮询
+                        setTimeout(checkStatus, 2000);
                     }
-                });
-            }
-        }
-    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('轮询状态失败:', xhr, status, error);
 
-    // 取消扫描任务
-    function cancelScan(taskId) {
-        if (!taskId) {
-            console.error('没有有效的任务ID');
-            return;
-        }
+                    if (xhr.status === 404) {
+                        $('#cancel-scan-btn').hide();
+                        currentTaskId = null;
+                        $('#scan-loading').hide();
+                        $('#scan-results').show();
+                        showError('扫描任务已丢失，请重新开始扫描');
+                        $('#scan-error-retry').show();
+                        return;
+                    }
 
-        // 显示取消确认
-        if (!confirm('确定要取消当前扫描任务吗？')) {
-            return;
-        }
-
-        $.ajax({
-            url: `/api/cancel_scan/${taskId}`,
-            type: 'POST',
-            success: function(response) {
-                $('#scan-loading').hide();
-                $('#scan-results').show();
-                showInfo('扫描任务已取消');
-                $('#scan-error-retry').show();
-                $('#cancel-scan-btn').hide();
-                currentTaskId = null;
-            },
-            error: function(xhr, status, error) {
-                console.error('取消扫描任务失败:', error);
-                let errorMsg = '取消任务失败';
-                if (xhr.responseJSON && xhr.responseJSON.error) {
-                    errorMsg += ': ' + xhr.responseJSON.error;
+                    // 其他错误，继续尝试
+                    setTimeout(checkStatus, 3000);
                 }
-                showError(errorMsg);
-            }
-        });
-    }
-
-    // 添加全局取消函数
-    function cancelCurrentScan() {
-        if (currentTaskId) {
-            cancelScan(currentTaskId);
-        } else {
-            $('#scan-loading').hide();
-            $('#scan-results').show();
-            $('#cancel-scan-btn').hide();
+            });
         }
+
+        // 立即开始检查
+        checkStatus();
     }
 
     // 渲染扫描结果
     function renderResults(results) {
+        console.log('渲染结果:', results);
         if (!results || results.length === 0) {
             $('#results-table').html('<tr><td colspan="11" class="text-center">未找到符合条件的股票</td></tr>');
             $('#result-count').text('0');
@@ -591,14 +426,9 @@
 
         let html = '';
         results.forEach(result => {
-            // 获取股票评分的颜色类
             const scoreClass = getMD3ScoreColorClass(result.score);
-
-            // 获取MA趋势的类和图标
             const maTrendClass = getMD3TrendColorClass(result.ma_trend);
             const maTrendIcon = getTrendIcon(result.ma_trend);
-
-            // 获取价格变动的类和图标
             const priceChangeClass = result.price_change >= 0 ? 'md3-text-bull' : 'md3-text-bear';
             const priceChangeIcon = result.price_change >= 0 ? '<i class="material-icons">arrow_upward</i>' : '<i class="material-icons">arrow_downward</i>';
 
@@ -628,44 +458,105 @@
         $('#export-btn').show();
     }
 
+    // 取消扫描任务
+    function cancelScan(taskId) {
+        if (!taskId) return;
+
+        if (!confirm('确定要取消当前扫描任务吗？')) return;
+
+        $.ajax({
+            url: `/api/cancel_scan/${taskId}`,
+            type: 'POST',
+            success: function(response) {
+                $('#scan-loading').hide();
+                $('#scan-results').show();
+                showInfo('扫描任务已取消');
+                $('#scan-error-retry').show();
+                $('#cancel-scan-btn').hide();
+                currentTaskId = null;
+            },
+            error: function(xhr, status, error) {
+                console.error('取消扫描任务失败:', error);
+                showError('取消任务失败: ' + (xhr.responseJSON ? xhr.responseJSON.error : error));
+            }
+        });
+    }
+
     // 导出到CSV
     function exportToCSV() {
-        // 获取表格数据
         const table = document.querySelector('#scan-results table');
         let csv = [];
         let rows = table.querySelectorAll('tr');
 
         for (let i = 0; i < rows.length; i++) {
             let row = [], cols = rows[i].querySelectorAll('td, th');
-
-            for (let j = 0; j < cols.length - 1; j++) { // 跳过最后一列（操作列）
-                // 获取单元格的文本内容，去除HTML标签
+            for (let j = 0; j < cols.length - 1; j++) {
                 let text = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/,/g, '，');
                 row.push(text);
             }
-
             csv.push(row.join(','));
         }
 
-        // 下载CSV文件
         const csvString = csv.join('\n');
         const filename = '市场扫描结果_' + new Date().toISOString().slice(0, 10) + '.csv';
-
         const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = filename;
-
         link.style.display = 'none';
         document.body.appendChild(link);
-
         link.click();
-
         document.body.removeChild(link);
     }
 
-    // 取消按钮点击事件
+    // 事件绑定
     $(document).ready(function() {
+        // 表单提交
+        $('#scan-form').submit(function(e) {
+            e.preventDefault();
+            console.log('表单提交');
+
+            const indexCode = $('#index-selector').val();
+            if (indexCode) {
+                fetchIndexStocks(indexCode);
+                return;
+            }
+
+            const industry = $('#industry-selector').val();
+            if (industry) {
+                fetchIndustryStocks(industry);
+                return;
+            }
+
+            const customStocks = $('#custom-stocks').val().trim();
+            if (customStocks) {
+                const stockList = customStocks.split(',').map(s => s.trim());
+                scanMarket(stockList);
+            } else {
+                showError('请至少选择一种方式获取股票列表');
+            }
+        });
+
+        // 指数选择变化
+        $('#index-selector').change(function() {
+            if ($(this).val()) {
+                $('#industry-selector').val('');
+            }
+        });
+
+        // 行业选择变化
+        $('#industry-selector').change(function() {
+            if ($(this).val()) {
+                $('#index-selector').val('');
+            }
+        });
+
+        // 导出结果
+        $('#export-btn').click(function() {
+            exportToCSV();
+        });
+
+        // 取消按钮
         $('#cancel-scan-btn').click(function() {
             if (currentTaskId) {
                 cancelScan(currentTaskId);
@@ -674,7 +565,13 @@
                 $('#scan-results').show();
             }
         });
+
+        console.log('页面初始化完成');
     });
+
+
+
+
 
 </script>
 {% endblock %}
