@@ -180,20 +180,20 @@
             <!-- Enhanced Material Design 3 Results Table -->
             <div id="scan-results" style="padding: 0;">
                 <div style="overflow-x: auto;">
-                    <table class="md3-data-table">
+                    <table class="md3-data-table" id="market-scan-table">
                         <thead>
                             <tr>
-                                <th>代码</th>
-                                <th>名称</th>
-                                <th>行业</th>
-                                <th>得分</th>
-                                <th>价格</th>
-                                <th>涨跌幅</th>
-                                <th>RSI</th>
-                                <th>MA趋势</th>
-                                <th>成交量</th>
-                                <th>建议</th>
-                                <th>操作</th>
+                                <th style="text-align: center;">代码</th>
+                                <th style="text-align: left;">名称</th>
+                                <th style="text-align: left;">行业</th>
+                                <th style="text-align: center;">得分</th>
+                                <th style="text-align: right;">价格</th>
+                                <th style="text-align: center;">涨跌幅</th>
+                                <th style="text-align: center;">RSI</th>
+                                <th style="text-align: center;">MA趋势</th>
+                                <th style="text-align: center;">成交量</th>
+                                <th style="text-align: center;">建议</th>
+                                <th style="text-align: center;">操作</th>
                             </tr>
                         </thead>
                         <tbody id="results-table">
@@ -418,7 +418,7 @@
     function renderResults(results) {
         console.log('渲染结果:', results);
         if (!results || results.length === 0) {
-            $('#results-table').html('<tr><td colspan="11" class="text-center">未找到符合条件的股票</td></tr>');
+            $('#results-table').html('<tr><td colspan="11" style="text-align: center;">未找到符合条件的股票</td></tr>');
             $('#result-count').text('0');
             $('#export-btn').hide();
             return;
@@ -429,24 +429,25 @@
             const scoreClass = getMD3ScoreColorClass(result.score);
             const maTrendClass = getMD3TrendColorClass(result.ma_trend);
             const maTrendIcon = getTrendIcon(result.ma_trend);
-            const priceChangeClass = result.price_change >= 0 ? 'md3-text-bull' : 'md3-text-bear';
-            const priceChangeIcon = result.price_change >= 0 ? '<i class="material-icons">arrow_upward</i>' : '<i class="material-icons">arrow_downward</i>';
+            // 使用中国股市习惯：上涨红色，下跌绿色
+            const priceChangeClass = result.price_change >= 0 ? 'trend-up' : 'trend-down';
+            const priceChangeIcon = result.price_change >= 0 ? '<i class="material-icons">trending_up</i>' : '<i class="material-icons">trending_down</i>';
 
             html += `
                 <tr>
-                    <td>${result.stock_code}</td>
-                    <td>${result.stock_name || '未知'}</td>
-                    <td>${result.industry || '-'}</td>
-                    <td><span class="badge ${scoreClass}">${result.score}</span></td>
-                    <td>${formatNumber(result.price)}</td>
-                    <td class="${priceChangeClass}">${priceChangeIcon} ${formatPercent(result.price_change)}</td>
-                    <td>${formatNumber(result.rsi)}</td>
-                    <td class="${maTrendClass}">${maTrendIcon} ${result.ma_trend}</td>
-                    <td>${result.volume_status}</td>
-                    <td>${result.recommendation}</td>
-                    <td>
-                        <a href="/stock_detail/${result.stock_code}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-chart-line"></i> 详情
+                    <td style="text-align: center;">${result.stock_code}</td>
+                    <td style="text-align: left;">${result.stock_name || '未知'}</td>
+                    <td style="text-align: left;">${result.industry || '-'}</td>
+                    <td style="text-align: center;"><span class="md3-badge ${scoreClass}">${result.score}</span></td>
+                    <td style="text-align: right;">${formatNumber(result.price)}</td>
+                    <td style="text-align: center;" class="${priceChangeClass}">${priceChangeIcon} ${formatPercent(result.price_change)}</td>
+                    <td style="text-align: center;">${formatNumber(result.rsi)}</td>
+                    <td style="text-align: center;" class="${maTrendClass}">${maTrendIcon} ${result.ma_trend}</td>
+                    <td style="text-align: center;">${result.volume_status}</td>
+                    <td style="text-align: center;">${result.recommendation}</td>
+                    <td style="text-align: center;">
+                        <a href="/stock_detail/${result.stock_code}" class="md3-button md3-button-outlined md3-button-small">
+                            <i class="material-icons">analytics</i> 详情
                         </a>
                     </td>
                 </tr>

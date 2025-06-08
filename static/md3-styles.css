@@ -1396,6 +1396,59 @@ table#concept-flow-table tbody tr td * {
     justify-content: unset !important;
 }
 
+/* 市场扫描表格专用样式 - 确保列对齐一致性 */
+table#market-scan-table tbody tr td:nth-child(1) {
+    text-align: center !important; /* 代码 */
+}
+
+table#market-scan-table tbody tr td:nth-child(2) {
+    text-align: left !important; /* 名称 */
+}
+
+table#market-scan-table tbody tr td:nth-child(3) {
+    text-align: left !important; /* 行业 */
+}
+
+table#market-scan-table tbody tr td:nth-child(4) {
+    text-align: center !important; /* 得分 */
+}
+
+table#market-scan-table tbody tr td:nth-child(5) {
+    text-align: right !important; /* 价格 */
+}
+
+table#market-scan-table tbody tr td:nth-child(6) {
+    text-align: center !important; /* 涨跌幅 */
+}
+
+table#market-scan-table tbody tr td:nth-child(7) {
+    text-align: center !important; /* RSI */
+}
+
+table#market-scan-table tbody tr td:nth-child(8) {
+    text-align: center !important; /* MA趋势 */
+}
+
+table#market-scan-table tbody tr td:nth-child(9) {
+    text-align: center !important; /* 成交量 */
+}
+
+table#market-scan-table tbody tr td:nth-child(10) {
+    text-align: center !important; /* 建议 */
+}
+
+table#market-scan-table tbody tr td:nth-child(11) {
+    text-align: center !important; /* 操作 */
+}
+
+/* 确保市场扫描表格内容都是inline显示 */
+table#market-scan-table tbody tr td * {
+    display: inline !important;
+    flex-direction: unset !important;
+    align-items: unset !important;
+    justify-content: unset !important;
+}
+
 /* Progress Indicators */
 .md3-linear-progress {
     width: 100%;
