@@ -1,0 +1,1863 @@
+{% extends "layout.html" %}
+
+{% block title %}风险监控 - 智能分析系统{% endblock %}
+
+{% block content %}
+<div class="page-transition">
+    <!-- Enhanced Material Design 3 分析表单 -->
+    <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+        <div class="md3-card-header">
+            <h2 class="md3-card-title">
+                <i class="material-icons">warning</i> 风险监控
+            </h2>
+            <p class="md3-card-subtitle">全方位风险评估与预警系统</p>
+        </div>
+        <div class="md3-card-body">
+            <!-- Enhanced Material Design 3 Tabs -->
+            <div class="md3-tabs" style="margin-bottom: 32px;">
+                <div class="md3-tab-bar">
+                    <button class="md3-tab md3-tab-active" id="stock-risk-tab" data-target="stock-risk">
+                        <i class="material-icons">show_chart</i>
+                        <span>个股风险</span>
+                    </button>
+                    <button class="md3-tab" id="portfolio-risk-tab" data-target="portfolio-risk">
+                        <i class="material-icons">work</i>
+                        <span>组合风险</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="md3-tab-content">
+                <div class="md3-tab-panel md3-tab-panel-active" id="stock-risk">
+                    <form id="stock-risk-form" style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 20px; align-items: end;">
+                        <div class="md3-text-field md3-text-field-outlined">
+                            <input type="text" class="md3-text-field-input" id="stock-code" placeholder=" " required>
+                            <label class="md3-text-field-label">股票代码</label>
+                            <div class="md3-text-field-supporting-text">例如：600519、0700.HK、AAPL</div>
+                        </div>
+
+                        <div class="md3-text-field md3-text-field-outlined">
+                            <select class="md3-text-field-input" id="market-type">
+                                <option value="A" selected>A股</option>
+                                <option value="HK">港股</option>
+                                <option value="US">美股</option>
+                            </select>
+                            <label class="md3-text-field-label">市场类型</label>
+                        </div>
+
+                        <button type="submit" class="md3-button md3-button-filled md3-button-large">
+                            <i class="material-icons">analytics</i> 分析风险
+                        </button>
+                    </form>
+                </div>
+
+                <div class="md3-tab-panel" id="portfolio-risk">
+                    <div class="md3-card md3-card-outlined" style="margin-bottom: 24px; background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container);">
+                        <div class="md3-card-body" style="display: flex; align-items: center; gap: 16px;">
+                            <i class="material-icons" style="color: var(--md-sys-color-primary);">info</i>
+                            <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);">分析投资组合的整体风险，识别高风险股票和风险集中度</span>
+                        </div>
+                    </div>
+                    <button id="analyze-portfolio-btn" class="md3-button md3-button-filled">
+                        <i class="material-icons">work</i> 分析我的投资组合
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 Loading Panel -->
+    <div id="loading-panel" style="display: none;">
+        <div class="md3-card md3-card-elevated md3-animate-fade-in">
+            <div class="md3-card-body" style="text-align: center; padding: 64px 32px;">
+                <div class="md3-progress-indicator" style="margin-bottom: 24px;"></div>
+                <p style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-body-large-font); font-size: var(--md-sys-typescale-body-large-size); margin: 0;">正在分析风险，请稍候...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 个股风险分析结果 -->
+    <div id="stock-risk-result" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px;">
+            <!-- 风险概览卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-left">
+                <div class="md3-card-header">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div>
+                            <h3 class="md3-card-title">
+                                <i class="material-icons">shield</i> 风险概览
+                            </h3>
+                        </div>
+                        <span id="risk-level-badge" class="md3-badge"></span>
+                    </div>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 32px;">
+                        <div style="flex: 1;">
+                            <h2 id="stock-name" style="margin: 0 0 8px 0; font-family: var(--md-sys-typescale-headline-large-font); font-size: 28px; font-weight: 500; color: var(--md-sys-color-on-surface);"></h2>
+                            <p id="stock-info" style="margin: 0; color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size);"></p>
+                        </div>
+                        <div>
+                            <div id="risk-gauge-chart" style="height: 140px; width: 140px;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 16px;">风险预警</h4>
+                        <div id="risk-alerts">
+                            <!-- 风险预警内容将在JS中动态填充 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 风险构成卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-right">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">radar</i> 风险构成
+                    </h3>
+                    <p class="md3-card-subtitle">多维度风险评估雷达图</p>
+                </div>
+                <div class="md3-card-body">
+                    <div id="risk-radar-chart" style="height: 280px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Material Design 3 风险指标详情 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- 波动率风险卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.1s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">trending_up</i> 波动率风险
+                    </h3>
+                    <p class="md3-card-subtitle">价格波动性分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <div class="md3-metrics-grid" style="grid-template-columns: 1fr; gap: 12px;">
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">当前波动率</div>
+                                    <div id="current-volatility" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">变化率</div>
+                                    <div id="volatility-change" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">风险等级</div>
+                                    <div id="volatility-risk-level" class="md3-metric-value"></div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 16px;">
+                                <div class="md3-body-small" style="color: var(--md-sys-color-on-surface-variant);" id="volatility-comment"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div id="volatility-chart" style="height: 180px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 趋势风险卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.2s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">show_chart</i> 趋势风险
+                    </h3>
+                    <p class="md3-card-subtitle">价格趋势分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <div class="md3-metrics-grid" style="grid-template-columns: 1fr; gap: 12px;">
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">当前趋势</div>
+                                    <div id="current-trend" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">均线关系</div>
+                                    <div id="ma-relationship" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">风险等级</div>
+                                    <div id="trend-risk-level" class="md3-metric-value"></div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 16px;">
+                                <div class="md3-body-small" style="color: var(--md-sys-color-on-surface-variant);" id="trend-comment"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div id="trend-chart" style="height: 180px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Material Design 3 风险指标详情 - 第二行 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- 反转风险卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.3s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">swap_vert</i> 反转风险
+                    </h3>
+                    <p class="md3-card-subtitle">价格反转信号分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <div class="md3-metrics-grid" style="grid-template-columns: 1fr; gap: 12px;">
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">反转信号数</div>
+                                    <div id="reversal-signals" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">可能方向</div>
+                                    <div id="reversal-direction" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">风险等级</div>
+                                    <div id="reversal-risk-level" class="md3-metric-value"></div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 16px;">
+                                <div class="md3-body-small" style="color: var(--md-sys-color-on-surface-variant);" id="reversal-comment"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div id="reversal-chart" style="height: 180px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 成交量风险卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.4s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">bar_chart</i> 成交量风险
+                    </h3>
+                    <p class="md3-card-subtitle">成交量异常分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <div class="md3-metrics-grid" style="grid-template-columns: 1fr; gap: 12px;">
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">成交量比率</div>
+                                    <div id="volume-ratio" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">成交量模式</div>
+                                    <div id="volume-pattern" class="md3-metric-value"></div>
+                                </div>
+                                <div class="md3-metric-item">
+                                    <div class="md3-metric-label">风险等级</div>
+                                    <div id="volume-risk-level" class="md3-metric-value"></div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 16px;">
+                                <div class="md3-body-small" style="color: var(--md-sys-color-on-surface-variant);" id="volume-comment"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div id="volume-chart" style="height: 180px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 投资组合风险分析结果 -->
+    <div id="portfolio-risk-result" style="display: none;" class="md3-animate-fade-in">
+
+        <!-- Enhanced Material Design 3 风险概览区域 -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- 组合风险概览卡片 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-left">
+                <div class="md3-card-header">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <div>
+                            <h3 class="md3-card-title">
+                                <i class="material-icons">work</i> 投资组合风险概览
+                            </h3>
+                            <p class="md3-card-subtitle">包含 <span id="portfolio-stock-count" class="md3-emphasis">0</span> 只股票</p>
+                        </div>
+                        <span id="portfolio-risk-level-badge" class="md3-badge md3-badge-large"></span>
+                    </div>
+                </div>
+                <div class="md3-card-body">
+                    <!-- 关键指标网格 -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                        <div class="md3-metric-item">
+                            <div class="md3-metric-label">
+                                <i class="material-icons" style="font-size: 16px; margin-right: 4px;">business</i>
+                                行业集中度
+                            </div>
+                            <div id="industry-concentration" class="md3-metric-value"></div>
+                        </div>
+                        <div class="md3-metric-item">
+                            <div class="md3-metric-label">
+                                <i class="material-icons" style="font-size: 16px; margin-right: 4px;">warning</i>
+                                高风险占比
+                            </div>
+                            <div id="high-risk-concentration" class="md3-metric-value md3-risk-highlight"></div>
+                        </div>
+                    </div>
+
+                    <!-- 风险预警区域 -->
+                    <div id="portfolio-risk-alerts" class="md3-alerts-container">
+                        <!-- 风险预警内容将在JS中动态填充 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 风险仪表盘 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-right">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">speed</i> 风险评分
+                    </h3>
+                </div>
+                <div class="md3-card-body" style="text-align: center;">
+                    <div id="portfolio-risk-gauge-chart" style="height: 180px;"></div>
+                    <div class="md3-risk-score-summary" style="margin-top: 16px;">
+                        <div class="md3-body-small" style="color: var(--md-sys-color-on-surface-variant);">
+                            综合风险评估
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Material Design 3 行业分布与详细分析 -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- 行业分布图 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.1s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">pie_chart</i> 行业分布
+                    </h3>
+                    <p class="md3-card-subtitle">投资组合行业配置分析</p>
+                </div>
+                <div class="md3-card-body">
+                    <div id="industry-distribution-chart" style="height: 240px;"></div>
+                </div>
+            </div>
+
+            <!-- 风险分析摘要 -->
+            <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.2s;">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">analytics</i> 风险分析摘要
+                    </h3>
+                </div>
+                <div class="md3-card-body">
+                    <div id="risk-summary-metrics" class="md3-metrics-grid">
+                        <!-- 风险摘要指标将在JS中动态填充 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Material Design 3 高风险股票表格 -->
+        <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.3s; margin-bottom: 24px;">
+            <div class="md3-card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div>
+                        <h3 class="md3-card-title">
+                            <i class="material-icons">trending_down</i> 高风险股票
+                        </h3>
+                        <p class="md3-card-subtitle">需要重点关注的投资标的</p>
+                    </div>
+                    <div class="md3-chip md3-chip-outlined" id="high-risk-count-chip">
+                        <span class="md3-chip-text">0 只高风险股票</span>
+                    </div>
+                </div>
+            </div>
+            <div class="md3-card-body" style="padding: 0;">
+                <div class="md3-table-container">
+                    <table class="md3-table">
+                        <thead>
+                            <tr>
+                                <th>股票代码</th>
+                                <th>股票名称</th>
+                                <th>风险评分</th>
+                                <th>风险等级</th>
+                                <th>持仓权重</th>
+                                <th>主要风险</th>
+                                <th>建议操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="high-risk-stocks-table">
+                            <!-- 高风险股票列表将在JS中动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Material Design 3 风险预警列表 -->
+        <div class="md3-card md3-card-elevated md3-animate-fade-in" style="animation-delay: 0.4s;">
+            <div class="md3-card-header">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div>
+                        <h3 class="md3-card-title">
+                            <i class="material-icons">notification_important</i> 风险预警列表
+                        </h3>
+                        <p class="md3-card-subtitle">实时风险监控与预警信息</p>
+                    </div>
+                    <div class="md3-chip md3-chip-filled" id="alerts-count-chip" style="background-color: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container);">
+                        <span class="md3-chip-text">0 条预警</span>
+                    </div>
+                </div>
+            </div>
+            <div class="md3-card-body" style="padding: 0;">
+                <div class="md3-table-container">
+                    <table class="md3-table">
+                        <thead>
+                            <tr>
+                                <th>股票代码</th>
+                                <th>股票名称</th>
+                                <th>预警类型</th>
+                                <th>风险等级</th>
+                                <th>预警信息</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="risk-alerts-table">
+                            <!-- 风险预警列表将在JS中动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Enhanced Material Design 3 Tabs */
+.md3-tabs {
+    width: 100%;
+}
+
+.md3-tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    background-color: var(--md-sys-color-surface);
+}
+
+.md3-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 24px;
+    border: none;
+    background: none;
+    color: var(--md-sys-color-on-surface-variant);
+    font-family: var(--md-sys-typescale-title-small-font);
+    font-size: var(--md-sys-typescale-title-small-size);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+    border-bottom: 3px solid transparent;
+}
+
+.md3-tab:hover {
+    background-color: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface);
+}
+
+.md3-tab.md3-tab-active {
+    color: var(--md-sys-color-primary);
+    border-bottom-color: var(--md-sys-color-primary);
+    background-color: var(--md-sys-color-primary-container);
+}
+
+.md3-tab-content {
+    margin-top: 24px;
+}
+
+.md3-tab-panel {
+    display: none;
+}
+
+.md3-tab-panel.md3-tab-panel-active {
+    display: block;
+}
+
+/* Enhanced Material Design 3 Portfolio Risk Analysis Styles */
+
+.md3-metric-item {
+    padding: 16px;
+    background-color: var(--md-sys-color-surface-container-low);
+    border-radius: var(--md-sys-shape-corner-medium);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.md3-metric-item:hover {
+    background-color: var(--md-sys-color-surface-container);
+    box-shadow: var(--md-sys-elevation-level1);
+}
+
+.md3-metric-label {
+    font-family: var(--md-sys-typescale-body-small-font);
+    font-size: var(--md-sys-typescale-body-small-size);
+    color: var(--md-sys-color-on-surface-variant);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.md3-metric-value {
+    font-family: var(--md-sys-typescale-headline-small-font);
+    font-size: var(--md-sys-typescale-headline-small-size);
+    font-weight: var(--md-sys-typescale-headline-small-weight);
+    color: var(--md-sys-color-on-surface);
+}
+
+.md3-risk-highlight {
+    color: var(--md-sys-color-error) !important;
+}
+
+.md3-emphasis {
+    font-weight: 600;
+    color: var(--md-sys-color-primary);
+}
+
+.md3-alerts-container {
+    max-height: 200px;
+    overflow-y: auto;
+    border-radius: var(--md-sys-shape-corner-medium);
+}
+
+.md3-alerts-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.md3-alerts-container::-webkit-scrollbar-track {
+    background: var(--md-sys-color-surface-container-low);
+    border-radius: 3px;
+}
+
+.md3-alerts-container::-webkit-scrollbar-thumb {
+    background: var(--md-sys-color-outline-variant);
+    border-radius: 3px;
+}
+
+.md3-risk-score-summary {
+    padding: 12px;
+    background-color: var(--md-sys-color-surface-container-low);
+    border-radius: var(--md-sys-shape-corner-medium);
+    border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.md3-metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.md3-table-container {
+    overflow-x: auto;
+    border-radius: var(--md-sys-shape-corner-medium);
+}
+
+.md3-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--md-sys-typescale-body-medium-font);
+    font-size: var(--md-sys-typescale-body-medium-size);
+}
+
+.md3-table th {
+    background-color: var(--md-sys-color-surface-container-high);
+    color: var(--md-sys-color-on-surface-variant);
+    font-weight: var(--md-sys-typescale-title-small-weight);
+    padding: 16px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.md3-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    color: var(--md-sys-color-on-surface);
+    transition: background-color var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.md3-table tbody tr:hover td {
+    background-color: var(--md-sys-color-surface-container-low);
+}
+
+.md3-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: var(--md-sys-shape-corner-small);
+    font-family: var(--md-sys-typescale-label-medium-font);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.md3-chip-outlined {
+    background-color: transparent;
+    border: 1px solid var(--md-sys-color-outline);
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.md3-chip-filled {
+    border: none;
+}
+
+.md3-chip-text {
+    margin: 0;
+}
+
+.md3-badge-large {
+    padding: 8px 16px;
+    font-size: var(--md-sys-typescale-label-large-size);
+    font-weight: var(--md-sys-typescale-label-large-weight);
+}
+
+/* Enhanced Material Design 3 Badge Styles */
+.md3-badge-critical {
+    background-color: var(--md-sys-color-error);
+    color: var(--md-sys-color-on-error);
+}
+
+.md3-badge-high {
+    background-color: var(--md-sys-color-warning);
+    color: var(--md-sys-color-on-warning);
+}
+
+.md3-badge-medium {
+    background-color: var(--md-sys-color-info);
+    color: var(--md-sys-color-on-info);
+}
+
+.md3-badge-low {
+    background-color: var(--md-sys-color-success);
+    color: var(--md-sys-color-on-success);
+}
+
+.md3-badge-minimal {
+    background-color: var(--md-sys-color-secondary);
+    color: var(--md-sys-color-on-secondary);
+}
+
+.md3-badge-unknown {
+    background-color: var(--md-sys-color-outline);
+    color: var(--md-sys-color-on-surface);
+}
+
+/* Enhanced Material Design 3 Score Badge Styles */
+.md3-score-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: var(--md-sys-shape-corner-small);
+    font-family: var(--md-sys-typescale-label-medium-font);
+    font-size: var(--md-sys-typescale-label-medium-size);
+    font-weight: var(--md-sys-typescale-label-medium-weight);
+    min-width: 48px;
+}
+
+.md3-score-critical {
+    background-color: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+}
+
+.md3-score-high {
+    background-color: var(--md-sys-color-warning-container);
+    color: var(--md-sys-color-on-warning-container);
+}
+
+.md3-score-medium {
+    background-color: var(--md-sys-color-info-container);
+    color: var(--md-sys-color-on-info-container);
+}
+
+.md3-score-low {
+    background-color: var(--md-sys-color-success-container);
+    color: var(--md-sys-color-on-success-container);
+}
+
+/* Enhanced Material Design 3 Alert Styles */
+.md3-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-radius: var(--md-sys-shape-corner-medium);
+    border: 1px solid;
+    transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+}
+
+.md3-alert-success {
+    background-color: var(--md-sys-color-success-container);
+    color: var(--md-sys-color-on-success-container);
+    border-color: var(--md-sys-color-success);
+}
+
+.md3-alert-error {
+    background-color: var(--md-sys-color-error-container);
+    color: var(--md-sys-color-on-error-container);
+    border-color: var(--md-sys-color-error);
+}
+
+.md3-alert-warning {
+    background-color: var(--md-sys-color-warning-container);
+    color: var(--md-sys-color-on-warning-container);
+    border-color: var(--md-sys-color-warning);
+}
+
+.md3-alert-info {
+    background-color: var(--md-sys-color-info-container);
+    color: var(--md-sys-color-on-info-container);
+    border-color: var(--md-sys-color-info);
+}
+
+.md3-alert-content {
+    flex: 1;
+}
+
+.md3-alert-title {
+    font-family: var(--md-sys-typescale-title-small-font);
+    font-size: var(--md-sys-typescale-title-small-size);
+    font-weight: var(--md-sys-typescale-title-small-weight);
+    margin-bottom: 4px;
+}
+
+.md3-alert-message {
+    font-family: var(--md-sys-typescale-body-medium-font);
+    font-size: var(--md-sys-typescale-body-medium-size);
+    line-height: 1.4;
+}
+
+/* Dark theme support */
+[data-theme="dark"] {
+    --md-sys-color-primary: #90CAF9;
+    --md-sys-color-on-primary: #0D47A1;
+    --md-sys-color-primary-container: #1565C0;
+    --md-sys-color-on-primary-container: #E3F2FD;
+    --md-sys-color-surface: #121212;
+    --md-sys-color-on-surface: #E0E0E0;
+    --md-sys-color-surface-container: #1E1E1E;
+    --md-sys-color-surface-container-low: #1A1A1A;
+    --md-sys-color-surface-container-high: #2A2A2A;
+    --md-sys-color-on-surface-variant: #B0B0B0;
+    --md-sys-color-outline-variant: #404040;
+    --md-sys-color-error: #F28B82;
+    --md-sys-color-error-container: #601410;
+    --md-sys-color-on-error-container: #F9DEDC;
+    --md-sys-color-warning: #FFB74D;
+    --md-sys-color-warning-container: #E65100;
+    --md-sys-color-on-warning-container: #FFE0B2;
+    --md-sys-color-info: #64B5F6;
+    --md-sys-color-info-container: #0D47A1;
+    --md-sys-color-on-info-container: #E3F2FD;
+    --md-sys-color-success: #81C784;
+    --md-sys-color-success-container: #1B5E20;
+    --md-sys-color-on-success-container: #C8E6C9;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Enhanced Material Design 3 Tab functionality
+        $('.md3-tab').click(function() {
+            const targetId = $(this).data('target');
+
+            // Remove active class from all tabs and panels
+            $('.md3-tab').removeClass('md3-tab-active');
+            $('.md3-tab-panel').removeClass('md3-tab-panel-active');
+
+            // Add active class to clicked tab and corresponding panel
+            $(this).addClass('md3-tab-active');
+            $(`#${targetId}`).addClass('md3-tab-panel-active');
+        });
+
+        // 个股风险分析表单提交
+        $('#stock-risk-form').submit(function(e) {
+            e.preventDefault();
+            const stockCode = $('#stock-code').val().trim();
+            const marketType = $('#market-type').val();
+
+            if (!stockCode) {
+                showError('请输入股票代码！');
+                return;
+            }
+
+            analyzeStockRisk(stockCode, marketType);
+        });
+
+        // 分析投资组合风险按钮点击
+        $('#analyze-portfolio-btn').click(function() {
+            analyzePortfolioRisk();
+        });
+
+        // 主题切换功能
+        initializeTheme();
+        $('#theme-toggle-btn').click(function() {
+            toggleTheme();
+        });
+    });
+
+    // 主题管理功能
+    function initializeTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        applyTheme(savedTheme);
+    }
+
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        applyTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+
+        const themeIcon = $('#theme-icon');
+        const themeText = $('#theme-text');
+
+        if (theme === 'dark') {
+            themeIcon.text('dark_mode');
+            themeText.text('深色模式');
+        } else {
+            themeIcon.text('light_mode');
+            themeText.text('浅色模式');
+        }
+
+        // 更新图表主题
+        updateChartsTheme(theme);
+    }
+
+    function updateChartsTheme(theme) {
+        // 如果有图表实例，重新渲染以适应新主题
+        if (window.portfolioRiskGaugeChart) {
+            window.portfolioRiskGaugeChart.updateOptions({
+                theme: {
+                    mode: theme
+                }
+            });
+        }
+
+        if (window.industryDistributionChart) {
+            window.industryDistributionChart.updateOptions({
+                theme: {
+                    mode: theme
+                }
+            });
+        }
+    }
+
+    function analyzeStockRisk(stockCode, marketType) {
+        $('#loading-panel').show();
+        $('#stock-risk-result').hide();
+        $('#portfolio-risk-result').hide();
+
+        $.ajax({
+            url: '/api/risk_analysis',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                stock_code: stockCode,
+                market_type: marketType
+            }),
+            success: function(response) {
+                $('#loading-panel').hide();
+                renderStockRiskAnalysis(response, stockCode);
+                $('#stock-risk-result').show();
+            },
+            error: function(xhr, status, error) {
+                $('#loading-panel').hide();
+                let errorMsg = '获取风险分析数据失败';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg += ': ' + xhr.responseJSON.error;
+                } else if (error) {
+                    errorMsg += ': ' + error;
+                }
+                showError(errorMsg);
+            }
+        });
+    }
+
+    function analyzePortfolioRisk() {
+        // 尝试从本地存储获取投资组合数据
+        const savedPortfolio = localStorage.getItem('portfolio');
+        if (!savedPortfolio) {
+            showError('您的投资组合为空，请先添加股票到投资组合');
+            return;
+        }
+
+        const portfolio = JSON.parse(savedPortfolio);
+        if (portfolio.length === 0) {
+            showError('您的投资组合为空，请先添加股票到投资组合');
+            return;
+        }
+
+        $('#loading-panel').show();
+        $('#stock-risk-result').hide();
+        $('#portfolio-risk-result').hide();
+
+        $.ajax({
+            url: '/api/portfolio_risk',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                portfolio: portfolio
+            }),
+            success: function(response) {
+                $('#loading-panel').hide();
+                renderPortfolioRiskAnalysis(response, portfolio);
+                $('#portfolio-risk-result').show();
+            },
+            error: function(xhr, status, error) {
+                $('#loading-panel').hide();
+                let errorMsg = '获取投资组合风险分析数据失败';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg += ': ' + xhr.responseJSON.error;
+                } else if (error) {
+                    errorMsg += ': ' + error;
+                }
+                showError(errorMsg);
+            }
+        });
+    }
+
+    function renderStockRiskAnalysis(data, stockCode) {
+        // 设置基本信息
+        $('#stock-name').text(data.stock_name || stockCode);
+        $('#stock-info').text(data.industry || '未知行业');
+
+        // 设置风险等级
+        const riskScore = data.total_risk_score || 0;
+        const riskLevel = data.risk_level || '未知';
+        const riskLevelBadgeClass = getRiskLevelBadgeClass(riskLevel);
+        $('#risk-level-badge').text(riskLevel).removeClass().addClass(`badge ${riskLevelBadgeClass}`);
+
+        // 设置风险预警
+        renderRiskAlerts(data.alerts || []);
+
+        // 渲染风险仪表图
+        renderRiskGaugeChart(riskScore);
+
+        // 渲染风险雷达图
+        renderRiskRadarChart(data);
+
+        // 设置波动率风险
+        const volatilityRisk = data.volatility_risk || {};
+        $('#current-volatility').text(formatPercent(volatilityRisk.value || 0, 2));
+
+        const volatilityChange = volatilityRisk.change || 0;
+        const volatilityChangeClass = volatilityChange >= 0 ? 'trend-up' : 'trend-down';
+        $('#volatility-change').text(formatPercent(volatilityChange, 2)).addClass(volatilityChangeClass);
+
+        $('#volatility-risk-level').text(volatilityRisk.risk_level || '未知');
+        $('#volatility-comment').text('波动率反映价格波动的剧烈程度，高波动率意味着高风险');
+
+        // 设置趋势风险
+        const trendRisk = data.trend_risk || {};
+        $('#current-trend').text(trendRisk.trend || '未知');
+        $('#ma-relationship').text(trendRisk.ma_relationship || '未知');
+        $('#trend-risk-level').text(trendRisk.risk_level || '未知');
+        $('#trend-comment').text('下降趋势中的股票有更高的风险，特别是在空头排列时');
+
+        // 设置反转风险
+        const reversalRisk = data.reversal_risk || {};
+        $('#reversal-signals').text(reversalRisk.reversal_signals || 0);
+        $('#reversal-direction').text(reversalRisk.direction || '未知');
+        $('#reversal-risk-level').text(reversalRisk.risk_level || '未知');
+        $('#reversal-comment').text('多个技术指标同时出现反转信号，意味着趋势可能即将改变');
+
+        // 设置成交量风险
+        const volumeRisk = data.volume_risk || {};
+        $('#volume-ratio').text(formatNumber(volumeRisk.volume_ratio || 0, 2));
+        $('#volume-pattern').text(volumeRisk.pattern || '未知');
+        $('#volume-risk-level').text(volumeRisk.risk_level || '未知');
+        $('#volume-comment').text('成交量异常变化常常预示价格波动，尤其是量价背离时');
+
+        // 渲染各个风险维度的图表
+        renderVolatilityChart([5.2, 3.8, 4.5, 7.2, 6.3]);
+        renderTrendChart([110, 108, 106, 102, 98]);
+        renderReversalChart([55, 60, 65, 72, 68]);
+        renderVolumeChart([1.2, 0.8, 1.5, 2.8, 2.1]);
+    }
+
+    function renderPortfolioRiskAnalysis(data, portfolio) {
+        // 设置基本信息
+        $('#portfolio-stock-count').text(portfolio.length);
+
+        // 设置风险等级
+        const riskScore = data.portfolio_risk_score || 0;
+        const riskLevel = data.risk_level || '未知';
+        const riskLevelBadgeClass = getMD3RiskLevelBadgeClass(riskLevel);
+        $('#portfolio-risk-level-badge').text(riskLevel).removeClass().addClass(`md3-badge md3-badge-large ${riskLevelBadgeClass}`);
+
+        // 设置风险集中度
+        const riskConcentration = data.risk_concentration || {};
+        $('#industry-concentration').text(`${riskConcentration.max_industry || '未知'} (${formatPercent(riskConcentration.max_industry_weight || 0, 1)})`);
+        $('#high-risk-concentration').text(formatPercent(riskConcentration.high_risk_weight || 0, 1));
+
+        // 设置风险预警
+        renderPortfolioRiskAlerts(data.alerts || []);
+
+        // 渲染风险分析摘要
+        renderRiskSummaryMetrics(data);
+
+        // 渲染投资组合风险仪表图
+        renderPortfolioRiskGaugeChart(riskScore);
+
+        // 渲染行业分布图
+        renderIndustryDistributionChart(portfolio);
+
+        // 渲染高风险股票列表
+        renderHighRiskStocksTable(data.high_risk_stocks || []);
+
+        // 渲染风险预警列表
+        renderRiskAlertsTable(data.alerts || []);
+
+        // 更新统计芯片
+        updateStatisticsChips(data, portfolio);
+    }
+
+    function renderRiskSummaryMetrics(data) {
+        const riskConcentration = data.risk_concentration || {};
+        const html = `
+            <div class="md3-metric-item">
+                <div class="md3-metric-label">
+                    <i class="material-icons" style="font-size: 16px; margin-right: 4px;">trending_up</i>
+                    平均风险评分
+                </div>
+                <div class="md3-metric-value">${(data.portfolio_risk_score || 0).toFixed(1)}</div>
+            </div>
+            <div class="md3-metric-item">
+                <div class="md3-metric-label">
+                    <i class="material-icons" style="font-size: 16px; margin-right: 4px;">scatter_plot</i>
+                    风险分散度
+                </div>
+                <div class="md3-metric-value">${formatPercent(riskConcentration.diversification_score || 0, 1)}</div>
+            </div>
+        `;
+        $('#risk-summary-metrics').html(html);
+    }
+
+    function updateStatisticsChips(data, portfolio) {
+        const highRiskStocks = data.high_risk_stocks || [];
+        const alerts = data.alerts || [];
+
+        $('#high-risk-count-chip .md3-chip-text').text(`${highRiskStocks.length} 只高风险股票`);
+        $('#alerts-count-chip .md3-chip-text').text(`${alerts.length} 条预警`);
+
+        // 根据数量调整芯片颜色
+        const highRiskChip = $('#high-risk-count-chip');
+        if (highRiskStocks.length > 0) {
+            highRiskChip.removeClass('md3-chip-outlined').addClass('md3-chip-filled');
+            highRiskChip.css({
+                'background-color': 'var(--md-sys-color-error-container)',
+                'color': 'var(--md-sys-color-on-error-container)'
+            });
+        } else {
+            highRiskChip.removeClass('md3-chip-filled').addClass('md3-chip-outlined');
+            highRiskChip.css({
+                'background-color': 'transparent',
+                'color': 'var(--md-sys-color-on-surface-variant)'
+            });
+        }
+    }
+
+    function renderRiskAlerts(alerts) {
+        let html = '';
+
+        if (alerts.length === 0) {
+            html = '<div class="alert alert-success">未发现显著风险因素</div>';
+        } else {
+            alerts.forEach(alert => {
+                const alertClass = getRiskAlertClass(alert.level);
+                html += `
+                    <div class="alert ${alertClass} mb-2">
+                        <strong>${alert.type}风险:</strong> ${alert.message}
+                    </div>
+                `;
+            });
+        }
+
+        $('#risk-alerts').html(html);
+    }
+
+    function renderPortfolioRiskAlerts(alerts) {
+        let html = '';
+
+        if (alerts.length === 0) {
+            html = `
+                <div class="md3-alert md3-alert-success">
+                    <i class="material-icons">check_circle</i>
+                    <div class="md3-alert-content">
+                        <div class="md3-alert-title">风险状态良好</div>
+                        <div class="md3-alert-message">投资组合风险均衡，未发现显著风险集中</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            let alertCount = 0;
+            alerts.forEach(alert => {
+                if (alertCount < 3) { // 只显示前3条
+                    const alertClass = getMD3RiskAlertClass(alert.level);
+                    const alertIcon = getMD3RiskAlertIcon(alert.level);
+                    html += `
+                        <div class="md3-alert ${alertClass}" style="margin-bottom: 12px;">
+                            <i class="material-icons">${alertIcon}</i>
+                            <div class="md3-alert-content">
+                                <div class="md3-alert-title">${alert.stock_code} - ${alert.type || '风险'}预警</div>
+                                <div class="md3-alert-message">${alert.message}</div>
+                            </div>
+                        </div>
+                    `;
+                    alertCount++;
+                }
+            });
+
+            if (alerts.length > 3) {
+                html += `
+                    <div class="md3-alert md3-alert-info" style="margin-top: 12px;">
+                        <i class="material-icons">info</i>
+                        <div class="md3-alert-content">
+                            <div class="md3-alert-message">还有 ${alerts.length - 3} 条风险预警，请查看下方详情表格</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        $('#portfolio-risk-alerts').html(html);
+    }
+
+    function getMD3RiskAlertClass(level) {
+        switch (level) {
+            case '高':
+                return 'md3-alert-error';
+            case '中':
+                return 'md3-alert-warning';
+            case '低':
+                return 'md3-alert-info';
+            default:
+                return 'md3-alert-info';
+        }
+    }
+
+    function getMD3RiskAlertIcon(level) {
+        switch (level) {
+            case '高':
+                return 'error';
+            case '中':
+                return 'warning';
+            case '低':
+                return 'info';
+            default:
+                return 'info';
+        }
+    }
+
+    function renderRiskGaugeChart(score) {
+        const options = {
+            series: [score],
+            chart: {
+                height: 120,
+                type: 'radialBar',
+            },
+            plotOptions: {
+                radialBar: {
+                    hollow: {
+                        size: '70%',
+                    },
+                    dataLabels: {
+                        show: true,
+                        name: {
+                            show: false
+                        },
+                        value: {
+                            fontSize: '16px',
+                            fontWeight: 'bold',
+                            offsetY: 5
+                        }
+                    },
+                    track: {
+                        background: '#f2f2f2'
+                    }
+                }
+            },
+            fill: {
+                colors: [getRiskColor(score)]
+            },
+            labels: ['风险分数']
+        };
+
+        const chart = new ApexCharts(document.querySelector("#risk-gauge-chart"), options);
+        chart.render();
+    }
+
+    function renderPortfolioRiskGaugeChart(score) {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const isDark = currentTheme === 'dark';
+
+        const options = {
+            series: [score],
+            chart: {
+                height: 180,
+                type: 'radialBar',
+                background: 'transparent'
+            },
+            plotOptions: {
+                radialBar: {
+                    hollow: {
+                        size: '65%',
+                    },
+                    dataLabels: {
+                        show: true,
+                        name: {
+                            show: true,
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: isDark ? '#B0B0B0' : '#666666',
+                            offsetY: 25
+                        },
+                        value: {
+                            fontSize: '24px',
+                            fontWeight: 'bold',
+                            color: isDark ? '#E0E0E0' : '#333333',
+                            offsetY: -10,
+                            formatter: function (val) {
+                                return val.toFixed(1);
+                            }
+                        }
+                    },
+                    track: {
+                        background: isDark ? '#404040' : '#f2f2f2',
+                        strokeWidth: '8px'
+                    }
+                }
+            },
+            fill: {
+                colors: [getRiskColor(score)]
+            },
+            stroke: {
+                lineCap: 'round'
+            },
+            labels: ['风险评分'],
+            theme: {
+                mode: currentTheme
+            }
+        };
+
+        // 清除旧图表
+        $('#portfolio-risk-gauge-chart').empty();
+
+        window.portfolioRiskGaugeChart = new ApexCharts(document.querySelector("#portfolio-risk-gauge-chart"), options);
+        window.portfolioRiskGaugeChart.render();
+    }
+
+    function renderRiskRadarChart(data) {
+        const volatilityRisk = data.volatility_risk?.score || 0;
+        const trendRisk = data.trend_risk?.score || 0;
+        const reversalRisk = data.reversal_risk?.score || 0;
+        const volumeRisk = data.volume_risk?.score || 0;
+
+        const options = {
+            series: [{
+                name: '风险评分',
+                data: [volatilityRisk, trendRisk, reversalRisk, volumeRisk]
+            }],
+            chart: {
+                height: 220,
+                type: 'radar',
+                toolbar: {
+                    show: false
+                }
+            },
+            xaxis: {
+                categories: ['波动率风险', '趋势风险', '反转风险', '成交量风险']
+            },
+            fill: {
+                opacity: 0.7,
+                colors: ['#dc3545']
+            },
+            markers: {
+                size: 4
+            },
+            title: {
+                text: '风险雷达图',
+                align: 'center',
+                style: {
+                    fontSize: '14px'
+                }
+            }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#risk-radar-chart"), options);
+        chart.render();
+    }
+
+    function renderIndustryDistributionChart(portfolio) {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const isDark = currentTheme === 'dark';
+
+        // 根据投资组合计算行业分布
+        const industries = {};
+        let totalWeight = 0;
+
+        portfolio.forEach(stock => {
+            const industry = stock.industry || '未知行业';
+            const weight = stock.weight || 1;
+
+            if (industries[industry]) {
+                industries[industry] += weight;
+            } else {
+                industries[industry] = weight;
+            }
+
+            totalWeight += weight;
+        });
+
+        const series = [];
+        const labels = [];
+
+        for (const industry in industries) {
+            if (industries.hasOwnProperty(industry)) {
+                series.push(industries[industry]);
+                labels.push(industry);
+            }
+        }
+
+        // Material Design 3 色彩方案
+        const lightColors = ['#1565C0', '#00695C', '#F57C00', '#D32F2F', '#2E7D32', '#7B1FA2', '#5D4037', '#455A64'];
+        const darkColors = ['#90CAF9', '#80CBC4', '#FFB74D', '#F28B82', '#81C784', '#CE93D8', '#BCAAA4', '#90A4AE'];
+
+        const options = {
+            series: series,
+            chart: {
+                height: 240,
+                type: 'donut',
+                background: 'transparent'
+            },
+            labels: labels,
+            colors: isDark ? darkColors : lightColors,
+            legend: {
+                position: 'bottom',
+                fontSize: '12px',
+                fontFamily: 'Roboto, sans-serif',
+                labels: {
+                    colors: isDark ? '#E0E0E0' : '#333333'
+                },
+                markers: {
+                    width: 8,
+                    height: 8,
+                    radius: 2
+                }
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '60%',
+                        labels: {
+                            show: true,
+                            total: {
+                                show: true,
+                                label: '总计',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                color: isDark ? '#E0E0E0' : '#333333',
+                                formatter: function () {
+                                    return portfolio.length + ' 只股票';
+                                }
+                            },
+                            value: {
+                                show: true,
+                                fontSize: '18px',
+                                fontWeight: 'bold',
+                                color: isDark ? '#E0E0E0' : '#333333',
+                                formatter: function (val) {
+                                    return ((val / totalWeight) * 100).toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            tooltip: {
+                theme: currentTheme,
+                y: {
+                    formatter: function(value) {
+                        const percentage = ((value / totalWeight) * 100).toFixed(1);
+                        return `${value} 只股票 (${percentage}%)`;
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function(val) {
+                    return val.toFixed(1) + '%';
+                },
+                style: {
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    colors: ['#FFFFFF']
+                },
+                dropShadow: {
+                    enabled: true,
+                    blur: 1,
+                    color: '#000000',
+                    opacity: 0.5
+                }
+            },
+            theme: {
+                mode: currentTheme
+            }
+        };
+
+        // 清除旧图表
+        $('#industry-distribution-chart').empty();
+
+        window.industryDistributionChart = new ApexCharts(document.querySelector("#industry-distribution-chart"), options);
+        window.industryDistributionChart.render();
+    }
+
+    function renderVolatilityChart(data) {
+        const options = {
+            series: [{
+                name: '波动率(%)',
+                data: data
+            }],
+            chart: {
+                height: 150,
+                type: 'line',
+                toolbar: {
+                    show: false
+                }
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
+            xaxis: {
+                labels: {
+                    show: false
+                }
+            },
+            yaxis: {
+                labels: {
+                    formatter: function(val) {
+                        return val.toFixed(1) + '%';
+                    },
+                    style: {
+                        fontSize: '10px'
+                    }
+                }
+            },
+            colors: ['#dc3545'],
+            tooltip: {
+                y: {
+                    formatter: function(value) {
+                        return value.toFixed(2) + '%';
+                    }
+                }
+            },
+            markers: {
+                size: 3
+            }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#volatility-chart"), options);
+        chart.render();
+    }
+
+    function renderTrendChart(data) {
+        const options = {
+            series: [{
+                name: '价格',
+                data: data
+            }, {
+                name: 'MA20',
+                data: [109, 107, 105, 103, 101]
+            }],
+            chart: {
+                height: 150,
+                type: 'line',
+                toolbar: {
+                    show: false
+                }
+            },
+            stroke: {
+                curve: 'straight',
+                width: [3, 2]
+            },
+            xaxis: {
+                labels: {
+                    show: false
+                }
+            },
+            yaxis: {
+                labels: {
+                    formatter: function(val) {
+                        return val.toFixed(0);
+                    },
+                    style: {
+                        fontSize: '10px'
+                    }
+                }
+            },
+            colors: ['#dc3545', '#007bff'],
+            tooltip: {
+                y: {
+                    formatter: function(value) {
+                        return value.toFixed(2);
+                    }
+                }
+            },
+            markers: {
+                size: 3
+            },
+            legend: {
+                show: false
+            }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#trend-chart"), options);
+        chart.render();
+    }
+
+    function renderReversalChart(data) {
+        const options = {
+            series: [{
+                name: 'RSI',
+                data: data
+            }],
+            chart: {
+                height: 150,
+                type: 'line',
+                toolbar: {
+                    show: false
+                }
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
+            xaxis: {
+                labels: {
+                    show: false
+                }
+            },
+            yaxis: {
+                min: 0,
+                max: 100,
+                labels: {
+                    formatter: function(val) {
+                        return val.toFixed(0);
+                    },
+                    style: {
+                        fontSize: '10px'
+                    }
+                }
+            },
+            colors: ['#ffc107'],
+            tooltip: {
+                y: {
+                    formatter: function(value) {
+                        return value.toFixed(2);
+                    }
+                }
+            },
+            markers: {
+                size: 3
+            },
+            annotations: {
+                yaxis: [{
+                    y: 70,
+                    borderColor: '#dc3545',
+                    label: {
+                        text: '超买',
+                        style: {
+                            color: '#fff',
+                            background: '#dc3545'
+                        }
+                    }
+                }, {
+                    y: 30,
+                    borderColor: '#28a745',
+                    label: {
+                        text: '超卖',
+                        style: {
+                            color: '#fff',
+                            background: '#28a745'
+                        }
+                    }
+                }]
+            }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#reversal-chart"), options);
+        chart.render();
+    }
+
+    function renderVolumeChart(data) {
+        const options = {
+            series: [{
+                name: '成交量比率',
+                data: data
+            }],
+            chart: {
+                height: 150,
+                type: 'bar',
+                toolbar: {
+                    show: false
+                }
+            },
+            xaxis: {
+                labels: {
+                    show: false
+                }
+            },
+            yaxis: {
+                labels: {
+                    formatter: function(val) {
+                        return val.toFixed(1) + 'x';
+                    },
+                    style: {
+                        fontSize: '10px'
+                    }
+                }
+            },
+            colors: ['#4e73df'],
+            tooltip: {
+                y: {
+                    formatter: function(value) {
+                        return value.toFixed(2) + 'x';
+                    }
+                }
+            },
+            plotOptions: {
+                bar: {
+                    columnWidth: '50%'
+                }
+            },
+            dataLabels: {
+                enabled: false
+            }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#volume-chart"), options);
+        chart.render();
+    }
+
+    function renderHighRiskStocksTable(highRiskStocks) {
+        let html = '';
+
+        if (highRiskStocks.length === 0) {
+            html = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: var(--md-sys-color-on-surface-variant);">
+                        <i class="material-icons" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">sentiment_satisfied</i>
+                        <div>暂无高风险股票，投资组合风险控制良好</div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            highRiskStocks.forEach(stock => {
+                const riskScoreClass = getMD3RiskScoreClass(stock.risk_score);
+                const riskLevelBadgeClass = getMD3RiskLevelBadgeClass(stock.risk_level);
+                const actionSuggestion = getRiskActionSuggestion(stock.risk_level);
+                html += `
+                    <tr>
+                        <td>
+                            <div style="font-weight: 500; color: var(--md-sys-color-primary);">${stock.stock_code}</div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 500;">${stock.stock_name || '未知'}</div>
+                        </td>
+                        <td>
+                            <div class="md3-score-badge ${riskScoreClass}">${stock.risk_score.toFixed(1)}</div>
+                        </td>
+                        <td>
+                            <span class="md3-badge ${riskLevelBadgeClass}">${stock.risk_level}</span>
+                        </td>
+                        <td>
+                            <div style="font-weight: 500;">${formatPercent(stock.weight || 0, 1)}</div>
+                        </td>
+                        <td>
+                            <div style="font-size: 13px; color: var(--md-sys-color-on-surface-variant);">
+                                ${stock.main_risk || '未知风险因素'}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="md3-button md3-button-text" style="padding: 6px 12px; min-height: 32px;" onclick="window.location.href='/stock_detail/${stock.stock_code}'">
+                                    <i class="material-icons" style="font-size: 16px;">analytics</i>
+                                    <span style="margin-left: 4px;">分析</span>
+                                </button>
+                                <div class="md3-chip md3-chip-outlined" style="font-size: 11px; padding: 4px 8px;">
+                                    ${actionSuggestion}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        $('#high-risk-stocks-table').html(html);
+    }
+
+    function renderRiskAlertsTable(alerts) {
+        let html = '';
+
+        if (alerts.length === 0) {
+            html = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: var(--md-sys-color-on-surface-variant);">
+                        <i class="material-icons" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">notifications_off</i>
+                        <div>暂无风险预警，投资组合运行正常</div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            alerts.forEach(alert => {
+                const alertLevelBadgeClass = getMD3RiskLevelBadgeClass(alert.level);
+                const alertIcon = getMD3RiskAlertIcon(alert.level);
+                const timeStamp = new Date().toLocaleString('zh-CN');
+                html += `
+                    <tr>
+                        <td>
+                            <div style="font-weight: 500; color: var(--md-sys-color-primary);">${alert.stock_code}</div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 500;">${alert.stock_name || '未知'}</div>
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <i class="material-icons" style="font-size: 16px; color: var(--md-sys-color-${alert.level === '高' ? 'error' : alert.level === '中' ? 'warning' : 'info'});">${alertIcon}</i>
+                                <span>${alert.type || '风险预警'}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="md3-badge ${alertLevelBadgeClass}">${alert.level}</span>
+                        </td>
+                        <td>
+                            <div style="font-size: 13px; line-height: 1.4;">${alert.message}</div>
+                        </td>
+                        <td>
+                            <div style="font-size: 12px; color: var(--md-sys-color-on-surface-variant);">${timeStamp}</div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        $('#risk-alerts-table').html(html);
+    }
+
+    function getRiskLevelBadgeClass(level) {
+        switch (level) {
+            case '极高':
+                return 'bg-danger';
+            case '高':
+                return 'bg-warning text-dark';
+            case '中等':
+                return 'bg-info text-dark';
+            case '低':
+                return 'bg-success';
+            case '极低':
+                return 'bg-secondary';
+            default:
+                return 'bg-secondary';
+        }
+    }
+
+    function getRiskAlertClass(level) {
+        switch (level) {
+            case '高':
+                return 'alert-danger';
+            case '中':
+                return 'alert-warning';
+            case '低':
+                return 'alert-info';
+            default:
+                return 'alert-secondary';
+        }
+    }
+
+    function getRiskScoreClass(score) {
+        if (score >= 80) return 'bg-danger';
+        if (score >= 60) return 'bg-warning text-dark';
+        if (score >= 40) return 'bg-info text-dark';
+        return 'bg-success';
+    }
+
+    function getRiskColor(score) {
+        if (score >= 80) return '#dc3545'; // 红色
+        if (score >= 60) return '#ffc107'; // 黄色
+        if (score >= 40) return '#17a2b8'; // 蓝色
+        return '#28a745'; // 绿色
+    }
+
+    // Enhanced Material Design 3 辅助函数
+    function getMD3RiskScoreClass(score) {
+        if (score >= 80) return 'md3-score-critical';
+        if (score >= 60) return 'md3-score-high';
+        if (score >= 40) return 'md3-score-medium';
+        return 'md3-score-low';
+    }
+
+    function getMD3RiskLevelBadgeClass(level) {
+        switch (level) {
+            case '极高':
+                return 'md3-badge-critical';
+            case '高':
+                return 'md3-badge-high';
+            case '中等':
+                return 'md3-badge-medium';
+            case '低':
+                return 'md3-badge-low';
+            case '极低':
+                return 'md3-badge-minimal';
+            default:
+                return 'md3-badge-unknown';
+        }
+    }
+
+    function getRiskActionSuggestion(level) {
+        switch (level) {
+            case '极高':
+                return '建议减仓';
+            case '高':
+                return '密切关注';
+            case '中等':
+                return '适度关注';
+            case '低':
+                return '正常持有';
+            case '极低':
+                return '可考虑加仓';
+            default:
+                return '待评估';
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,498 @@
+{% extends "layout.html" %}
+
+{% block title %}智能问答 - 智能分析系统{% endblock %}
+
+{% block content %}
+<div class="page-transition">
+    <!-- Enhanced Material Design 3 分析表单 -->
+    <div class="md3-card md3-card-elevated md3-animate-fade-in" style="margin-bottom: 32px;">
+        <div class="md3-card-header">
+            <h2 class="md3-card-title">
+                <i class="material-icons">help</i> 智能问答
+            </h2>
+            <p class="md3-card-subtitle">AI助手为您解答股票投资疑问</p>
+        </div>
+        <div class="md3-card-body">
+            <form id="qa-form" style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 20px; align-items: end;">
+                <div class="md3-text-field md3-text-field-outlined">
+                    <input type="text" class="md3-text-field-input" id="stock-code" placeholder=" " required>
+                    <label class="md3-text-field-label">股票代码</label>
+                    <div class="md3-text-field-supporting-text">例如：600519、0700.HK、AAPL</div>
+                </div>
+
+                <div class="md3-text-field md3-text-field-outlined">
+                    <select class="md3-text-field-input" id="market-type">
+                        <option value="A" selected>A股</option>
+                        <option value="HK">港股</option>
+                        <option value="US">美股</option>
+                    </select>
+                    <label class="md3-text-field-label">市场类型</label>
+                </div>
+
+                <button type="submit" class="md3-button md3-button-filled md3-button-large">
+                    <i class="material-icons">check_circle</i> 选择股票
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 Chat Container -->
+    <div id="chat-container" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 32px;">
+            <!-- 股票信息侧边栏 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-left">
+                <div class="md3-card-header">
+                    <h3 id="stock-info-header" class="md3-card-title">
+                        <i class="material-icons">info</i> 股票信息
+                    </h3>
+                </div>
+                <div class="md3-card-body">
+                    <div style="margin-bottom: 24px;">
+                        <h2 id="selected-stock-name" style="margin: 0 0 8px 0; font-family: var(--md-sys-typescale-headline-medium-font); font-size: 24px; font-weight: 500; color: var(--md-sys-color-on-surface);">--</h2>
+                        <p id="selected-stock-code" style="margin: 0 0 24px 0; color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font);">--</p>
+
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--md-sys-color-on-surface-variant);">行业</span>
+                                <span id="selected-stock-industry" style="color: var(--md-sys-color-on-surface);">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--md-sys-color-on-surface-variant);">现价</span>
+                                <span id="selected-stock-price" style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-weight: 500;">--</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--md-sys-color-on-surface-variant);">涨跌幅</span>
+                                <span id="selected-stock-change" style="font-family: var(--md-sys-typescale-title-medium-font); font-weight: 500;">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px solid var(--md-sys-color-outline-variant); padding-top: 24px;">
+                        <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 16px;">常见问题</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <button class="md3-button md3-button-outlined md3-button-small common-question" data-question="这只股票的主要支撑位是多少？" style="justify-content: flex-start;">主要支撑位分析</button>
+                            <button class="md3-button md3-button-outlined md3-button-small common-question" data-question="该股票近期的技术面走势如何？" style="justify-content: flex-start;">技术面走势分析</button>
+                            <button class="md3-button md3-button-outlined md3-button-small common-question" data-question="这只股票的基本面情况如何？" style="justify-content: flex-start;">基本面情况分析</button>
+                            <button class="md3-button md3-button-outlined md3-button-small common-question" data-question="该股票主力资金最近的流入情况？" style="justify-content: flex-start;">主力资金流向</button>
+                            <button class="md3-button md3-button-outlined md3-button-small common-question" data-question="这只股票近期有哪些重要事件？" style="justify-content: flex-start;">近期重要事件</button>
+                            <button class="md3-button md3-button-outlined md3-button-small common-question" data-question="您对这只股票有什么投资建议？" style="justify-content: flex-start;">综合投资建议</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 聊天区域 -->
+            <div class="md3-card md3-card-elevated md3-animate-slide-in-right">
+                <div class="md3-card-header">
+                    <h3 class="md3-card-title">
+                        <i class="material-icons">chat</i> 与AI助手对话
+                    </h3>
+                    <p class="md3-card-subtitle">专业的股票分析AI为您答疑解惑</p>
+                </div>
+                <div class="md3-card-body" style="padding: 0;">
+                    <div id="chat-messages" style="height: 450px; overflow-y: auto; padding: 24px; background-color: var(--md-sys-color-surface-container-lowest);">
+                        <div class="md3-chat-message md3-chat-message-system">
+                            <div class="md3-chat-message-content">
+                                <p>您好！我是股票分析AI助手，请输入您想了解的关于当前股票的问题。</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="padding: 24px; border-top: 1px solid var(--md-sys-color-outline-variant); background-color: var(--md-sys-color-surface);">
+                        <form id="question-form" style="display: flex; gap: 12px; align-items: end;">
+                            <div class="md3-text-field md3-text-field-outlined" style="flex: 1;">
+                                <input type="text" id="question-input" class="md3-text-field-input" placeholder=" " required>
+                                <label class="md3-text-field-label">输入您的问题...</label>
+                            </div>
+                            <button type="submit" class="md3-button md3-button-filled md3-button-large">
+                                <i class="material-icons">send</i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Material Design 3 Loading Panel -->
+    <div id="loading-panel" style="display: none;">
+        <div class="md3-card md3-card-elevated md3-animate-fade-in">
+            <div class="md3-card-body" style="text-align: center; padding: 64px 32px;">
+                <div class="md3-progress-indicator" style="margin-bottom: 24px;"></div>
+                <p style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-body-large-font); font-size: var(--md-sys-typescale-body-large-size); margin: 0;">正在获取股票数据...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+    /* Enhanced Material Design 3 Chat Messages */
+    .md3-chat-message {
+        margin-bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        animation: md3-chat-message-appear 0.3s ease-out;
+    }
+
+    @keyframes md3-chat-message-appear {
+        from {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .md3-chat-message-user {
+        align-items: flex-end;
+    }
+
+    .md3-chat-message-system {
+        align-items: flex-start;
+    }
+
+    .md3-chat-message-content {
+        max-width: 85%;
+        padding: 16px 20px;
+        border-radius: var(--md-sys-shape-corner-large);
+        position: relative;
+        font-family: var(--md-sys-typescale-body-medium-font);
+        font-size: var(--md-sys-typescale-body-medium-size);
+        line-height: 1.5;
+        box-shadow: var(--md-sys-elevation-level1);
+    }
+
+    .md3-chat-message-user .md3-chat-message-content {
+        background-color: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+        border-bottom-right-radius: 8px;
+    }
+
+    .md3-chat-message-system .md3-chat-message-content {
+        background-color: var(--md-sys-color-surface-container-high);
+        color: var(--md-sys-color-on-surface);
+        border-bottom-left-radius: 8px;
+    }
+
+    .md3-chat-message-content p {
+        margin-bottom: 12px;
+    }
+
+    .md3-chat-message-content p:last-child {
+        margin-bottom: 0;
+    }
+
+    .md3-chat-message-time {
+        font-size: var(--md-sys-typescale-label-small-size);
+        color: var(--md-sys-color-on-surface-variant);
+        margin-top: 8px;
+        font-family: var(--md-sys-typescale-label-small-font);
+    }
+
+    /* Enhanced Financial Term Styling */
+    .keyword {
+        color: var(--md-sys-color-primary);
+        font-weight: 600;
+        background-color: var(--md-sys-color-primary-container);
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    .term {
+        color: var(--md-sys-color-secondary);
+        font-weight: 500;
+        background-color: var(--md-sys-color-secondary-container);
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    .price {
+        color: var(--md-sys-color-tertiary);
+        font-family: var(--md-sys-typescale-label-large-font);
+        font-weight: 500;
+        background-color: var(--md-sys-color-tertiary-container);
+        padding: 4px 8px;
+        border-radius: 6px;
+    }
+
+    .trend-up {
+        color: var(--md-sys-color-bull);
+        font-weight: 500;
+    }
+
+    .trend-down {
+        color: var(--md-sys-color-bear);
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let selectedStock = {
+        code: '',
+        name: '',
+        market_type: 'A'
+    };
+
+    $(document).ready(function() {
+        // 选择股票表单提交
+        $('#qa-form').submit(function(e) {
+            e.preventDefault();
+            const stockCode = $('#stock-code').val().trim();
+            const marketType = $('#market-type').val();
+
+            if (!stockCode) {
+                showError('请输入股票代码！');
+                return;
+            }
+
+            selectStock(stockCode, marketType);
+        });
+
+        // 问题表单提交
+        $('#question-form').submit(function(e) {
+            e.preventDefault();
+            const question = $('#question-input').val().trim();
+
+            if (!question) {
+                return;
+            }
+
+            if (!selectedStock.code) {
+                showError('请先选择一只股票');
+                return;
+            }
+
+            addUserMessage(question);
+            $('#question-input').val('');
+            askQuestion(question);
+        });
+
+        // 常见问题点击
+        $('.common-question').click(function() {
+            const question = $(this).data('question');
+
+            if (!selectedStock.code) {
+                showError('请先选择一只股票');
+                return;
+            }
+
+            $('#question-input').val(question);
+            $('#question-form').submit();
+        });
+    });
+
+    function selectStock(stockCode, marketType) {
+        $('#loading-panel').show();
+        $('#chat-container').hide();
+
+        // 重置对话区域
+        $('#chat-messages').html(`
+            <div class="md3-chat-message md3-chat-message-system">
+                <div class="md3-chat-message-content">
+                    <p>您好！我是股票分析AI助手，请输入您想了解的关于当前股票的问题。</p>
+                </div>
+            </div>
+        `);
+
+        // 获取股票基本信息
+        $.ajax({
+            url: '/analyze',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                stock_codes: [stockCode],
+                market_type: marketType
+            }),
+            success: function(response) {
+                $('#loading-panel').hide();
+
+                if (response.results && response.results.length > 0) {
+                    const stockInfo = response.results[0];
+
+                    // 保存选中的股票信息
+                    selectedStock = {
+                        code: stockCode,
+                        name: stockInfo.stock_name || '未知',
+                        market_type: marketType,
+                        industry: stockInfo.industry || '未知',
+                        price: stockInfo.price || 0,
+                        price_change: stockInfo.price_change || 0
+                    };
+
+                    // 更新股票信息区域
+                    updateStockInfo();
+
+                    // 显示聊天界面
+                    $('#chat-container').show();
+
+                    // 欢迎消息
+                    addSystemMessage(`我已加载 ${selectedStock.name}(${selectedStock.code}) 的数据，您可以问我关于这只股票的问题。`);
+                } else {
+                    showError('未找到股票信息，请检查股票代码是否正确');
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#loading-panel').hide();
+                let errorMsg = '获取股票信息失败';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg += ': ' + xhr.responseJSON.error;
+                } else if (error) {
+                    errorMsg += ': ' + error;
+                }
+                showError(errorMsg);
+            }
+        });
+    }
+
+    function updateStockInfo() {
+        // 更新股票信息区域
+        $('#stock-info-header').text(selectedStock.name);
+        $('#selected-stock-name').text(selectedStock.name);
+        $('#selected-stock-code').text(selectedStock.code);
+        $('#selected-stock-industry').text(selectedStock.industry);
+        $('#selected-stock-price').text('¥' + formatNumber(selectedStock.price, 2));
+
+        const priceChangeClass = selectedStock.price_change >= 0 ? 'md3-text-bull' : 'md3-text-bear';
+        const priceChangeIcon = selectedStock.price_change >= 0 ? '<i class="material-icons">arrow_upward</i> ' : '<i class="material-icons">arrow_downward</i> ';
+        $('#selected-stock-change').html(`<span class="${priceChangeClass}" style="display: flex; align-items: center; gap: 4px;">${priceChangeIcon}${formatPercent(selectedStock.price_change, 2)}</span>`);
+    }
+
+    function askQuestion(question) {
+        // 显示思考中消息
+        const thinkingMessageId = 'thinking-' + Date.now();
+        addSystemMessage('<i class="fas fa-spinner fa-pulse"></i> 正在思考...', thinkingMessageId);
+
+        // 发送问题到API
+        $.ajax({
+            url: '/api/qa',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                stock_code: selectedStock.code,
+                question: question,
+                market_type: selectedStock.market_type
+            }),
+            success: function(response) {
+                // 移除思考中消息
+                $(`#${thinkingMessageId}`).remove();
+
+                // 添加回答
+                addSystemMessage(formatAnswer(response.answer));
+
+                // 滚动到底部
+                scrollToBottom();
+            },
+            error: function(xhr, status, error) {
+                // 移除思考中消息
+                $(`#${thinkingMessageId}`).remove();
+
+                // 添加错误消息
+                let errorMsg = '无法回答您的问题';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg += ': ' + xhr.responseJSON.error;
+                } else if (error) {
+                    errorMsg += ': ' + error;
+                }
+
+                addSystemMessage(`<span class="text-danger">${errorMsg}</span>`);
+
+                // 滚动到底部
+                scrollToBottom();
+            }
+        });
+    }
+
+    function addUserMessage(message) {
+        const time = new Date().toLocaleTimeString();
+
+        const messageHtml = `
+            <div class="md3-chat-message md3-chat-message-user">
+                <div class="md3-chat-message-content">
+                    <p>${message}</p>
+                </div>
+                <div class="md3-chat-message-time">${time}</div>
+            </div>
+        `;
+
+        $('#chat-messages').append(messageHtml);
+        scrollToBottom();
+    }
+
+    function addSystemMessage(message, id = null) {
+        const time = new Date().toLocaleTimeString();
+        const idAttribute = id ? `id="${id}"` : '';
+
+        const messageHtml = `
+            <div class="md3-chat-message md3-chat-message-system" ${idAttribute}>
+                <div class="md3-chat-message-content">
+                    <p>${message}</p>
+                </div>
+                <div class="md3-chat-message-time">${time}</div>
+            </div>
+        `;
+
+        $('#chat-messages').append(messageHtml);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        const chatContainer = document.getElementById('chat-messages');
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function formatAnswer(text) {
+        if (!text) return '';
+
+        // First, make the text safe for HTML
+        const safeText = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+        // Replace basic Markdown elements
+        let formatted = safeText
+            // Bold text with ** or __
+            .replace(/\*\*(.*?)\*\*/g, '<strong class="keyword">$1</strong>')
+            .replace(/__(.*?)__/g, '<strong>$1</strong>')
+
+            // Italic text with * or _
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/_(.*?)_/g, '<em>$1</em>')
+
+            // Headers - only h4, h5, h6 for chat
+            .replace(/^#### (.*?)$/gm, '<h6>$1</h6>')
+            .replace(/^### (.*?)$/gm, '<h6>$1</h6>')
+            .replace(/^## (.*?)$/gm, '<h6>$1</h6>')
+            .replace(/^# (.*?)$/gm, '<h6>$1</h6>')
+
+            // Apply special styling to financial terms
+            .replace(/支撑位/g, '<span class="keyword">支撑位</span>')
+            .replace(/压力位/g, '<span class="keyword">压力位</span>')
+            .replace(/趋势/g, '<span class="keyword">趋势</span>')
+            .replace(/均线/g, '<span class="keyword">均线</span>')
+            .replace(/MACD/g, '<span class="term">MACD</span>')
+            .replace(/RSI/g, '<span class="term">RSI</span>')
+            .replace(/KDJ/g, '<span class="term">KDJ</span>')
+
+            // Highlight price patterns and movements
+            .replace(/([上涨升])/g, '<span class="trend-up">$1</span>')
+            .replace(/([下跌降])/g, '<span class="trend-down">$1</span>')
+            .replace(/(买入|做多|多头|突破)/g, '<span class="trend-up">$1</span>')
+            .replace(/(卖出|做空|空头|跌破)/g, '<span class="trend-down">$1</span>')
+
+            // Highlight price values (matches patterns like 31.25, 120.50)
+            .replace(/(\d+\.\d{2})/g, '<span class="price">$1</span>')
+
+            // Convert line breaks to paragraph tags
+            .replace(/\n\n+/g, '</p><p class="mb-2">')
+            .replace(/\n/g, '<br>');
+
+        // Wrap in paragraph tags for consistent styling
+        return '<p class="mb-2">' + formatted + '</p>';
+    }
+</script>
+{% endblock %}
