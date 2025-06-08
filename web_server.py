@@ -200,7 +200,7 @@ def generate_task_id():
     return str(uuid.uuid4())
 
 
-def start_market_scan_task_status(task_id, status, progress=None, result=None, error=None):
+def start_market_scan_task_status(task_id, status, progress=None, result=None, error=None, **kwargs):
     """更新任务状态 - 保持原有签名"""
     with task_lock:
         if task_id in scan_tasks:
@@ -210,9 +210,19 @@ def start_market_scan_task_status(task_id, status, progress=None, result=None, e
                 task['progress'] = progress
             if result is not None:
                 task['result'] = result
+                app.logger.info(f"任务 {task_id} 结果已保存，共 {len(result) if isinstance(result, list) else 0} 个结果")
             if error is not None:
                 task['error'] = error
+
+            # 更新其他统计信息
+            for key, value in kwargs.items():
+                if key in ['processed', 'found', 'failed', 'timeout', 'estimated_remaining']:
+                    task[key] = value
+
             task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            app.logger.debug(f"任务 {task_id} 状态更新为: {status}, 进度: {progress}%")
+        else:
+            app.logger.error(f"尝试更新不存在的任务: {task_id}")
 
 
 def update_task_status(task_type, task_id, status, progress=None, result=None, error=None):
@@ -1046,7 +1056,15 @@ def start_market_scan():
                         if task_id in scan_tasks:
                             scan_tasks[task_id].update(task_update)
 
-                    start_market_scan_task_status(task_id, TASK_RUNNING, progress=progress)
+                    start_market_scan_task_status(
+                        task_id, TASK_RUNNING,
+                        progress=progress,
+                        processed=processed_count,
+                        found=len(results),
+                        failed=len(failed_stocks),
+                        timeout=len(timeout_stocks),
+                        estimated_remaining=int(estimated_remaining_time)
+                    )
 
                     app.logger.info(f"批次完成，耗时: {batch_time:.2f}秒，当前找到 {len(results)} 只符合条件的股票")
 
@@ -1100,9 +1118,11 @@ def get_scan_status(task_id):
     """获取扫描任务状态"""
     with task_lock:
         if task_id not in scan_tasks:
+            app.logger.warning(f"任务 {task_id} 不存在，当前任务列表: {list(scan_tasks.keys())}")
             return jsonify({'error': '找不到指定的扫描任务'}), 404
 
         task = scan_tasks[task_id]
+        app.logger.info(f"查询任务 {task_id} 状态: {task['status']}")
 
         # 基本状态信息
         status = {
@@ -1110,6 +1130,11 @@ def get_scan_status(task_id):
             'status': task['status'],
             'progress': task.get('progress', 0),
             'total': task.get('total', 0),
+            'processed': task.get('processed', 0),
+            'found': task.get('found', 0),
+            'failed': task.get('failed', 0),
+            'timeout': task.get('timeout', 0),
+            'estimated_remaining': task.get('estimated_remaining', 0),
             'created_at': task['created_at'],
             'updated_at': task['updated_at']
         }
@@ -1117,6 +1142,7 @@ def get_scan_status(task_id):
         # 如果任务完成，包含结果
         if task['status'] == TASK_COMPLETED and 'result' in task:
             status['result'] = task['result']
+            app.logger.info(f"任务 {task_id} 已完成，返回 {len(task['result'])} 个结果")
 
         # 如果任务失败，包含错误信息
         if task['status'] == TASK_FAILED and 'error' in task:

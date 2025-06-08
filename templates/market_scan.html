@@ -447,6 +447,8 @@
                             $('#cancel-scan-btn').hide();
                             currentTaskId = null;
 
+                            console.log('扫描任务完成，结果数量:', response.result ? response.result.length : 0);
+
                             // 显示结果
                             renderResults(response.result || []);
                             $('#scan-loading').hide();
@@ -457,6 +459,9 @@
                                 $('#results-table').html('<tr><td colspan="11" class="text-center">未找到符合条件的股票</td></tr>');
                                 $('#result-count').text('0');
                                 $('#export-btn').hide();
+                                showInfo('扫描完成，但未找到符合条件的股票');
+                            } else {
+                                showSuccess(`扫描完成！找到 ${response.result.length} 只符合条件的股票`);
                             }
 
                         } else if (response.status === 'failed') {
@@ -496,15 +501,33 @@
                         }
                     },
                     error: function(xhr, status, error) {
+                        console.error('轮询状态失败:', {
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            error: error,
+                            response: xhr.responseText
+                        });
 
-                        // 尝试继续轮询
+                        // 如果是404错误，说明任务不存在，停止轮询
+                        if (xhr.status === 404) {
+                            clearInterval(pollInterval);
+                            $('#scan-loading').hide();
+                            $('#scan-results').show();
+                            showError('扫描任务已丢失，请重新开始扫描');
+                            $('#scan-error-retry').show();
+                            $('#cancel-scan-btn').hide();
+                            currentTaskId = null;
+                            return;
+                        }
+
+                        // 其他错误，尝试继续轮询
                         if (!pollInterval) {
                             pollInterval = setInterval(checkStatus, 3000);
                         }
 
                         // 更新进度消息
                         $('#scan-message').html(`正在扫描市场...<br>
-                            无法获取最新进度<br>
+                            无法获取最新进度 (错误: ${xhr.status})<br>
                             耗时: ${elapsedTime}秒`);
                     }
                 });
