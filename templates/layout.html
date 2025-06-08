@@ -15,7 +15,7 @@
     <!-- ApexCharts -->
     <link href="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.min.css" rel="stylesheet">
     <!-- Enhanced Material Design 3 Styles -->
-    <link href="/static/md3-styles.css?v=20241207-market-scan-alignment-fix" rel="stylesheet">
+    <link href="/static/md3-styles.css?v=20241207-table-alignment-ultimate-fix" rel="stylesheet">
     <!-- Download PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -778,9 +778,9 @@
             return trend === 'UP' ? 'trend-up' : 'trend-down';
         }
 
-        // 根据趋势获取图标 - 使用Material Icons
+        // 根据趋势获取图标
         function getTrendIcon(trend) {
-            return trend === 'UP' ? '<i class="material-icons">trending_up</i>' : '<i class="material-icons">trending_down</i>';
+            return trend === 'UP' ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
         }
 
         // Material Design 3 相关函数
@@ -792,7 +792,7 @@
         }
 
         function getMD3TrendColorClass(trend) {
-            return trend === 'UP' ? 'trend-up' : 'trend-down';
+            return trend === 'UP' ? 'md3-text-bull' : 'md3-text-bear';
         }
 
         // 主题切换功能
