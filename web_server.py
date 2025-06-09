@@ -1264,13 +1264,34 @@ def clean_old_tasks():
             # 解析更新时间
             try:
                 updated_at = datetime.strptime(task['updated_at'], '%Y-%m-%d %H:%M:%S')
-                # 如果任务完成或失败且超过1小时，或者任务状态异常且超过3小时，清理它
-                if ((task['status'] in [TASK_COMPLETED, TASK_FAILED] and
-                     (now - updated_at).total_seconds() > 3600) or
-                        ((now - updated_at).total_seconds() > 10800)):
+                time_diff = (now - updated_at).total_seconds()
+
+                # 清理条件：
+                # 1. 已完成或失败的任务超过1小时
+                # 2. 正在运行的任务超过2小时（防止卡死）
+                # 3. 等待中的任务超过30分钟（可能是孤儿任务）
+                should_delete = False
+
+                if task['status'] in [TASK_COMPLETED, TASK_FAILED]:
+                    # 完成或失败的任务，1小时后清理
+                    should_delete = time_diff > 3600
+                elif task['status'] == TASK_RUNNING:
+                    # 运行中的任务，2小时后清理（防止卡死）
+                    should_delete = time_diff > 7200
+                elif task['status'] == TASK_PENDING:
+                    # 等待中的任务，30分钟后清理（可能是孤儿任务）
+                    should_delete = time_diff > 1800
+                else:
+                    # 其他状态的任务，1小时后清理
+                    should_delete = time_diff > 3600
+
+                if should_delete:
                     to_delete.append(task_id)
-            except:
+                    app.logger.info(f"准备清理任务 {task_id}，状态: {task['status']}, 已存在: {time_diff/60:.1f}分钟")
+
+            except Exception as e:
                 # 日期解析错误，添加到删除列表
+                app.logger.warning(f"任务 {task_id} 日期解析错误: {str(e)}")
                 to_delete.append(task_id)
 
         # 删除旧任务
@@ -1315,8 +1336,8 @@ def run_task_cleaner():
         except Exception as e:
             app.logger.error(f"任务清理出错: {str(e)}")
 
-        # 每 5 分钟运行一次，而不是每小时
-        time.sleep(600)
+        # 每 30 分钟运行一次，减少对正在运行任务的干扰
+        time.sleep(1800)
 
 
 # 基本面分析路由
