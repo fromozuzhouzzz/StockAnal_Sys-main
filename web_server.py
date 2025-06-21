@@ -229,6 +229,8 @@ class UnifiedTaskManager:
 
             self.tasks[task_id] = task
             app.logger.info(f"统一任务管理器: 创建任务 {task_id}, 类型: {task_type}")
+            app.logger.info(f"统一任务管理器: 任务创建后，当前任务数: {len(self.tasks)}")
+            app.logger.info(f"统一任务管理器: 当前任务列表: {list(self.tasks.keys())}")
 
         return task_id, task
 
@@ -1090,6 +1092,18 @@ def start_market_scan():
             total=len(stock_list)
         )
 
+        # 验证任务创建成功
+        verification_task = unified_task_manager.get_task(task_id)
+        if not verification_task:
+            app.logger.error(f"任务创建失败！无法找到刚创建的任务 {task_id}")
+            return jsonify({'error': '任务创建失败'}), 500
+        else:
+            app.logger.info(f"任务创建成功验证: {task_id}")
+
+        # 记录任务创建的详细信息
+        app.logger.info(f"任务创建详情: ID={task_id}, 类型=market_scan, 股票数={len(stock_list)}")
+        app.logger.info(f"任务初始状态: {verification_task['status']}")
+
         # 启动后台线程执行扫描
         def run_scan():
             scan_start_time = time.time()
@@ -1107,8 +1121,9 @@ def start_market_scan():
                 processed_count = 0
 
                 for i in range(0, total, batch_size):
-                    # 检查任务是否被取消
-                    if task_id not in scan_tasks or scan_tasks[task_id]['status'] != TASK_RUNNING:
+                    # 检查任务是否被取消 - 使用统一任务管理器
+                    current_task = unified_task_manager.get_task(task_id)
+                    if not current_task or current_task['status'] != TASK_RUNNING:
                         app.logger.info(f"扫描任务 {task_id} 被取消")
                         return
 
@@ -1121,8 +1136,9 @@ def start_market_scan():
                     for stock_code in batch:
                         stock_start_time = time.time()
                         try:
-                            # 检查任务状态
-                            if task_id not in scan_tasks or scan_tasks[task_id]['status'] != TASK_RUNNING:
+                            # 检查任务状态 - 使用统一任务管理器
+                            current_task = unified_task_manager.get_task(task_id)
+                            if not current_task or current_task['status'] != TASK_RUNNING:
                                 app.logger.info(f"扫描任务 {task_id} 被取消")
                                 return
 
@@ -1165,21 +1181,10 @@ def start_market_scan():
                     else:
                         estimated_remaining_time = 0
 
-                    # 更新任务状态，包含详细信息
-                    task_update = {
-                        'processed': processed_count,
-                        'failed': len(failed_stocks),
-                        'timeout': len(timeout_stocks),
-                        'found': len(results),
-                        'estimated_remaining': int(estimated_remaining_time)
-                    }
-
-                    with task_lock:
-                        if task_id in scan_tasks:
-                            scan_tasks[task_id].update(task_update)
-
-                    start_market_scan_task_status(
-                        task_id, TASK_RUNNING,
+                    # 更新任务状态，包含详细信息 - 使用统一任务管理器
+                    unified_task_manager.update_task(
+                        task_id,
+                        status=TASK_RUNNING,
                         progress=progress,
                         processed=processed_count,
                         found=len(results),
@@ -1238,13 +1243,20 @@ def start_market_scan():
 @app.route('/api/scan_status/<task_id>', methods=['GET'])
 def get_scan_status(task_id):
     """获取扫描任务状态 - 使用统一任务管理器"""
+    # 增强调试日志
+    app.logger.info(f"收到任务状态查询请求: {task_id}")
+    app.logger.info(f"当前统一任务管理器中的任务数: {len(unified_task_manager.tasks)}")
+    app.logger.info(f"当前任务ID列表: {list(unified_task_manager.tasks.keys())}")
+
     task = unified_task_manager.get_task(task_id)
 
     if not task:
+        app.logger.error(f"任务 {task_id} 不存在！")
+        app.logger.error(f"当前所有任务: {list(unified_task_manager.tasks.keys())}")
         return jsonify({'error': '找不到指定的扫描任务'}), 404
 
     # 详细的状态日志记录
-    app.logger.debug(f"查询任务 {task_id} 状态: {task['status']}, 进度: {task.get('progress', 0)}%")
+    app.logger.info(f"成功查询任务 {task_id} 状态: {task['status']}, 进度: {task.get('progress', 0)}%")
 
     # 检查任务是否长时间无更新
     try:
@@ -1286,46 +1298,23 @@ def get_scan_status(task_id):
 
 @app.route('/api/cancel_scan/<task_id>', methods=['POST'])
 def cancel_scan_task(task_id):
-    """取消扫描任务"""
+    """取消扫描任务 - 使用统一任务管理器"""
     try:
-        with task_lock:
-            if task_id not in scan_tasks:
-                return jsonify({'error': '找不到指定的扫描任务'}), 404
+        task = unified_task_manager.get_task(task_id)
+        if not task:
+            return jsonify({'error': '找不到指定的扫描任务'}), 404
 
-            task = scan_tasks[task_id]
-
-            # 只能取消正在运行或等待中的任务
-            if task['status'] in [TASK_PENDING, TASK_RUNNING]:
-                task['status'] = 'cancelled'
-                task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                app.logger.info(f"扫描任务 {task_id} 已被用户取消")
-                return jsonify({'message': '任务已取消'})
-            else:
-                return jsonify({'error': f'任务状态为 {task["status"]}，无法取消'}), 400
+        # 只能取消正在运行或等待中的任务
+        if task['status'] in [TASK_PENDING, TASK_RUNNING]:
+            unified_task_manager.update_task(task_id, status='cancelled')
+            app.logger.info(f"扫描任务 {task_id} 已被用户取消")
+            return jsonify({'message': '任务已取消'})
+        else:
+            return jsonify({'error': f'任务状态为 {task["status"]}，无法取消'}), 400
 
     except Exception as e:
         app.logger.error(f"取消扫描任务时出错: {str(e)}")
         return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/cancel_scan/<task_id>', methods=['POST'])
-def cancel_scan(task_id):
-    """取消扫描任务"""
-    with task_lock:
-        if task_id not in scan_tasks:
-            return jsonify({'error': '找不到指定的扫描任务'}), 404
-
-        task = scan_tasks[task_id]
-
-        if task['status'] in [TASK_COMPLETED, TASK_FAILED]:
-            return jsonify({'message': '任务已完成或失败，无法取消'})
-
-        # 更新状态为失败
-        task['status'] = TASK_FAILED
-        task['error'] = '用户取消任务'
-        task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        return jsonify({'message': '任务已取消'})
 
 
 @app.route('/api/index_stocks', methods=['GET'])
