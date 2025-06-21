@@ -120,66 +120,7 @@ handler.setFormatter(logging.Formatter(
 ))
 app.logger.addHandler(handler)
 
-# 扩展任务管理系统以支持不同类型的任务
-task_types = {
-    'scan': 'market_scan',  # 市场扫描任务
-    'analysis': 'stock_analysis'  # 个股分析任务
-}
-
-# 任务数据存储
-tasks = {
-    'market_scan': {},  # 原来的scan_tasks
-    'stock_analysis': {}  # 新的个股分析任务
-}
-
-
-def get_task_store(task_type):
-    """获取指定类型的任务存储"""
-    return tasks.get(task_type, {})
-
-
-def generate_task_key(task_type, **params):
-    """生成任务键"""
-    if task_type == 'stock_analysis':
-        # 对于个股分析，使用股票代码和市场类型作为键
-        return f"{params.get('stock_code')}_{params.get('market_type', 'A')}"
-    return None  # 其他任务类型不使用预生成的键
-
-
-def get_or_create_task(task_type, **params):
-    """获取或创建任务"""
-    store = get_task_store(task_type)
-    task_key = generate_task_key(task_type, **params)
-
-    # 检查是否有现有任务
-    if task_key and task_key in store:
-        task = store[task_key]
-        # 检查任务是否仍然有效
-        if task['status'] in [TASK_PENDING, TASK_RUNNING]:
-            return task['id'], task, False
-        if task['status'] == TASK_COMPLETED and 'result' in task:
-            # 任务已完成且有结果，重用它
-            return task['id'], task, False
-
-    # 创建新任务
-    task_id = generate_task_id()
-    task = {
-        'id': task_id,
-        'key': task_key,  # 存储任务键以便以后查找
-        'type': task_type,
-        'status': TASK_PENDING,
-        'progress': 0,
-        'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'params': params
-    }
-
-    with task_lock:
-        if task_key:
-            store[task_key] = task
-        store[task_id] = task
-
-    return task_id, task, True
+# 旧的任务管理代码已移除，现在只使用统一任务管理器
 
 
 # 统一任务管理系统 - 解决多套存储机制问题
@@ -198,11 +139,23 @@ class UnifiedTaskManager:
         self.CANCELLED = 'cancelled'
 
     def create_task(self, task_type, **params):
-        """创建新任务 - 线程安全"""
+        """创建新任务 - 线程安全，增强调试"""
         import uuid
         task_id = str(uuid.uuid4())
 
+        # 详细的任务创建日志
+        app.logger.info(f"统一任务管理器: 开始创建任务，类型: {task_type}")
+        app.logger.info(f"统一任务管理器: 生成任务ID: {task_id}")
+        app.logger.info(f"统一任务管理器: 任务参数: {params}")
+
         with self.lock:
+            # 检查任务ID是否已存在（理论上不应该发生）
+            if task_id in self.tasks:
+                app.logger.error(f"统一任务管理器: 严重错误！任务ID {task_id} 已存在！")
+                # 重新生成ID
+                task_id = str(uuid.uuid4())
+                app.logger.info(f"统一任务管理器: 重新生成任务ID: {task_id}")
+
             task = {
                 'id': task_id,
                 'type': task_type,
@@ -227,59 +180,94 @@ class UnifiedTaskManager:
                     'estimated_remaining': 0
                 })
 
+            # 存储任务
             self.tasks[task_id] = task
-            app.logger.info(f"统一任务管理器: 创建任务 {task_id}, 类型: {task_type}")
+
+            # 详细的存储验证日志
+            app.logger.info(f"统一任务管理器: 任务 {task_id} 已存储到内存")
             app.logger.info(f"统一任务管理器: 任务创建后，当前任务数: {len(self.tasks)}")
             app.logger.info(f"统一任务管理器: 当前任务列表: {list(self.tasks.keys())}")
+
+            # 立即验证任务是否正确存储
+            verification_task = self.tasks.get(task_id)
+            if verification_task:
+                app.logger.info(f"统一任务管理器: 任务存储验证成功 - ID: {verification_task['id']}, 状态: {verification_task['status']}")
+            else:
+                app.logger.error(f"统一任务管理器: 严重错误！任务存储验证失败 - 任务 {task_id} 未找到！")
 
         return task_id, task
 
     def get_task(self, task_id):
-        """获取任务 - 线程安全"""
+        """获取任务 - 线程安全，增强调试"""
+        app.logger.info(f"统一任务管理器: 开始查询任务 {task_id}")
+
         with self.lock:
             task = self.tasks.get(task_id)
             if task:
-                app.logger.debug(f"统一任务管理器: 获取任务 {task_id}, 状态: {task['status']}")
+                app.logger.info(f"统一任务管理器: 成功获取任务 {task_id}, 状态: {task['status']}, 类型: {task.get('type', '未知')}")
+                app.logger.info(f"统一任务管理器: 任务详情 - 进度: {task.get('progress', 0)}%, 创建时间: {task.get('created_at', '未知')}")
             else:
-                app.logger.warning(f"统一任务管理器: 任务 {task_id} 不存在，当前任务数: {len(self.tasks)}")
-                app.logger.warning(f"统一任务管理器: 当前任务列表: {list(self.tasks.keys())}")
+                app.logger.error(f"统一任务管理器: 任务 {task_id} 不存在！")
+                app.logger.error(f"统一任务管理器: 当前任务数: {len(self.tasks)}")
+                app.logger.error(f"统一任务管理器: 当前任务列表: {list(self.tasks.keys())}")
+
+                # 检查是否有相似的任务ID
+                for existing_id in self.tasks.keys():
+                    if existing_id.startswith(task_id[:8]) or task_id.startswith(existing_id[:8]):
+                        app.logger.warning(f"统一任务管理器: 发现相似任务ID: {existing_id}")
+
             return task
 
     def update_task(self, task_id, status=None, progress=None, result=None, error=None, **kwargs):
-        """更新任务状态 - 线程安全"""
+        """更新任务状态 - 线程安全，增强调试"""
+        app.logger.info(f"统一任务管理器: 开始更新任务 {task_id}")
+        app.logger.info(f"统一任务管理器: 更新参数 - 状态: {status}, 进度: {progress}, 结果类型: {type(result).__name__ if result is not None else 'None'}")
+
         with self.lock:
             if task_id not in self.tasks:
                 app.logger.error(f"统一任务管理器: 尝试更新不存在的任务 {task_id}")
+                app.logger.error(f"统一任务管理器: 当前任务列表: {list(self.tasks.keys())}")
                 return False
 
             task = self.tasks[task_id]
             old_status = task.get('status', '')
             old_progress = task.get('progress', 0)
 
+            app.logger.info(f"统一任务管理器: 任务 {task_id} 当前状态: {old_status}, 当前进度: {old_progress}%")
+
             # 更新基本字段
             if status is not None:
                 task['status'] = status
+                app.logger.info(f"统一任务管理器: 任务 {task_id} 状态更新: {old_status} -> {status}")
             if progress is not None:
                 task['progress'] = progress
                 # 如果进度有变化，更新进度时间戳
                 if progress != old_progress:
                     task['progress_updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    app.logger.info(f"统一任务管理器: 任务 {task_id} 进度更新: {old_progress}% -> {progress}%")
             if result is not None:
                 task['result'] = result
                 if isinstance(result, list):
                     app.logger.info(f"统一任务管理器: 任务 {task_id} 结果已保存，共 {len(result)} 个结果")
+                else:
+                    app.logger.info(f"统一任务管理器: 任务 {task_id} 结果已保存，类型: {type(result).__name__}")
             if error is not None:
                 task['error'] = error
+                app.logger.error(f"统一任务管理器: 任务 {task_id} 错误信息: {error}")
 
             # 更新其他字段
             for key, value in kwargs.items():
                 task[key] = value
+                app.logger.debug(f"统一任务管理器: 任务 {task_id} 更新字段 {key}: {value}")
 
             task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-            # 详细日志记录
-            if status != old_status or progress != old_progress:
-                app.logger.info(f"统一任务管理器: 任务 {task_id} 状态更新: {old_status} -> {status}, 进度: {old_progress}% -> {progress}%")
+            # 验证任务更新成功
+            verification_task = self.tasks.get(task_id)
+            if verification_task:
+                app.logger.info(f"统一任务管理器: 任务 {task_id} 更新验证成功 - 最新状态: {verification_task['status']}, 最新进度: {verification_task.get('progress', 0)}%")
+            else:
+                app.logger.error(f"统一任务管理器: 严重错误！任务 {task_id} 更新后验证失败！")
 
             return True
 
@@ -328,6 +316,22 @@ class UnifiedTaskManager:
 
             return len(to_delete)
 
+    def cleanup_completed_tasks(self):
+        """清理所有已完成的任务 - 线程安全"""
+        with self.lock:
+            tasks_to_remove = []
+            for task_id, task in self.tasks.items():
+                if task['status'] in [self.COMPLETED, self.FAILED, 'cancelled']:
+                    tasks_to_remove.append(task_id)
+
+            for task_id in tasks_to_remove:
+                del self.tasks[task_id]
+
+            if tasks_to_remove:
+                app.logger.info(f"统一任务管理器: 清理了 {len(tasks_to_remove)} 个已完成任务")
+
+            return len(tasks_to_remove)
+
 # 创建全局统一任务管理器
 unified_task_manager = UnifiedTaskManager()
 
@@ -359,78 +363,7 @@ def start_market_scan_task_status(task_id, status, progress=None, result=None, e
     )
 
 
-def update_task_status(task_type, task_id, status, progress=None, result=None, error=None):
-    """更新任务状态"""
-    store = get_task_store(task_type)
-    with task_lock:
-        if task_id in store:
-            task = store[task_id]
-            task['status'] = status
-            if progress is not None:
-                task['progress'] = progress
-            if result is not None:
-                task['result'] = result
-            if error is not None:
-                task['error'] = error
-            task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-            # 更新键索引的任务
-            if 'key' in task and task['key'] in store:
-                store[task['key']] = task
-
-
-analysis_tasks = {}
-
-
-def get_or_create_analysis_task(stock_code, market_type='A'):
-    """获取或创建个股分析任务"""
-    # 创建一个键，用于查找现有任务
-    task_key = f"{stock_code}_{market_type}"
-
-    with task_lock:
-        # 检查是否有现有任务
-        for task_id, task in analysis_tasks.items():
-            if task.get('key') == task_key:
-                # 检查任务是否仍然有效
-                if task['status'] in [TASK_PENDING, TASK_RUNNING]:
-                    return task_id, task, False
-                if task['status'] == TASK_COMPLETED and 'result' in task:
-                    # 任务已完成且有结果，重用它
-                    return task_id, task, False
-
-        # 创建新任务
-        task_id = generate_task_id()
-        task = {
-            'id': task_id,
-            'key': task_key,
-            'status': TASK_PENDING,
-            'progress': 0,
-            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'params': {
-                'stock_code': stock_code,
-                'market_type': market_type
-            }
-        }
-
-        analysis_tasks[task_id] = task
-
-        return task_id, task, True
-
-
-def update_analysis_task(task_id, status, progress=None, result=None, error=None):
-    """更新个股分析任务状态"""
-    with task_lock:
-        if task_id in analysis_tasks:
-            task = analysis_tasks[task_id]
-            task['status'] = status
-            if progress is not None:
-                task['progress'] = progress
-            if result is not None:
-                task['result'] = result
-            if error is not None:
-                task['error'] = error
-            task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+# 旧的个股分析任务管理代码已移除，现在使用统一任务管理器
 
 
 # 定义自定义JSON编码器
@@ -728,7 +661,7 @@ def make_cache_key_with_stock():
 
 @app.route('/api/start_stock_analysis', methods=['POST'])
 def start_stock_analysis():
-    """启动个股分析任务"""
+    """启动个股分析任务 - 使用统一任务管理器"""
     try:
         data = request.json
         stock_code = data.get('stock_code')
@@ -739,47 +672,34 @@ def start_stock_analysis():
 
         app.logger.info(f"准备分析股票: {stock_code}")
 
-        # 获取或创建任务
-        task_id, task, is_new = get_or_create_task(
+        # 使用统一任务管理器创建任务
+        task_id, task = unified_task_manager.create_task(
             'stock_analysis',
             stock_code=stock_code,
             market_type=market_type
         )
 
-        # 如果是已完成的任务，直接返回结果
-        if task['status'] == TASK_COMPLETED and 'result' in task:
-            app.logger.info(f"使用缓存的分析结果: {stock_code}")
-            return jsonify({
-                'task_id': task_id,
-                'status': task['status'],
-                'result': task['result']
-            })
+        # 启动后台线程执行分析
+        def run_analysis():
+            try:
+                unified_task_manager.update_task(task_id, status=TASK_RUNNING, progress=10)
 
-        # 如果是新创建的任务，启动后台处理
-        if is_new:
-            app.logger.info(f"创建新的分析任务: {task_id}")
+                # 执行分析
+                result = analyzer.perform_enhanced_analysis(stock_code, market_type)
 
-            # 启动后台线程执行分析
-            def run_analysis():
-                try:
-                    update_task_status('stock_analysis', task_id, TASK_RUNNING, progress=10)
+                # 更新任务状态为完成
+                unified_task_manager.update_task(task_id, status=TASK_COMPLETED, progress=100, result=result)
+                app.logger.info(f"分析任务 {task_id} 完成")
 
-                    # 执行分析
-                    result = analyzer.perform_enhanced_analysis(stock_code, market_type)
+            except Exception as e:
+                app.logger.error(f"分析任务 {task_id} 失败: {str(e)}")
+                app.logger.error(traceback.format_exc())
+                unified_task_manager.update_task(task_id, status=TASK_FAILED, error=str(e))
 
-                    # 更新任务状态为完成
-                    update_task_status('stock_analysis', task_id, TASK_COMPLETED, progress=100, result=result)
-                    app.logger.info(f"分析任务 {task_id} 完成")
-
-                except Exception as e:
-                    app.logger.error(f"分析任务 {task_id} 失败: {str(e)}")
-                    app.logger.error(traceback.format_exc())
-                    update_task_status('stock_analysis', task_id, TASK_FAILED, error=str(e))
-
-            # 启动后台线程
-            thread = threading.Thread(target=run_analysis)
-            thread.daemon = True
-            thread.start()
+        # 启动后台线程
+        thread = threading.Thread(target=run_analysis)
+        thread.daemon = True
+        thread.start()
 
         # 返回任务ID和状态
         return jsonify({
@@ -795,124 +715,51 @@ def start_stock_analysis():
 
 @app.route('/api/analysis_status/<task_id>', methods=['GET'])
 def get_analysis_status(task_id):
-    """获取个股分析任务状态"""
-    store = get_task_store('stock_analysis')
-    with task_lock:
-        if task_id not in store:
-            return jsonify({'error': '找不到指定的分析任务'}), 404
+    """获取个股分析任务状态 - 使用统一任务管理器"""
+    task = unified_task_manager.get_task(task_id)
 
-        task = store[task_id]
+    if not task:
+        return jsonify({'error': '找不到指定的分析任务'}), 404
 
-        # 基本状态信息
-        status = {
-            'id': task['id'],
-            'status': task['status'],
-            'progress': task.get('progress', 0),
-            'created_at': task['created_at'],
-            'updated_at': task['updated_at']
-        }
+    # 基本状态信息
+    status = {
+        'id': task['id'],
+        'status': task['status'],
+        'progress': task.get('progress', 0),
+        'created_at': task['created_at'],
+        'updated_at': task['updated_at']
+    }
 
-        # 如果任务完成，包含结果
-        if task['status'] == TASK_COMPLETED and 'result' in task:
-            status['result'] = task['result']
+    # 如果任务完成，包含结果
+    if task['status'] == TASK_COMPLETED and 'result' in task:
+        status['result'] = task['result']
 
-        # 如果任务失败，包含错误信息
-        if task['status'] == TASK_FAILED and 'error' in task:
-            status['error'] = task['error']
+    # 如果任务失败，包含错误信息
+    if task['status'] == TASK_FAILED and 'error' in task:
+        status['error'] = task['error']
 
-        return custom_jsonify(status)
+    return custom_jsonify(status)
 
 
 @app.route('/api/cancel_analysis/<task_id>', methods=['POST'])
 def cancel_analysis(task_id):
-    """取消个股分析任务"""
-    store = get_task_store('stock_analysis')
-    with task_lock:
-        if task_id not in store:
-            return jsonify({'error': '找不到指定的分析任务'}), 404
+    """取消个股分析任务 - 使用统一任务管理器"""
+    task = unified_task_manager.get_task(task_id)
 
-        task = store[task_id]
+    if not task:
+        return jsonify({'error': '找不到指定的分析任务'}), 404
 
-        if task['status'] in [TASK_COMPLETED, TASK_FAILED]:
-            return jsonify({'message': '任务已完成或失败，无法取消'})
+    if task['status'] in [TASK_COMPLETED, TASK_FAILED]:
+        return jsonify({'message': '任务已完成或失败，无法取消'})
 
-        # 更新状态为失败
-        task['status'] = TASK_FAILED
-        task['error'] = '用户取消任务'
-        task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # 更新状态为取消
+    unified_task_manager.update_task(task_id, status='cancelled', error='用户取消任务')
+    app.logger.info(f"分析任务 {task_id} 已被用户取消")
 
-        # 更新键索引的任务
-        if 'key' in task and task['key'] in store:
-            store[task['key']] = task
-
-        return jsonify({'message': '任务已取消'})
+    return jsonify({'message': '任务已取消'})
 
 
-# 保留原有API用于向后兼容
-@app.route('/api/enhanced_analysis', methods=['POST'])
-def enhanced_analysis():
-    """原增强分析API的向后兼容版本"""
-    try:
-        data = request.json
-        stock_code = data.get('stock_code')
-        market_type = data.get('market_type', 'A')
-
-        if not stock_code:
-            return custom_jsonify({'error': '请输入股票代码'}), 400
-
-        # 调用新的任务系统，但模拟同步行为
-        # 这会导致和之前一样的超时问题，但保持兼容
-        timeout = 300
-        start_time = time.time()
-
-        # 获取或创建任务
-        task_id, task, is_new = get_or_create_task(
-            'stock_analysis',
-            stock_code=stock_code,
-            market_type=market_type
-        )
-
-        # 如果是已完成的任务，直接返回结果
-        if task['status'] == TASK_COMPLETED and 'result' in task:
-            app.logger.info(f"使用缓存的分析结果: {stock_code}")
-            return custom_jsonify({'result': task['result']})
-
-        # 启动分析（如果是新任务）
-        if is_new:
-            # 同步执行分析
-            try:
-                result = analyzer.perform_enhanced_analysis(stock_code, market_type)
-                update_task_status('stock_analysis', task_id, TASK_COMPLETED, progress=100, result=result)
-                app.logger.info(f"分析完成: {stock_code}，耗时 {time.time() - start_time:.2f} 秒")
-                return custom_jsonify({'result': result})
-            except Exception as e:
-                app.logger.error(f"分析过程中出错: {str(e)}")
-                update_task_status('stock_analysis', task_id, TASK_FAILED, error=str(e))
-                return custom_jsonify({'error': f'分析过程中出错: {str(e)}'}), 500
-        else:
-            # 已存在正在处理的任务，等待其完成
-            max_wait = timeout - (time.time() - start_time)
-            wait_interval = 0.5
-            waited = 0
-
-            while waited < max_wait:
-                with task_lock:
-                    current_task = store[task_id]
-                    if current_task['status'] == TASK_COMPLETED and 'result' in current_task:
-                        return custom_jsonify({'result': current_task['result']})
-                    if current_task['status'] == TASK_FAILED:
-                        error = current_task.get('error', '任务失败，无详细信息')
-                        return custom_jsonify({'error': error}), 500
-
-                time.sleep(wait_interval)
-                waited += wait_interval
-
-            # 超时
-            return custom_jsonify({'error': '处理超时，请稍后重试'}), 504
-
-    except Exception as e:
-        app.logger.error(f"执行增强版分析时出错: {traceback.format_exc()}")
-        return custom_jsonify({'error': str(e)}), 500
+# 向后兼容的API已移除，请使用新的异步任务API
 
 
 # 添加在web_server.py主代码中
@@ -1410,14 +1257,8 @@ def run_task_cleaner():
                     # 清理 Flask 缓存
                     cache.clear()
 
-                    # 清理任务存储
-                    with task_lock:
-                        for task_type in tasks:
-                            task_store = tasks[task_type]
-                            completed_tasks = [task_id for task_id, task in task_store.items()
-                                               if task['status'] == TASK_COMPLETED]
-                            for task_id in completed_tasks:
-                                del task_store[task_id]
+                    # 清理统一任务管理器中的已完成任务
+                    unified_task_manager.cleanup_completed_tasks()
 
                     app.logger.info("市场收盘时间检测到，已清理所有缓存数据")
 
