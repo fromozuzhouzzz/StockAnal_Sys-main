@@ -182,17 +182,162 @@ def get_or_create_task(task_type, **params):
     return task_id, task, True
 
 
-# 添加到web_server.py顶部
-# 任务管理系统
-scan_tasks = {}  # 存储扫描任务的状态和结果
-task_lock = threading.Lock()  # 用于线程安全操作
+# 统一任务管理系统 - 解决多套存储机制问题
+class UnifiedTaskManager:
+    """统一任务管理器 - 彻底解决任务存储不一致问题"""
 
-# 任务状态常量
-TASK_PENDING = 'pending'
-TASK_RUNNING = 'running'
-TASK_COMPLETED = 'completed'
-TASK_FAILED = 'failed'
+    def __init__(self):
+        self.tasks = {}  # 统一的任务存储
+        self.lock = threading.RLock()  # 使用可重入锁，避免死锁
 
+        # 任务状态常量
+        self.PENDING = 'pending'
+        self.RUNNING = 'running'
+        self.COMPLETED = 'completed'
+        self.FAILED = 'failed'
+        self.CANCELLED = 'cancelled'
+
+    def create_task(self, task_type, **params):
+        """创建新任务 - 线程安全"""
+        import uuid
+        task_id = str(uuid.uuid4())
+
+        with self.lock:
+            task = {
+                'id': task_id,
+                'type': task_type,
+                'status': self.PENDING,
+                'progress': 0,
+                'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'progress_updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'params': params,
+                'result': None,
+                'error': None
+            }
+
+            # 添加任务类型特定的字段
+            if task_type == 'market_scan':
+                task.update({
+                    'total': params.get('total', 0),
+                    'processed': 0,
+                    'found': 0,
+                    'failed': 0,
+                    'timeout': 0,
+                    'estimated_remaining': 0
+                })
+
+            self.tasks[task_id] = task
+            app.logger.info(f"统一任务管理器: 创建任务 {task_id}, 类型: {task_type}")
+
+        return task_id, task
+
+    def get_task(self, task_id):
+        """获取任务 - 线程安全"""
+        with self.lock:
+            task = self.tasks.get(task_id)
+            if task:
+                app.logger.debug(f"统一任务管理器: 获取任务 {task_id}, 状态: {task['status']}")
+            else:
+                app.logger.warning(f"统一任务管理器: 任务 {task_id} 不存在，当前任务数: {len(self.tasks)}")
+                app.logger.warning(f"统一任务管理器: 当前任务列表: {list(self.tasks.keys())}")
+            return task
+
+    def update_task(self, task_id, status=None, progress=None, result=None, error=None, **kwargs):
+        """更新任务状态 - 线程安全"""
+        with self.lock:
+            if task_id not in self.tasks:
+                app.logger.error(f"统一任务管理器: 尝试更新不存在的任务 {task_id}")
+                return False
+
+            task = self.tasks[task_id]
+            old_status = task.get('status', '')
+            old_progress = task.get('progress', 0)
+
+            # 更新基本字段
+            if status is not None:
+                task['status'] = status
+            if progress is not None:
+                task['progress'] = progress
+                # 如果进度有变化，更新进度时间戳
+                if progress != old_progress:
+                    task['progress_updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            if result is not None:
+                task['result'] = result
+                if isinstance(result, list):
+                    app.logger.info(f"统一任务管理器: 任务 {task_id} 结果已保存，共 {len(result)} 个结果")
+            if error is not None:
+                task['error'] = error
+
+            # 更新其他字段
+            for key, value in kwargs.items():
+                task[key] = value
+
+            task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+            # 详细日志记录
+            if status != old_status or progress != old_progress:
+                app.logger.info(f"统一任务管理器: 任务 {task_id} 状态更新: {old_status} -> {status}, 进度: {old_progress}% -> {progress}%")
+
+            return True
+
+    def cleanup_old_tasks(self):
+        """清理旧任务 - 保守策略"""
+        with self.lock:
+            now = datetime.now()
+            to_delete = []
+
+            for task_id, task in self.tasks.items():
+                try:
+                    updated_at = datetime.strptime(task['updated_at'], '%Y-%m-%d %H:%M:%S')
+                    time_diff = (now - updated_at).total_seconds()
+
+                    should_delete = False
+
+                    if task['status'] in [self.COMPLETED, self.FAILED, self.CANCELLED]:
+                        # 完成的任务，6小时后清理
+                        should_delete = time_diff > 21600
+                    elif task['status'] == self.RUNNING:
+                        # 运行中的任务，只有在超过12小时且无进度更新时才清理
+                        if time_diff > 43200:  # 12小时
+                            progress_updated_at = datetime.strptime(
+                                task.get('progress_updated_at', task['updated_at']),
+                                '%Y-%m-%d %H:%M:%S'
+                            )
+                            progress_time_diff = (now - progress_updated_at).total_seconds()
+                            if progress_time_diff > 7200:  # 2小时内无进度更新
+                                should_delete = True
+                                app.logger.warning(f"统一任务管理器: 任务 {task_id} 运行超过12小时且2小时内无进度更新，判定为卡死")
+                    elif task['status'] == self.PENDING:
+                        # 等待中的任务，4小时后清理
+                        should_delete = time_diff > 14400
+
+                    if should_delete:
+                        to_delete.append(task_id)
+                        app.logger.info(f"统一任务管理器: 准备清理任务 {task_id}，状态: {task['status']}, 已存在: {time_diff/60:.1f}分钟")
+
+                except Exception as e:
+                    app.logger.error(f"统一任务管理器: 清理任务 {task_id} 时出错: {str(e)}")
+
+            # 删除旧任务
+            for task_id in to_delete:
+                del self.tasks[task_id]
+                app.logger.info(f"统一任务管理器: 清理任务 {task_id}")
+
+            return len(to_delete)
+
+# 创建全局统一任务管理器
+unified_task_manager = UnifiedTaskManager()
+
+# 为了兼容性，保留旧的变量名和函数，但指向新的统一管理器
+scan_tasks = unified_task_manager.tasks  # 兼容性别名
+task_lock = unified_task_manager.lock    # 兼容性别名
+
+# 任务状态常量 - 兼容性
+TASK_PENDING = unified_task_manager.PENDING
+TASK_RUNNING = unified_task_manager.RUNNING
+TASK_COMPLETED = unified_task_manager.COMPLETED
+TASK_FAILED = unified_task_manager.FAILED
 
 def generate_task_id():
     """生成唯一的任务ID"""
@@ -201,39 +346,15 @@ def generate_task_id():
 
 
 def start_market_scan_task_status(task_id, status, progress=None, result=None, error=None, **kwargs):
-    """更新任务状态 - 改进版，增加进度跟踪"""
-    with task_lock:
-        if task_id in scan_tasks:
-            task = scan_tasks[task_id]
-            old_status = task.get('status', '')
-            old_progress = task.get('progress', 0)
-
-            task['status'] = status
-            if progress is not None:
-                task['progress'] = progress
-                # 如果进度有变化，更新进度时间戳
-                if progress != old_progress:
-                    task['progress_updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            if result is not None:
-                task['result'] = result
-                app.logger.info(f"任务 {task_id} 结果已保存，共 {len(result) if isinstance(result, list) else 0} 个结果")
-            if error is not None:
-                task['error'] = error
-
-            # 更新其他统计信息
-            for key, value in kwargs.items():
-                if key in ['processed', 'found', 'failed', 'timeout', 'estimated_remaining']:
-                    task[key] = value
-
-            task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-            # 增强日志记录
-            if status != old_status or progress != old_progress:
-                app.logger.info(f"任务 {task_id} 状态更新: {old_status} -> {status}, 进度: {old_progress}% -> {progress}%")
-            else:
-                app.logger.debug(f"任务 {task_id} 状态保持: {status}, 进度: {progress}%")
-        else:
-            app.logger.error(f"尝试更新不存在的任务: {task_id}，当前任务列表: {list(scan_tasks.keys())}")
+    """更新任务状态 - 使用统一任务管理器"""
+    return unified_task_manager.update_task(
+        task_id=task_id,
+        status=status,
+        progress=progress,
+        result=result,
+        error=error,
+        **kwargs
+    )
 
 
 def update_task_status(task_type, task_id, status, progress=None, result=None, error=None):
@@ -960,24 +1081,14 @@ def start_market_scan():
             app.logger.warning(f"股票列表过长 ({len(stock_list)}只)，截取前100只")
             stock_list = stock_list[:100]
 
-        # 创建新任务
-        task_id = generate_task_id()
-        task = {
-            'id': task_id,
-            'status': TASK_PENDING,
-            'progress': 0,
-            'total': len(stock_list),
-            'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'params': {
-                'stock_list': stock_list,
-                'min_score': min_score,
-                'market_type': market_type
-            }
-        }
-
-        with task_lock:
-            scan_tasks[task_id] = task
+        # 使用统一任务管理器创建任务
+        task_id, task = unified_task_manager.create_task(
+            'market_scan',
+            stock_list=stock_list,
+            min_score=min_score,
+            market_type=market_type,
+            total=len(stock_list)
+        )
 
         # 启动后台线程执行扫描
         def run_scan():
@@ -1126,57 +1237,51 @@ def start_market_scan():
 
 @app.route('/api/scan_status/<task_id>', methods=['GET'])
 def get_scan_status(task_id):
-    """获取扫描任务状态 - 增强版"""
-    with task_lock:
-        if task_id not in scan_tasks:
-            # 增强错误日志记录
-            app.logger.warning(f"任务 {task_id} 不存在")
-            app.logger.warning(f"当前任务列表: {list(scan_tasks.keys())}")
-            app.logger.warning(f"任务列表详情: {[(tid, task.get('status', 'unknown')) for tid, task in scan_tasks.items()]}")
-            return jsonify({'error': '找不到指定的扫描任务'}), 404
+    """获取扫描任务状态 - 使用统一任务管理器"""
+    task = unified_task_manager.get_task(task_id)
 
-        task = scan_tasks[task_id]
+    if not task:
+        return jsonify({'error': '找不到指定的扫描任务'}), 404
 
-        # 详细的状态日志记录
-        app.logger.debug(f"查询任务 {task_id} 状态: {task['status']}, 进度: {task.get('progress', 0)}%")
+    # 详细的状态日志记录
+    app.logger.debug(f"查询任务 {task_id} 状态: {task['status']}, 进度: {task.get('progress', 0)}%")
 
-        # 检查任务是否长时间无更新
-        from datetime import datetime
-        try:
-            updated_at = datetime.strptime(task['updated_at'], '%Y-%m-%d %H:%M:%S')
-            time_since_update = (datetime.now() - updated_at).total_seconds()
-            if time_since_update > 300:  # 5分钟无更新
-                app.logger.warning(f"任务 {task_id} 已 {time_since_update/60:.1f} 分钟无更新")
-        except:
-            pass
+    # 检查任务是否长时间无更新
+    try:
+        updated_at = datetime.strptime(task['updated_at'], '%Y-%m-%d %H:%M:%S')
+        time_since_update = (datetime.now() - updated_at).total_seconds()
+        if time_since_update > 300:  # 5分钟无更新
+            app.logger.warning(f"任务 {task_id} 已 {time_since_update/60:.1f} 分钟无更新")
+    except:
+        pass
 
-        # 基本状态信息
-        status = {
-            'id': task['id'],
-            'status': task['status'],
-            'progress': task.get('progress', 0),
-            'total': task.get('total', 0),
-            'processed': task.get('processed', 0),
-            'found': task.get('found', 0),
-            'failed': task.get('failed', 0),
-            'timeout': task.get('timeout', 0),
-            'estimated_remaining': task.get('estimated_remaining', 0),
-            'created_at': task['created_at'],
-            'updated_at': task['updated_at'],
-            'progress_updated_at': task.get('progress_updated_at', task['updated_at'])
-        }
+    # 基本状态信息
+    status = {
+        'id': task['id'],
+        'status': task['status'],
+        'progress': task.get('progress', 0),
+        'total': task.get('total', 0),
+        'processed': task.get('processed', 0),
+        'found': task.get('found', 0),
+        'failed': task.get('failed', 0),
+        'timeout': task.get('timeout', 0),
+        'estimated_remaining': task.get('estimated_remaining', 0),
+        'created_at': task['created_at'],
+        'updated_at': task['updated_at'],
+        'progress_updated_at': task.get('progress_updated_at', task['updated_at'])
+    }
 
-        # 如果任务完成，包含结果
-        if task['status'] == TASK_COMPLETED and 'result' in task:
-            status['result'] = task['result']
-            app.logger.info(f"任务 {task_id} 已完成，返回 {len(task['result'])} 个结果")
+    # 如果任务完成，包含结果
+    if task['status'] == TASK_COMPLETED and 'result' in task:
+        status['result'] = task['result']
+        app.logger.info(f"任务 {task_id} 已完成，返回 {len(task['result'])} 个结果")
 
-        # 如果任务失败，包含错误信息
-        if task['status'] == TASK_FAILED and 'error' in task:
-            status['error'] = task['error']
-            app.logger.info(f"任务 {task_id} 失败: {task['error']}")
+    # 如果任务失败，包含错误信息
+    if task['status'] == TASK_FAILED and 'error' in task:
+        status['error'] = task['error']
+        app.logger.info(f"任务 {task_id} 失败: {task['error']}")
 
-        return custom_jsonify(status)
+    return custom_jsonify(status)
 
 
 @app.route('/api/cancel_scan/<task_id>', methods=['POST'])
@@ -1281,72 +1386,10 @@ def get_industry_stocks():
         return jsonify({'error': str(e)}), 500
 
 
-# 添加到web_server.py
+# 使用统一任务管理器的清理函数
 def clean_old_tasks():
-    """清理旧的扫描任务 - 改进版，更加保守的清理策略"""
-    with task_lock:
-        now = datetime.now()
-        to_delete = []
-
-        for task_id, task in scan_tasks.items():
-            # 解析更新时间
-            try:
-                updated_at = datetime.strptime(task['updated_at'], '%Y-%m-%d %H:%M:%S')
-                time_diff = (now - updated_at).total_seconds()
-
-                # 更加保守的清理条件：
-                should_delete = False
-
-                if task['status'] in [TASK_COMPLETED, TASK_FAILED]:
-                    # 完成或失败的任务，4小时后清理（给用户更多时间查看结果）
-                    should_delete = time_diff > 14400
-                elif task['status'] == TASK_RUNNING:
-                    # 运行中的任务，只有在超过6小时且没有进度更新时才清理
-                    # 增加额外检查：如果任务有进度更新，说明还在活跃运行
-                    if time_diff > 21600:  # 6小时
-                        # 检查任务是否真的卡死：如果进度在最近1小时内有更新，则不删除
-                        last_progress_update = task.get('progress_updated_at', task['updated_at'])
-                        try:
-                            progress_updated_at = datetime.strptime(last_progress_update, '%Y-%m-%d %H:%M:%S')
-                            progress_time_diff = (now - progress_updated_at).total_seconds()
-                            if progress_time_diff < 3600:  # 1小时内有进度更新
-                                should_delete = False
-                                app.logger.info(f"任务 {task_id} 虽然运行超过6小时，但1小时内有进度更新，保留任务")
-                            else:
-                                should_delete = True
-                                app.logger.warning(f"任务 {task_id} 运行超过6小时且1小时内无进度更新，判定为卡死")
-                        except:
-                            should_delete = True
-                elif task['status'] == TASK_PENDING:
-                    # 等待中的任务，2小时后清理（给更多时间启动）
-                    should_delete = time_diff > 7200
-                else:
-                    # 其他状态的任务，4小时后清理
-                    should_delete = time_diff > 14400
-
-                if should_delete:
-                    to_delete.append(task_id)
-                    app.logger.info(f"准备清理任务 {task_id}，状态: {task['status']}, 已存在: {time_diff/60:.1f}分钟")
-
-            except Exception as e:
-                # 日期解析错误，但不立即删除，给24小时缓冲期
-                app.logger.warning(f"任务 {task_id} 日期解析错误: {str(e)}")
-                # 只有在任务创建超过24小时时才删除
-                created_at = task.get('created_at', '')
-                try:
-                    if created_at:
-                        created_time = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S')
-                        if (now - created_time).total_seconds() > 86400:  # 24小时
-                            to_delete.append(task_id)
-                except:
-                    pass
-
-        # 删除旧任务
-        for task_id in to_delete:
-            app.logger.info(f"清理任务: {task_id}")
-            del scan_tasks[task_id]
-
-        return len(to_delete)
+    """清理旧的扫描任务 - 使用统一任务管理器"""
+    return unified_task_manager.cleanup_old_tasks()
 
 
 # 修改 run_task_cleaner 函数，降低清理频率并增加保护机制
