@@ -201,13 +201,19 @@ def generate_task_id():
 
 
 def start_market_scan_task_status(task_id, status, progress=None, result=None, error=None, **kwargs):
-    """更新任务状态 - 保持原有签名"""
+    """更新任务状态 - 改进版，增加进度跟踪"""
     with task_lock:
         if task_id in scan_tasks:
             task = scan_tasks[task_id]
+            old_status = task.get('status', '')
+            old_progress = task.get('progress', 0)
+
             task['status'] = status
             if progress is not None:
                 task['progress'] = progress
+                # 如果进度有变化，更新进度时间戳
+                if progress != old_progress:
+                    task['progress_updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             if result is not None:
                 task['result'] = result
                 app.logger.info(f"任务 {task_id} 结果已保存，共 {len(result) if isinstance(result, list) else 0} 个结果")
@@ -220,9 +226,14 @@ def start_market_scan_task_status(task_id, status, progress=None, result=None, e
                     task[key] = value
 
             task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            app.logger.debug(f"任务 {task_id} 状态更新为: {status}, 进度: {progress}%")
+
+            # 增强日志记录
+            if status != old_status or progress != old_progress:
+                app.logger.info(f"任务 {task_id} 状态更新: {old_status} -> {status}, 进度: {old_progress}% -> {progress}%")
+            else:
+                app.logger.debug(f"任务 {task_id} 状态保持: {status}, 进度: {progress}%")
         else:
-            app.logger.error(f"尝试更新不存在的任务: {task_id}")
+            app.logger.error(f"尝试更新不存在的任务: {task_id}，当前任务列表: {list(scan_tasks.keys())}")
 
 
 def update_task_status(task_type, task_id, status, progress=None, result=None, error=None):
@@ -1115,14 +1126,29 @@ def start_market_scan():
 
 @app.route('/api/scan_status/<task_id>', methods=['GET'])
 def get_scan_status(task_id):
-    """获取扫描任务状态"""
+    """获取扫描任务状态 - 增强版"""
     with task_lock:
         if task_id not in scan_tasks:
-            app.logger.warning(f"任务 {task_id} 不存在，当前任务列表: {list(scan_tasks.keys())}")
+            # 增强错误日志记录
+            app.logger.warning(f"任务 {task_id} 不存在")
+            app.logger.warning(f"当前任务列表: {list(scan_tasks.keys())}")
+            app.logger.warning(f"任务列表详情: {[(tid, task.get('status', 'unknown')) for tid, task in scan_tasks.items()]}")
             return jsonify({'error': '找不到指定的扫描任务'}), 404
 
         task = scan_tasks[task_id]
-        app.logger.info(f"查询任务 {task_id} 状态: {task['status']}")
+
+        # 详细的状态日志记录
+        app.logger.debug(f"查询任务 {task_id} 状态: {task['status']}, 进度: {task.get('progress', 0)}%")
+
+        # 检查任务是否长时间无更新
+        from datetime import datetime
+        try:
+            updated_at = datetime.strptime(task['updated_at'], '%Y-%m-%d %H:%M:%S')
+            time_since_update = (datetime.now() - updated_at).total_seconds()
+            if time_since_update > 300:  # 5分钟无更新
+                app.logger.warning(f"任务 {task_id} 已 {time_since_update/60:.1f} 分钟无更新")
+        except:
+            pass
 
         # 基本状态信息
         status = {
@@ -1136,7 +1162,8 @@ def get_scan_status(task_id):
             'timeout': task.get('timeout', 0),
             'estimated_remaining': task.get('estimated_remaining', 0),
             'created_at': task['created_at'],
-            'updated_at': task['updated_at']
+            'updated_at': task['updated_at'],
+            'progress_updated_at': task.get('progress_updated_at', task['updated_at'])
         }
 
         # 如果任务完成，包含结果
@@ -1147,6 +1174,7 @@ def get_scan_status(task_id):
         # 如果任务失败，包含错误信息
         if task['status'] == TASK_FAILED and 'error' in task:
             status['error'] = task['error']
+            app.logger.info(f"任务 {task_id} 失败: {task['error']}")
 
         return custom_jsonify(status)
 
@@ -1255,7 +1283,7 @@ def get_industry_stocks():
 
 # 添加到web_server.py
 def clean_old_tasks():
-    """清理旧的扫描任务"""
+    """清理旧的扫描任务 - 改进版，更加保守的清理策略"""
     with task_lock:
         now = datetime.now()
         to_delete = []
@@ -1266,42 +1294,62 @@ def clean_old_tasks():
                 updated_at = datetime.strptime(task['updated_at'], '%Y-%m-%d %H:%M:%S')
                 time_diff = (now - updated_at).total_seconds()
 
-                # 清理条件：
-                # 1. 已完成或失败的任务超过1小时
-                # 2. 正在运行的任务超过2小时（防止卡死）
-                # 3. 等待中的任务超过30分钟（可能是孤儿任务）
+                # 更加保守的清理条件：
                 should_delete = False
 
                 if task['status'] in [TASK_COMPLETED, TASK_FAILED]:
-                    # 完成或失败的任务，1小时后清理
-                    should_delete = time_diff > 3600
+                    # 完成或失败的任务，4小时后清理（给用户更多时间查看结果）
+                    should_delete = time_diff > 14400
                 elif task['status'] == TASK_RUNNING:
-                    # 运行中的任务，2小时后清理（防止卡死）
-                    should_delete = time_diff > 7200
+                    # 运行中的任务，只有在超过6小时且没有进度更新时才清理
+                    # 增加额外检查：如果任务有进度更新，说明还在活跃运行
+                    if time_diff > 21600:  # 6小时
+                        # 检查任务是否真的卡死：如果进度在最近1小时内有更新，则不删除
+                        last_progress_update = task.get('progress_updated_at', task['updated_at'])
+                        try:
+                            progress_updated_at = datetime.strptime(last_progress_update, '%Y-%m-%d %H:%M:%S')
+                            progress_time_diff = (now - progress_updated_at).total_seconds()
+                            if progress_time_diff < 3600:  # 1小时内有进度更新
+                                should_delete = False
+                                app.logger.info(f"任务 {task_id} 虽然运行超过6小时，但1小时内有进度更新，保留任务")
+                            else:
+                                should_delete = True
+                                app.logger.warning(f"任务 {task_id} 运行超过6小时且1小时内无进度更新，判定为卡死")
+                        except:
+                            should_delete = True
                 elif task['status'] == TASK_PENDING:
-                    # 等待中的任务，30分钟后清理（可能是孤儿任务）
-                    should_delete = time_diff > 1800
+                    # 等待中的任务，2小时后清理（给更多时间启动）
+                    should_delete = time_diff > 7200
                 else:
-                    # 其他状态的任务，1小时后清理
-                    should_delete = time_diff > 3600
+                    # 其他状态的任务，4小时后清理
+                    should_delete = time_diff > 14400
 
                 if should_delete:
                     to_delete.append(task_id)
                     app.logger.info(f"准备清理任务 {task_id}，状态: {task['status']}, 已存在: {time_diff/60:.1f}分钟")
 
             except Exception as e:
-                # 日期解析错误，添加到删除列表
+                # 日期解析错误，但不立即删除，给24小时缓冲期
                 app.logger.warning(f"任务 {task_id} 日期解析错误: {str(e)}")
-                to_delete.append(task_id)
+                # 只有在任务创建超过24小时时才删除
+                created_at = task.get('created_at', '')
+                try:
+                    if created_at:
+                        created_time = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S')
+                        if (now - created_time).total_seconds() > 86400:  # 24小时
+                            to_delete.append(task_id)
+                except:
+                    pass
 
         # 删除旧任务
         for task_id in to_delete:
+            app.logger.info(f"清理任务: {task_id}")
             del scan_tasks[task_id]
 
         return len(to_delete)
 
 
-# 修改 run_task_cleaner 函数，使其每 5 分钟运行一次并在 16:30 左右清理所有缓存
+# 修改 run_task_cleaner 函数，降低清理频率并增加保护机制
 def run_task_cleaner():
     """定期运行任务清理，并在每天 16:30 左右清理所有缓存"""
     while True:
@@ -1310,34 +1358,47 @@ def run_task_cleaner():
             # 判断是否在收盘时间附近（16:25-16:35）
             is_market_close_time = (now.hour == 16 and 25 <= now.minute <= 35)
 
-            cleaned = clean_old_tasks()
+            # 只在特定时间进行清理，避免干扰正在运行的任务
+            should_clean = False
 
-            # 如果是收盘时间，清理所有缓存
             if is_market_close_time:
-                # 清理分析器的数据缓存
-                analyzer.data_cache.clear()
+                # 收盘时间，进行全面清理
+                should_clean = True
+            elif now.hour in [2, 6, 10, 14, 18, 22]:  # 每4小时清理一次，避开交易时间
+                should_clean = True
 
-                # 清理 Flask 缓存
-                cache.clear()
+            if should_clean:
+                cleaned = clean_old_tasks()
 
-                # 清理任务存储
-                with task_lock:
-                    for task_type in tasks:
-                        task_store = tasks[task_type]
-                        completed_tasks = [task_id for task_id, task in task_store.items()
-                                           if task['status'] == TASK_COMPLETED]
-                        for task_id in completed_tasks:
-                            del task_store[task_id]
+                # 如果是收盘时间，清理所有缓存
+                if is_market_close_time:
+                    # 清理分析器的数据缓存
+                    analyzer.data_cache.clear()
 
-                app.logger.info("市场收盘时间检测到，已清理所有缓存数据")
+                    # 清理 Flask 缓存
+                    cache.clear()
 
-            if cleaned > 0:
-                app.logger.info(f"清理了 {cleaned} 个旧的扫描任务")
+                    # 清理任务存储
+                    with task_lock:
+                        for task_type in tasks:
+                            task_store = tasks[task_type]
+                            completed_tasks = [task_id for task_id, task in task_store.items()
+                                               if task['status'] == TASK_COMPLETED]
+                            for task_id in completed_tasks:
+                                del task_store[task_id]
+
+                    app.logger.info("市场收盘时间检测到，已清理所有缓存数据")
+
+                if cleaned > 0:
+                    app.logger.info(f"清理了 {cleaned} 个旧的扫描任务")
+            else:
+                app.logger.debug("跳过任务清理，避免干扰正在运行的任务")
+
         except Exception as e:
             app.logger.error(f"任务清理出错: {str(e)}")
 
-        # 每 30 分钟运行一次，减少对正在运行任务的干扰
-        time.sleep(1800)
+        # 每 2 小时检查一次，但只在特定时间点实际清理
+        time.sleep(7200)
 
 
 # 基本面分析路由

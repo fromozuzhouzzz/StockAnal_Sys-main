@@ -337,34 +337,48 @@
         });
     }
 
-    // 轮询扫描任务状态
+    // 轮询扫描任务状态 - 改进版
     function pollScanStatus(taskId) {
         console.log('开始轮询任务状态:', taskId);
-        let elapsedTime = 0;
+        const startTime = Date.now();
+        let pollCount = 0;
+        let consecutiveErrors = 0;
+        const maxConsecutiveErrors = 5;
 
         function checkStatus() {
+            pollCount++;
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+
+            console.log(`轮询 #${pollCount}: 任务 ${taskId}, 已耗时 ${elapsedSeconds}秒`);
+
             $.ajax({
                 url: `/api/scan_status/${taskId}`,
                 type: 'GET',
+                timeout: 10000, // 10秒超时
                 success: function(response) {
-                    console.log('任务状态:', response);
-                    elapsedTime++;
+                    console.log('任务状态响应:', response);
+                    consecutiveErrors = 0; // 重置错误计数
+
                     const progress = response.progress || 0;
 
                     // 更新进度消息
                     let progressHtml = `正在扫描市场...<br>
                         进度: ${progress}% 完成<br>
                         已处理: ${response.processed || 0} / ${response.total || 0} 只股票<br>
-                        耗时: ${elapsedTime}秒`;
+                        耗时: ${elapsedSeconds}秒`;
 
                     if (response.found !== undefined) {
                         progressHtml += `<br>找到符合条件: ${response.found} 只`;
                     }
 
+                    if (response.failed !== undefined && response.failed > 0) {
+                        progressHtml += `<br>失败: ${response.failed} 只`;
+                    }
+
                     $('#scan-message').html(progressHtml);
 
                     if (response.status === 'completed') {
-                        console.log('扫描完成，结果:', response.result);
+                        console.log('扫描完成，结果数量:', response.result ? response.result.length : 0);
                         $('#cancel-scan-btn').hide();
                         currentTaskId = null;
 
@@ -379,11 +393,21 @@
                         }
 
                     } else if (response.status === 'failed') {
+                        console.error('扫描任务失败:', response.error);
                         $('#cancel-scan-btn').hide();
                         currentTaskId = null;
                         $('#scan-loading').hide();
                         $('#scan-results').show();
                         showError('扫描任务失败: ' + (response.error || '未知错误'));
+                        $('#scan-error-retry').show();
+
+                    } else if (response.status === 'cancelled') {
+                        console.log('扫描任务已取消');
+                        $('#cancel-scan-btn').hide();
+                        currentTaskId = null;
+                        $('#scan-loading').hide();
+                        $('#scan-results').show();
+                        showInfo('扫描任务已取消');
                         $('#scan-error-retry').show();
 
                     } else {
@@ -392,20 +416,41 @@
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('轮询状态失败:', xhr, status, error);
+                    consecutiveErrors++;
+                    console.error(`轮询状态失败 (第${consecutiveErrors}次):`, {
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                        error: error,
+                        response: xhr.responseText
+                    });
 
                     if (xhr.status === 404) {
+                        console.error('任务不存在，停止轮询');
                         $('#cancel-scan-btn').hide();
                         currentTaskId = null;
                         $('#scan-loading').hide();
                         $('#scan-results').show();
-                        showError('扫描任务已丢失，请重新开始扫描');
+                        showError('扫描任务已丢失，可能被系统清理。请重新开始扫描。');
                         $('#scan-error-retry').show();
                         return;
                     }
 
-                    // 其他错误，继续尝试
-                    setTimeout(checkStatus, 3000);
+                    // 如果连续错误次数过多，停止轮询
+                    if (consecutiveErrors >= maxConsecutiveErrors) {
+                        console.error('连续错误次数过多，停止轮询');
+                        $('#cancel-scan-btn').hide();
+                        currentTaskId = null;
+                        $('#scan-loading').hide();
+                        $('#scan-results').show();
+                        showError(`网络连接异常，已停止轮询。错误: ${error}`);
+                        $('#scan-error-retry').show();
+                        return;
+                    }
+
+                    // 其他错误，延长间隔后继续尝试
+                    const retryDelay = Math.min(3000 + consecutiveErrors * 1000, 10000); // 最多10秒
+                    console.log(`${retryDelay/1000}秒后重试...`);
+                    setTimeout(checkStatus, retryDelay);
                 }
             });
         }
