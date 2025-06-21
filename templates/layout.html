@@ -15,7 +15,7 @@
     <!-- ApexCharts -->
     <link href="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.min.css" rel="stylesheet">
     <!-- Enhanced Material Design 3 Styles -->
-    <link href="/static/md3-styles.css" rel="stylesheet">
+    <link href="/static/md3-styles.css?v=20241207-table-alignment-ultimate-fix" rel="stylesheet">
     <!-- Download PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -642,6 +642,13 @@
                 <i class="material-icons">search</i>
             </button>
         </div>
+
+        <!-- 主题切换开关 -->
+        <div class="md3-theme-switcher" style="margin-left: 16px;">
+            <button id="global-theme-toggle" class="md3-icon-button" title="切换主题">
+                <i class="material-icons" id="global-theme-icon">light_mode</i>
+            </button>
+        </div>
     </nav>
 
     <!-- Material Design 3 Main Content -->
@@ -775,6 +782,63 @@
         function getTrendIcon(trend) {
             return trend === 'UP' ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
         }
+
+        // Material Design 3 相关函数
+        function getMD3ScoreColorClass(score) {
+            if (score >= 80) return 'md3-badge-success';
+            if (score >= 60) return 'md3-badge-primary';
+            if (score >= 40) return 'md3-badge-warning';
+            return 'md3-badge-danger';
+        }
+
+        function getMD3TrendColorClass(trend) {
+            return trend === 'UP' ? 'md3-text-bull' : 'md3-text-bear';
+        }
+
+        // 主题切换功能
+        function initThemeToggle() {
+            const themeToggle = document.getElementById('global-theme-toggle');
+            const themeIcon = document.getElementById('global-theme-icon');
+            const body = document.body;
+
+            // 从localStorage获取保存的主题
+            const savedTheme = localStorage.getItem('theme') || 'light';
+
+            // 应用保存的主题
+            if (savedTheme === 'dark') {
+                body.setAttribute('data-theme', 'dark');
+                themeIcon.textContent = 'dark_mode';
+                themeToggle.title = '切换到浅色模式';
+            } else {
+                body.removeAttribute('data-theme');
+                themeIcon.textContent = 'light_mode';
+                themeToggle.title = '切换到深色模式';
+            }
+
+            // 主题切换事件
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = body.getAttribute('data-theme');
+
+                if (currentTheme === 'dark') {
+                    // 切换到浅色模式
+                    body.removeAttribute('data-theme');
+                    themeIcon.textContent = 'light_mode';
+                    themeToggle.title = '切换到深色模式';
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    // 切换到深色模式
+                    body.setAttribute('data-theme', 'dark');
+                    themeIcon.textContent = 'dark_mode';
+                    themeToggle.title = '切换到浅色模式';
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        }
+
+        // 页面加载完成后初始化主题切换
+        $(document).ready(function() {
+            initThemeToggle();
+        });
     </script>
     {% block scripts %}{% endblock %}
 </body>

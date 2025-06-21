@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资金流向测试页面</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="static/md3-styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1976d2;
+        }
+        /* 中国股市习惯：上涨红色，下跌绿色 */
+        .trend-up {
+            color: #d32f2f; /* 红色表示上涨 */
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+        }
+        .trend-down {
+            color: #2e7d32; /* 绿色表示下跌 */
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+        }
+        .md3-data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+            font-size: 14px;
+        }
+        .md3-data-table th {
+            padding: 16px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 1px solid #e0e0e0;
+            background-color: #f8f9fa;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        .md3-data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #333;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        .md3-data-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .md3-button {
+            padding: 8px 16px;
+            border: 1px solid #1976d2;
+            background: transparent;
+            color: #1976d2;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+        .md3-button:hover {
+            background-color: #e3f2fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; color: #1976d2; margin-bottom: 32px;">资金流向页面修复测试</h1>
+        
+        <!-- 概念资金流向测试 -->
+        <div class="test-section">
+            <div class="test-title">1. 概念资金流向表格（修复后）</div>
+            <div style="overflow-x: auto;">
+                <table class="md3-data-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center;">序号</th>
+                            <th style="text-align: left;">概念/行业</th>
+                            <th style="text-align: right;">行业指数</th>
+                            <th style="text-align: center;">涨跌幅</th>
+                            <th style="text-align: right;">流入资金(亿)</th>
+                            <th style="text-align: right;">流出资金(亿)</th>
+                            <th style="text-align: right;">净额(亿)</th>
+                            <th style="text-align: center;">公司家数</th>
+                            <th style="text-align: center;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="text-align: center;">1</td>
+                            <td>人工智能</td>
+                            <td style="text-align: right;">1234.56</td>
+                            <td class="trend-up" style="text-align: center;">
+                                <i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 2.34%
+                            </td>
+                            <td style="text-align: right;">12.45</td>
+                            <td style="text-align: right;">8.76</td>
+                            <td class="trend-up" style="text-align: right;">
+                                <i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 3.69
+                            </td>
+                            <td style="text-align: center;">45</td>
+                            <td style="text-align: center;">
+                                <button class="md3-button">
+                                    <i class="material-icons">search</i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;">2</td>
+                            <td>新能源汽车</td>
+                            <td style="text-align: right;">987.65</td>
+                            <td class="trend-down" style="text-align: center;">
+                                <i class="material-icons" style="color: #2e7d32;">arrow_downward</i> -1.23%
+                            </td>
+                            <td style="text-align: right;">8.90</td>
+                            <td style="text-align: right;">11.23</td>
+                            <td class="trend-down" style="text-align: right;">
+                                <i class="material-icons" style="color: #2e7d32;">arrow_downward</i> -2.33
+                            </td>
+                            <td style="text-align: center;">32</td>
+                            <td style="text-align: center;">
+                                <button class="md3-button">
+                                    <i class="material-icons">search</i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 概念成分股测试 -->
+        <div class="test-section">
+            <div class="test-title">2. 概念成分股表格（修复后）</div>
+            <div style="overflow-x: auto;">
+                <table class="md3-data-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center;">代码</th>
+                            <th style="text-align: left;">名称</th>
+                            <th style="text-align: right;">最新价</th>
+                            <th style="text-align: center;">涨跌幅</th>
+                            <th style="text-align: right;">主力净流入</th>
+                            <th style="text-align: right;">主力净流入占比</th>
+                            <th style="text-align: center;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="text-align: center; white-space: nowrap;">000001</td>
+                            <td style="text-align: left; white-space: nowrap;">平安银行</td>
+                            <td style="text-align: right; white-space: nowrap;">12.34</td>
+                            <td class="trend-up" style="text-align: center; white-space: nowrap;">
+                                <i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 1.23%
+                            </td>
+                            <td class="trend-up" style="text-align: right; white-space: nowrap;">
+                                <i class="material-icons" style="color: #d32f2f;">arrow_upward</i> 12.35 亿
+                            </td>
+                            <td class="trend-up" style="text-align: right; white-space: nowrap;">2.34%</td>
+                            <td style="text-align: center; white-space: nowrap;">
+                                <button class="md3-button" style="margin-right: 4px;">
+                                    <i class="material-icons">trending_up</i>
+                                </button>
+                                <button class="md3-button">
+                                    <i class="material-icons">account_balance</i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center; white-space: nowrap;">000002</td>
+                            <td style="text-align: left; white-space: nowrap;">万科A</td>
+                            <td style="text-align: right; white-space: nowrap;">23.45</td>
+                            <td class="trend-down" style="text-align: center; white-space: nowrap;">
+                                <i class="material-icons" style="color: #2e7d32;">arrow_downward</i> -0.87%
+                            </td>
+                            <td class="trend-down" style="text-align: right; white-space: nowrap;">
+                                <i class="material-icons" style="color: #2e7d32;">arrow_downward</i> -9.88 亿
+                            </td>
+                            <td class="trend-down" style="text-align: right; white-space: nowrap;">-1.56%</td>
+                            <td style="text-align: center; white-space: nowrap;">
+                                <button class="md3-button" style="margin-right: 4px;">
+                                    <i class="material-icons">trending_up</i>
+                                </button>
+                                <button class="md3-button">
+                                    <i class="material-icons">account_balance</i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 修复说明 -->
+        <div class="test-section">
+            <div class="test-title">修复内容总结</div>
+            <ul style="line-height: 1.8; color: #666;">
+                <li><strong>列对齐问题修复：</strong>为所有表头和数据单元格添加了明确的text-align样式，确保数字右对齐、文本左对齐、操作按钮居中对齐</li>
+                <li><strong>涨跌幅颜色修复：</strong>按照中国股市习惯，上涨显示红色向上箭头，下跌显示绿色向下箭头</li>
+                <li><strong>按钮样式统一：</strong>将所有按钮统一为Material Design 3风格，确保操作列宽度一致</li>
+                <li><strong>表格样式优化：</strong>添加了white-space: nowrap防止文本换行，vertical-align: middle确保垂直居中</li>
+                <li><strong>图标更新：</strong>使用Material Icons的arrow_upward和arrow_downward替代原来的灰色图标</li>
+                <li><strong>数据清理：</strong>添加了数据清理逻辑，移除可能的换行符和多余空格，确保每个单元格只显示一个值</li>
+                <li><strong>调试功能：</strong>添加了控制台调试信息，帮助识别数据格式问题</li>
+            </ul>
+        </div>
+
+        <!-- 问题分析 -->
+        <div class="test-section">
+            <div class="test-title">问题分析与解决方案</div>
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                <h4 style="color: #856404; margin: 0 0 12px 0;">🔍 发现的问题</h4>
+                <p style="color: #856404; margin: 0;">根据您的截图，"涨跌幅"列显示了三行内容，这表明数据中可能包含了换行符或某个字段的值格式不正确。</p>
+            </div>
+            <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; padding: 16px;">
+                <h4 style="color: #0c5460; margin: 0 0 12px 0;">✅ 解决方案</h4>
+                <ul style="color: #0c5460; margin: 0; padding-left: 20px;">
+                    <li>添加数据清理函数，移除换行符和制表符</li>
+                    <li>确保每个数据字段都经过parseFloat或String处理</li>
+                    <li>为所有单元格添加white-space: nowrap样式</li>
+                    <li>将HTML构建为单行，避免模板字符串中的换行</li>
+                    <li>添加调试信息帮助识别数据问题</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

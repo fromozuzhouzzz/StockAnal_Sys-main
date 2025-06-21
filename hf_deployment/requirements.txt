@@ -1,0 +1,36 @@
+# 核心依赖 - Hugging Face Spaces 优化版本
+numpy>=1.24.0
+pandas==2.2.2
+scipy>=1.13.0,<1.14.0
+akshare>=1.16.56
+tqdm==4.67.1
+openai==0.28.0
+requests==2.32.3
+python-dotenv==1.0.1
+flask==3.1.0
+loguru==0.7.2
+matplotlib==3.9.2
+seaborn==0.13.2
+beautifulsoup4==4.12.3
+html5lib==1.1
+lxml==4.9.4
+jsonpath==0.82.2
+openpyxl==3.1.5
+flask_swagger_ui
+sqlalchemy
+flask-cors
+flask-caching
+gunicorn==20.1.0
+PyYAML==6.0
+scikit-learn==1.2.2
+statsmodels==0.13.5
+tavily-python
+
+# Hugging Face Spaces 不支持 PostgreSQL，移除相关依赖
+# psycopg2-binary  # PostgreSQL 支持
+
+# 移除本地开发依赖，减少部署时间
+# ipython>=7.34.0
+# pytest==7.3.1
+# supervisor==4.2.5
+# redis==4.5.4

@@ -8,7 +8,7 @@
 
 import numpy as np
 import pandas as pd
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from stock_analyzer import StockAnalyzer
 from us_stock_service import USStockService
 import threading
@@ -200,7 +200,7 @@ def generate_task_id():
     return str(uuid.uuid4())
 
 
-def start_market_scan_task_status(task_id, status, progress=None, result=None, error=None):
+def start_market_scan_task_status(task_id, status, progress=None, result=None, error=None, **kwargs):
     """更新任务状态 - 保持原有签名"""
     with task_lock:
         if task_id in scan_tasks:
@@ -210,9 +210,19 @@ def start_market_scan_task_status(task_id, status, progress=None, result=None, e
                 task['progress'] = progress
             if result is not None:
                 task['result'] = result
+                app.logger.info(f"任务 {task_id} 结果已保存，共 {len(result) if isinstance(result, list) else 0} 个结果")
             if error is not None:
                 task['error'] = error
+
+            # 更新其他统计信息
+            for key, value in kwargs.items():
+                if key in ['processed', 'found', 'failed', 'timeout', 'estimated_remaining']:
+                    task[key] = value
+
             task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            app.logger.debug(f"任务 {task_id} 状态更新为: {status}, 进度: {progress}%")
+        else:
+            app.logger.error(f"尝试更新不存在的任务: {task_id}")
 
 
 def update_task_status(task_type, task_id, status, progress=None, result=None, error=None):
@@ -519,6 +529,12 @@ def market_scan():
     return render_template('market_scan.html')
 
 
+@app.route('/test_scan')
+def test_scan():
+    """测试扫描页面"""
+    return send_from_directory('.', 'test_scan_simple.html')
+
+
 # 基本面分析页面
 @app.route('/fundamental')
 def fundamental():
@@ -529,6 +545,11 @@ def fundamental():
 @app.route('/capital_flow')
 def capital_flow():
     return render_template('capital_flow.html')
+
+# 修复验证页面
+@app.route('/test_fix')
+def test_fix():
+    return render_template('test_fix.html')
 
 
 # 情景预测页面
@@ -949,44 +970,127 @@ def start_market_scan():
 
         # 启动后台线程执行扫描
         def run_scan():
+            scan_start_time = time.time()
+            failed_stocks = []
+            timeout_stocks = []
+
             try:
                 start_market_scan_task_status(task_id, TASK_RUNNING)
+                app.logger.info(f"开始扫描任务 {task_id}，共 {len(stock_list)} 只股票")
 
                 # 执行分批处理
                 results = []
                 total = len(stock_list)
-                batch_size = 10
+                batch_size = 5  # 减小批次大小，提高响应性
+                processed_count = 0
 
                 for i in range(0, total, batch_size):
+                    # 检查任务是否被取消
                     if task_id not in scan_tasks or scan_tasks[task_id]['status'] != TASK_RUNNING:
-                        # 任务被取消
                         app.logger.info(f"扫描任务 {task_id} 被取消")
                         return
 
                     batch = stock_list[i:i + batch_size]
                     batch_results = []
+                    batch_start_time = time.time()
+
+                    app.logger.info(f"处理批次 {i//batch_size + 1}/{(total + batch_size - 1)//batch_size}，股票: {batch}")
 
                     for stock_code in batch:
+                        stock_start_time = time.time()
                         try:
-                            report = analyzer.quick_analyze_stock(stock_code, market_type)
+                            # 检查任务状态
+                            if task_id not in scan_tasks or scan_tasks[task_id]['status'] != TASK_RUNNING:
+                                app.logger.info(f"扫描任务 {task_id} 被取消")
+                                return
+
+                            # 使用较短的超时时间进行快速分析
+                            report = analyzer.quick_analyze_stock(stock_code, market_type, timeout=15)
+                            stock_time = time.time() - stock_start_time
+
                             if report['score'] >= min_score:
                                 batch_results.append(report)
+                                app.logger.info(f"股票 {stock_code} 符合条件，得分: {report['score']:.1f}，耗时: {stock_time:.2f}秒")
+                            else:
+                                app.logger.debug(f"股票 {stock_code} 不符合条件，得分: {report['score']:.1f}")
+
                         except Exception as e:
-                            app.logger.error(f"分析股票 {stock_code} 时出错: {str(e)}")
+                            stock_time = time.time() - stock_start_time
+                            error_msg = str(e)
+
+                            if "超时" in error_msg or "timeout" in error_msg.lower():
+                                timeout_stocks.append(stock_code)
+                                app.logger.warning(f"股票 {stock_code} 分析超时: {stock_time:.2f}秒")
+                            else:
+                                failed_stocks.append(stock_code)
+                                app.logger.error(f"分析股票 {stock_code} 时出错: {error_msg}")
                             continue
 
+                        processed_count += 1
+
                     results.extend(batch_results)
+                    batch_time = time.time() - batch_start_time
 
                     # 更新进度
                     progress = min(100, int((i + len(batch)) / total * 100))
-                    start_market_scan_task_status(task_id, TASK_RUNNING, progress=progress)
+
+                    # 计算预估剩余时间
+                    elapsed_time = time.time() - scan_start_time
+                    if processed_count > 0:
+                        avg_time_per_stock = elapsed_time / processed_count
+                        remaining_stocks = total - processed_count
+                        estimated_remaining_time = avg_time_per_stock * remaining_stocks
+                    else:
+                        estimated_remaining_time = 0
+
+                    # 更新任务状态，包含详细信息
+                    task_update = {
+                        'processed': processed_count,
+                        'failed': len(failed_stocks),
+                        'timeout': len(timeout_stocks),
+                        'found': len(results),
+                        'estimated_remaining': int(estimated_remaining_time)
+                    }
+
+                    with task_lock:
+                        if task_id in scan_tasks:
+                            scan_tasks[task_id].update(task_update)
+
+                    start_market_scan_task_status(
+                        task_id, TASK_RUNNING,
+                        progress=progress,
+                        processed=processed_count,
+                        found=len(results),
+                        failed=len(failed_stocks),
+                        timeout=len(timeout_stocks),
+                        estimated_remaining=int(estimated_remaining_time)
+                    )
+
+                    app.logger.info(f"批次完成，耗时: {batch_time:.2f}秒，当前找到 {len(results)} 只符合条件的股票")
 
                 # 按得分排序
                 results.sort(key=lambda x: x['score'], reverse=True)
 
+                # 记录扫描统计信息
+                total_time = time.time() - scan_start_time
+                stats = {
+                    'total_stocks': total,
+                    'processed': processed_count,
+                    'found': len(results),
+                    'failed': len(failed_stocks),
+                    'timeout': len(timeout_stocks),
+                    'total_time': total_time,
+                    'avg_time_per_stock': total_time / max(processed_count, 1)
+                }
+
                 # 更新任务状态为完成
                 start_market_scan_task_status(task_id, TASK_COMPLETED, progress=100, result=results)
-                app.logger.info(f"扫描任务 {task_id} 完成，找到 {len(results)} 只符合条件的股票")
+
+                app.logger.info(f"扫描任务 {task_id} 完成！统计信息: {stats}")
+                if failed_stocks:
+                    app.logger.warning(f"失败的股票: {failed_stocks}")
+                if timeout_stocks:
+                    app.logger.warning(f"超时的股票: {timeout_stocks}")
 
             except Exception as e:
                 app.logger.error(f"扫描任务 {task_id} 失败: {str(e)}")
@@ -1014,9 +1118,11 @@ def get_scan_status(task_id):
     """获取扫描任务状态"""
     with task_lock:
         if task_id not in scan_tasks:
+            app.logger.warning(f"任务 {task_id} 不存在，当前任务列表: {list(scan_tasks.keys())}")
             return jsonify({'error': '找不到指定的扫描任务'}), 404
 
         task = scan_tasks[task_id]
+        app.logger.info(f"查询任务 {task_id} 状态: {task['status']}")
 
         # 基本状态信息
         status = {
@@ -1024,6 +1130,11 @@ def get_scan_status(task_id):
             'status': task['status'],
             'progress': task.get('progress', 0),
             'total': task.get('total', 0),
+            'processed': task.get('processed', 0),
+            'found': task.get('found', 0),
+            'failed': task.get('failed', 0),
+            'timeout': task.get('timeout', 0),
+            'estimated_remaining': task.get('estimated_remaining', 0),
             'created_at': task['created_at'],
             'updated_at': task['updated_at']
         }
@@ -1031,12 +1142,37 @@ def get_scan_status(task_id):
         # 如果任务完成，包含结果
         if task['status'] == TASK_COMPLETED and 'result' in task:
             status['result'] = task['result']
+            app.logger.info(f"任务 {task_id} 已完成，返回 {len(task['result'])} 个结果")
 
         # 如果任务失败，包含错误信息
         if task['status'] == TASK_FAILED and 'error' in task:
             status['error'] = task['error']
 
         return custom_jsonify(status)
+
+
+@app.route('/api/cancel_scan/<task_id>', methods=['POST'])
+def cancel_scan_task(task_id):
+    """取消扫描任务"""
+    try:
+        with task_lock:
+            if task_id not in scan_tasks:
+                return jsonify({'error': '找不到指定的扫描任务'}), 404
+
+            task = scan_tasks[task_id]
+
+            # 只能取消正在运行或等待中的任务
+            if task['status'] in [TASK_PENDING, TASK_RUNNING]:
+                task['status'] = 'cancelled'
+                task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                app.logger.info(f"扫描任务 {task_id} 已被用户取消")
+                return jsonify({'message': '任务已取消'})
+            else:
+                return jsonify({'error': f'任务状态为 {task["status"]}，无法取消'}), 400
+
+    except Exception as e:
+        app.logger.error(f"取消扫描任务时出错: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/cancel_scan/<task_id>', methods=['POST'])
@@ -1128,13 +1264,34 @@ def clean_old_tasks():
             # 解析更新时间
             try:
                 updated_at = datetime.strptime(task['updated_at'], '%Y-%m-%d %H:%M:%S')
-                # 如果任务完成或失败且超过1小时，或者任务状态异常且超过3小时，清理它
-                if ((task['status'] in [TASK_COMPLETED, TASK_FAILED] and
-                     (now - updated_at).total_seconds() > 3600) or
-                        ((now - updated_at).total_seconds() > 10800)):
+                time_diff = (now - updated_at).total_seconds()
+
+                # 清理条件：
+                # 1. 已完成或失败的任务超过1小时
+                # 2. 正在运行的任务超过2小时（防止卡死）
+                # 3. 等待中的任务超过30分钟（可能是孤儿任务）
+                should_delete = False
+
+                if task['status'] in [TASK_COMPLETED, TASK_FAILED]:
+                    # 完成或失败的任务，1小时后清理
+                    should_delete = time_diff > 3600
+                elif task['status'] == TASK_RUNNING:
+                    # 运行中的任务，2小时后清理（防止卡死）
+                    should_delete = time_diff > 7200
+                elif task['status'] == TASK_PENDING:
+                    # 等待中的任务，30分钟后清理（可能是孤儿任务）
+                    should_delete = time_diff > 1800
+                else:
+                    # 其他状态的任务，1小时后清理
+                    should_delete = time_diff > 3600
+
+                if should_delete:
                     to_delete.append(task_id)
-            except:
+                    app.logger.info(f"准备清理任务 {task_id}，状态: {task['status']}, 已存在: {time_diff/60:.1f}分钟")
+
+            except Exception as e:
                 # 日期解析错误，添加到删除列表
+                app.logger.warning(f"任务 {task_id} 日期解析错误: {str(e)}")
                 to_delete.append(task_id)
 
         # 删除旧任务
@@ -1179,8 +1336,8 @@ def run_task_cleaner():
         except Exception as e:
             app.logger.error(f"任务清理出错: {str(e)}")
 
-        # 每 5 分钟运行一次，而不是每小时
-        time.sleep(600)
+        # 每 30 分钟运行一次，减少对正在运行任务的干扰
+        time.sleep(1800)
 
 
 # 基本面分析路由

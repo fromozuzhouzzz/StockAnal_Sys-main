@@ -6,31 +6,55 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
+# 导入新的数据访问层
+from data_service import data_service
+
 
 class CapitalFlowAnalyzer:
     def __init__(self):
         self.data_cache = {}
+        self.max_retries = 3  # 最大重试次数
+        self.api_timeout = 30  # API调用超时时间
 
         # 设置日志记录
         logging.basicConfig(level=logging.INFO,
                             format='%(asctime)s - %(levelname)s - %(message)s')
         self.logger = logging.getLogger(__name__)
 
+    def _retry_api_call(self, api_func, *args, **kwargs):
+        """带重试机制的API调用"""
+        for attempt in range(self.max_retries):
+            try:
+                return api_func(*args, **kwargs)
+            except Exception as e:
+                error_msg = str(e)
+                self.logger.warning(f"API调用第 {attempt + 1} 次尝试失败: {error_msg}")
+
+                if attempt < self.max_retries - 1:
+                    # 指数退避
+                    wait_time = 2 ** attempt
+                    self.logger.info(f"等待 {wait_time} 秒后重试...")
+                    import time
+                    time.sleep(wait_time)
+                else:
+                    raise e
+
     def get_concept_fund_flow(self, period="10日排行"):
-        """获取概念/行业资金流向数据"""
+        """获取概念/行业资金流向数据，使用缓存机制"""
         try:
             self.logger.info(f"Getting concept fund flow for period: {period}")
 
-            # 检查缓存
+            # 检查内存缓存
             cache_key = f"concept_fund_flow_{period}"
             if cache_key in self.data_cache:
                 cache_time, cached_data = self.data_cache[cache_key]
                 # 如果在最近一小时内有缓存数据，则返回缓存数据
                 if (datetime.now() - cache_time).total_seconds() < 3600:
+                    self.logger.info(f"使用缓存的概念资金流向数据: {period}")
                     return cached_data
 
-            # 从akshare获取数据
-            concept_data = ak.stock_fund_flow_concept(symbol=period)
+            # 从akshare获取数据（带重试机制）
+            concept_data = self._retry_api_call(ak.stock_fund_flow_concept, symbol=period)
 
             # 处理数据
             result = []

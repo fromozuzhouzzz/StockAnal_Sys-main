@@ -20,6 +20,9 @@ import math
 import json
 import threading
 
+# 导入新的数据访问层
+from data_service import data_service
+
 # 线程局部存储
 thread_local = threading.local()
 
@@ -60,87 +63,54 @@ class StockAnalyzer:
 
         # JSON匹配标志
         self.json_match_flag = True
-    def get_stock_data(self, stock_code, market_type='A', start_date=None, end_date=None):
-        """获取股票数据"""
-        import akshare as ak
-
+    def get_stock_data(self, stock_code, market_type='A', start_date=None, end_date=None, timeout=30):
+        """获取股票数据，使用新的数据访问层"""
         self.logger.info(f"开始获取股票 {stock_code} 数据，市场类型: {market_type}")
 
-        cache_key = f"{stock_code}_{market_type}_{start_date}_{end_date}_price"
-        if cache_key in self.data_cache:
-            cached_df = self.data_cache[cache_key]
-            # 创建一个副本以避免修改缓存数据
-            # 并确保副本的日期类型为datetime
-            result = cached_df.copy()
-            # If 'date' column exists but is not datetime, convert it
-            if 'date' in result.columns and not pd.api.types.is_datetime64_any_dtype(result['date']):
-                try:
-                    result['date'] = pd.to_datetime(result['date'])
-                except Exception as e:
-                    self.logger.warning(f"无法将日期列转换为datetime格式: {str(e)}")
-            return result
-
+        # 格式化日期参数
         if start_date is None:
-            start_date = (datetime.now() - timedelta(days=365)).strftime('%Y%m%d')
+            start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
+        elif isinstance(start_date, str) and len(start_date) == 8:
+            # 转换YYYYMMDD格式为YYYY-MM-DD
+            start_date = f"{start_date[:4]}-{start_date[4:6]}-{start_date[6:8]}"
+
         if end_date is None:
-            end_date = datetime.now().strftime('%Y%m%d')
+            end_date = datetime.now().strftime('%Y-%m-%d')
+        elif isinstance(end_date, str) and len(end_date) == 8:
+            # 转换YYYYMMDD格式为YYYY-MM-DD
+            end_date = f"{end_date[:4]}-{end_date[4:6]}-{end_date[6:8]}"
 
         try:
-            # 根据市场类型获取数据
-            if market_type == 'A':
-                df = ak.stock_zh_a_hist(
-                    symbol=stock_code,
-                    start_date=start_date,
-                    end_date=end_date,
-                    adjust="qfq"
-                )
-            elif market_type == 'HK':
-                df = ak.stock_hk_daily(
-                    symbol=stock_code,
-                    adjust="qfq"
-                )
-            elif market_type == 'US':
-                df = ak.stock_us_hist(
-                    symbol=stock_code,
-                    start_date=start_date,
-                    end_date=end_date,
-                    adjust="qfq"
-                )
-            else:
-                raise ValueError(f"不支持的市场类型: {market_type}")
+            # 使用新的数据访问层获取数据
+            df = data_service.get_stock_price_history(
+                stock_code=stock_code,
+                market_type=market_type,
+                start_date=start_date,
+                end_date=end_date
+            )
 
-            # 重命名列名以匹配分析需求
-            df = df.rename(columns={
-                "日期": "date",
-                "开盘": "open",
-                "收盘": "close",
-                "最高": "high",
-                "最低": "low",
-                "成交量": "volume",
-                "成交额": "amount"
-            })
+            if df is None or len(df) == 0:
+                raise Exception(f"获取股票 {stock_code} 数据为空")
 
-            # 确保日期格式正确
-            df['date'] = pd.to_datetime(df['date'])
-
-            # 数据类型转换
-            numeric_columns = ['open', 'close', 'high', 'low', 'volume']
-            for col in numeric_columns:
-                if col in df.columns:
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
-
-            # 删除空值
-            df = df.dropna()
-
-            result = df.sort_values('date')
-
-            # 缓存原始数据（包含datetime类型）
-            self.data_cache[cache_key] = result.copy()
-
-            return result
+            self.logger.info(f"成功获取股票 {stock_code} 数据，共 {len(df)} 条记录")
+            return df
 
         except Exception as e:
             self.logger.error(f"获取股票数据失败: {e}")
+
+            # 降级处理：尝试从内存缓存获取
+            cache_key = f"{stock_code}_{market_type}_{start_date}_{end_date}_price"
+            if cache_key in self.data_cache:
+                self.logger.warning(f"使用内存缓存数据作为降级方案")
+                cached_df = self.data_cache[cache_key]
+                result = cached_df.copy()
+                if 'date' in result.columns and not pd.api.types.is_datetime64_any_dtype(result['date']):
+                    try:
+                        result['date'] = pd.to_datetime(result['date'])
+                    except Exception as e:
+                        self.logger.warning(f"无法将日期列转换为datetime格式: {str(e)}")
+                return result
+
             raise Exception(f"获取股票数据失败: {e}")
 
     def get_north_flow_history(self, stock_code, start_date=None, end_date=None):
@@ -1551,17 +1521,30 @@ class StockAnalyzer:
     #         self.logger.error(f"快速分析股票 {stock_code} 时出错: {str(e)}")
     #         raise
 
-    def quick_analyze_stock(self, stock_code, market_type='A'):
-        """快速分析股票，用于市场扫描"""
+    def quick_analyze_stock(self, stock_code, market_type='A', timeout=20):
+        """快速分析股票，用于市场扫描，增加超时控制"""
+        start_time = time.time()
         try:
-            # 获取股票数据
-            df = self.get_stock_data(stock_code, market_type)
+            self.logger.info(f"开始快速分析股票: {stock_code}")
+
+            # 获取股票数据（设置较短的超时时间）
+            df = self.get_stock_data(stock_code, market_type, timeout=timeout)
+            data_time = time.time()
+            self.logger.debug(f"股票 {stock_code} 数据获取耗时: {data_time - start_time:.2f}秒")
+
+            # 检查数据有效性
+            if df is None or len(df) < 2:
+                raise Exception(f"股票 {stock_code} 数据不足，无法进行分析")
 
             # 计算技术指标
             df = self.calculate_indicators(df)
+            indicator_time = time.time()
+            self.logger.debug(f"股票 {stock_code} 指标计算耗时: {indicator_time - data_time:.2f}秒")
 
             # 简化评分计算
             score = self.calculate_score(df)
+            score_time = time.time()
+            self.logger.debug(f"股票 {stock_code} 评分计算耗时: {score_time - indicator_time:.2f}秒")
 
             # 获取最新数据
             latest = df.iloc[-1]
@@ -1574,9 +1557,9 @@ class StockAnalyzer:
                 industry = stock_info.get('行业', '未知')
 
                 # 添加日志
-                self.logger.info(f"股票 {stock_code} 信息: 名称={stock_name}, 行业={industry}")
+                self.logger.debug(f"股票 {stock_code} 信息: 名称={stock_name}, 行业={industry}")
             except Exception as e:
-                self.logger.error(f"获取股票 {stock_code} 信息时出错: {str(e)}")
+                self.logger.warning(f"获取股票 {stock_code} 信息时出错: {str(e)}")
                 stock_name = '未知'
                 industry = '未知'
 
@@ -1603,74 +1586,44 @@ class StockAnalyzer:
 
     # ======================== 新增功能 ========================#
 
-    def get_stock_info(self, stock_code):
-        """获取股票基本信息"""
-        import akshare as ak
-
-        cache_key = f"{stock_code}_info"
-        if cache_key in self.data_cache:
-            return self.data_cache[cache_key]
-
+    def get_stock_info(self, stock_code, market_type='A'):
+        """获取股票基本信息，使用新的数据访问层"""
         try:
-            # 获取A股股票基本信息
-            stock_info = ak.stock_individual_info_em(symbol=stock_code)
+            # 使用新的数据访问层获取数据
+            info = data_service.get_stock_basic_info(stock_code, market_type)
 
-            # 修改：使用列名而不是索引访问数据
-            info_dict = {}
-            for _, row in stock_info.iterrows():
-                # 使用iloc安全地获取数据
-                if len(row) >= 2:  # 确保有至少两列
-                    info_dict[row.iloc[0]] = row.iloc[1]
+            if info:
+                # 转换为原有格式以保持兼容性
+                result = {
+                    '股票名称': info['stock_name'],
+                    '行业': info['industry'],
+                    '地区': info.get('sector', '未知'),
+                    '总市值': info['market_cap'],
+                    '市盈率': info['pe_ratio'],
+                    '市净率': info['pb_ratio'],
+                    '总股本': info['total_share'],
+                    '流通股': info['float_share'],
+                    '上市时间': info['list_date']
+                }
 
-            # 获取股票名称
-            try:
-                stock_name = ak.stock_info_a_code_name()
+                # 缓存结果
+                cache_key = f"{stock_code}_info"
+                self.data_cache[cache_key] = result
 
-                # 检查数据框是否包含预期的列
-                if '代码' in stock_name.columns and '名称' in stock_name.columns:
-                    # 尝试找到匹配的股票代码
-                    matched_stocks = stock_name[stock_name['代码'] == stock_code]
-                    if not matched_stocks.empty:
-                        name = matched_stocks['名称'].values[0]
-                    else:
-                        self.logger.warning(f"未找到股票代码 {stock_code} 的名称信息")
-                        name = "未知"
-                else:
-                    # 尝试使用不同的列名
-                    possible_code_columns = ['代码', 'code', 'symbol', '股票代码', 'stock_code']
-                    possible_name_columns = ['名称', 'name', '股票名称', 'stock_name']
+                self.logger.info(f"获取到股票信息: 名称={result['股票名称']}, 行业={result['行业']}")
+                return result
+            else:
+                raise Exception("无法获取股票基本信息")
 
-                    code_col = next((col for col in possible_code_columns if col in stock_name.columns), None)
-                    name_col = next((col for col in possible_name_columns if col in stock_name.columns), None)
-
-                    if code_col and name_col:
-                        matched_stocks = stock_name[stock_name[code_col] == stock_code]
-                        if not matched_stocks.empty:
-                            name = matched_stocks[name_col].values[0]
-                        else:
-                            name = "未知"
-                    else:
-                        self.logger.warning(f"股票信息DataFrame结构不符合预期: {stock_name.columns.tolist()}")
-                        name = "未知"
-            except Exception as e:
-                self.logger.error(f"获取股票名称时出错: {str(e)}")
-                name = "未知"
-
-            info_dict['股票名称'] = name
-
-            # 确保基本字段存在
-            if '行业' not in info_dict:
-                info_dict['行业'] = "未知"
-            if '地区' not in info_dict:
-                info_dict['地区'] = "未知"
-
-            # 增加更多日志来调试问题
-            self.logger.info(f"获取到股票信息: 名称={name}, 行业={info_dict.get('行业', '未知')}")
-
-            self.data_cache[cache_key] = info_dict
-            return info_dict
         except Exception as e:
-            self.logger.error(f"获取股票信息失败: {str(e)}")
+            self.logger.error(f"获取股票基本信息失败: {str(e)}")
+
+            # 降级处理：尝试从内存缓存获取
+            cache_key = f"{stock_code}_info"
+            if cache_key in self.data_cache:
+                self.logger.warning(f"使用内存缓存数据作为降级方案")
+                return self.data_cache[cache_key]
+
             return {"股票名称": "未知", "行业": "未知", "地区": "未知"}
 
     def identify_support_resistance(self, df):

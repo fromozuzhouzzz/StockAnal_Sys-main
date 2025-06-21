@@ -81,4 +81,13 @@ dump.rdb
 .env.local
 .env.development.local
 .env.test.local
-.env.production.local 
+.env.production.local # 敏感信息文件
+*.key
+*.pem
+config/secrets.py
+secrets/
+# 数据库文件
+# 日志文件
+# 临时文件
+*.pyc
+*.pyo

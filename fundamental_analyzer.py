@@ -9,6 +9,11 @@
 import akshare as ak
 import pandas as pd
 import numpy as np
+import logging
+import time
+
+# 导入新的数据访问层
+from data_service import data_service
 
 
 class FundamentalAnalyzer:
