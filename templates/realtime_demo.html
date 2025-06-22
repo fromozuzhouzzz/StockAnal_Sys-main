@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时通信演示 - 股票分析系统</title>
+    
+    <!-- 引入必要的CSS和JS库 -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    
+    <!-- 引入实时通信客户端 -->
+    <script src="{{ url_for('static', filename='js/websocket_client.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sse_client.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/smart_polling.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/unified_task_client.js') }}"></script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .demo-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .status-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .button-group {
+            margin: 15px 0;
+        }
+        
+        .button-group button {
+            margin: 5px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+        }
+        
+        .button-group button:hover {
+            background: #0056b3;
+        }
+        
+        .button-group button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .stat-card {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+            background: #f8f9fa;
+        }
+        
+        .log-entry.success {
+            border-left-color: #28a745;
+        }
+        
+        .log-entry.error {
+            border-left-color: #dc3545;
+        }
+        
+        .log-entry.warning {
+            border-left-color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 实时通信演示 - 股票分析系统</h1>
+    
+    <!-- 通信方式状态 -->
+    <div class="demo-section">
+        <h2>📡 通信方式状态</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="communication-method">检测中...</div>
+                <div class="stat-label">当前通信方式</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="connection-status">连接中...</div>
+                <div class="stat-label">连接状态</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="subscribed-tasks">0</div>
+                <div class="stat-label">订阅任务数</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 任务测试 -->
+    <div class="demo-section">
+        <h2>🧪 任务状态测试</h2>
+        <div class="button-group">
+            <button onclick="startStockAnalysis()">启动股票分析任务</button>
+            <button onclick="startMarketScan()">启动市场扫描任务</button>
+            <button onclick="testRealtimeBroadcast()">测试实时广播</button>
+            <button onclick="clearLogs()">清空日志</button>
+        </div>
+        
+        <div>
+            <label for="test-task-id">测试任务ID:</label>
+            <input type="text" id="test-task-id" placeholder="输入任务ID进行订阅测试" style="width: 300px; padding: 5px;">
+            <button onclick="subscribeTestTask()">订阅任务</button>
+            <button onclick="unsubscribeTestTask()">取消订阅</button>
+        </div>
+        
+        <h3>📋 任务状态日志</h3>
+        <div id="task-logs" class="status-display"></div>
+    </div>
+    
+    <!-- 实时统计 -->
+    <div class="demo-section">
+        <h2>📊 实时统计信息</h2>
+        <button onclick="refreshStats()">刷新统计</button>
+        <div id="stats-display" class="status-display"></div>
+    </div>
+    
+    <!-- 系统日志 -->
+    <div class="demo-section">
+        <h2>📝 系统日志</h2>
+        <div id="system-logs" class="status-display"></div>
+    </div>
+
+    <script>
+        // 全局变量
+        let logCounter = 0;
+        let currentTasks = new Set();
+        
+        // 页面加载完成后初始化
+        $(document).ready(function() {
+            logMessage('页面加载完成，初始化实时通信...', 'info');
+            
+            // 等待统一任务客户端初始化完成
+            setTimeout(() => {
+                updateConnectionStatus();
+                refreshStats();
+                
+                // 定期更新状态
+                setInterval(updateConnectionStatus, 5000);
+                setInterval(refreshStats, 10000);
+            }, 2000);
+        });
+        
+        // 更新连接状态
+        function updateConnectionStatus() {
+            if (window.unifiedTaskClient) {
+                const method = window.unifiedTaskClient.getCommunicationMethod();
+                const tasks = window.unifiedTaskClient.getSubscribedTasks();
+                
+                document.getElementById('communication-method').textContent = method ? method.toUpperCase() : '未知';
+                document.getElementById('subscribed-tasks').textContent = tasks.length;
+                
+                // 检查连接状态
+                let status = '未知';
+                if (method === 'websocket' && window.wsTaskClient) {
+                    status = window.wsTaskClient.isConnected() ? '已连接' : '断开';
+                } else if (method === 'sse') {
+                    status = '已连接';
+                } else if (method === 'polling') {
+                    status = '轮询中';
+                }
+                
+                document.getElementById('connection-status').textContent = status;
+            }
+        }
+        
+        // 启动股票分析任务
+        function startStockAnalysis() {
+            const stockCode = '600547'; // 测试股票代码
+            
+            logMessage(`启动股票分析任务: ${stockCode}`, 'info');
+            
+            $.ajax({
+                url: '/api/start_stock_analysis',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    stock_code: stockCode,
+                    market_type: 'A'
+                }),
+                success: function(response) {
+                    const taskId = response.task_id;
+                    logMessage(`✓ 股票分析任务创建成功: ${taskId}`, 'success');
+                    
+                    // 订阅任务状态
+                    subscribeTask(taskId, 'stock_analysis');
+                },
+                error: function(xhr, status, error) {
+                    logMessage(`✗ 股票分析任务创建失败: ${error}`, 'error');
+                }
+            });
+        }
+        
+        // 启动市场扫描任务
+        function startMarketScan() {
+            logMessage('启动市场扫描任务...', 'info');
+            
+            $.ajax({
+                url: '/api/start_market_scan',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    industry: '保险',
+                    min_score: 7.0,
+                    max_results: 10
+                }),
+                success: function(response) {
+                    const taskId = response.task_id;
+                    logMessage(`✓ 市场扫描任务创建成功: ${taskId}`, 'success');
+                    
+                    // 订阅任务状态
+                    subscribeTask(taskId, 'market_scan');
+                },
+                error: function(xhr, status, error) {
+                    logMessage(`✗ 市场扫描任务创建失败: ${error}`, 'error');
+                }
+            });
+        }
+        
+        // 订阅任务状态
+        function subscribeTask(taskId, taskType) {
+            if (!window.unifiedTaskClient) {
+                logMessage('统一任务客户端不可用', 'error');
+                return;
+            }
+            
+            currentTasks.add(taskId);
+            
+            const success = window.unifiedTaskClient.subscribeTask(taskId, function(data) {
+                logMessage(`📨 任务 ${taskId} 状态更新: ${data.status} (${data.progress}%)`, 'info');
+                
+                if (['completed', 'failed', 'cancelled'].includes(data.status)) {
+                    logMessage(`🏁 任务 ${taskId} 已完成: ${data.status}`, data.status === 'completed' ? 'success' : 'error');
+                    currentTasks.delete(taskId);
+                }
+            });
+            
+            if (success) {
+                logMessage(`✓ 成功订阅任务: ${taskId}`, 'success');
+            } else {
+                logMessage(`✗ 订阅任务失败: ${taskId}`, 'error');
+            }
+        }
+        
+        // 订阅测试任务
+        function subscribeTestTask() {
+            const taskId = document.getElementById('test-task-id').value.trim();
+            if (!taskId) {
+                alert('请输入任务ID');
+                return;
+            }
+            
+            subscribeTask(taskId, 'test');
+        }
+        
+        // 取消订阅测试任务
+        function unsubscribeTestTask() {
+            const taskId = document.getElementById('test-task-id').value.trim();
+            if (!taskId) {
+                alert('请输入任务ID');
+                return;
+            }
+            
+            if (window.unifiedTaskClient) {
+                window.unifiedTaskClient.unsubscribeTask(taskId);
+                currentTasks.delete(taskId);
+                logMessage(`取消订阅任务: ${taskId}`, 'warning');
+            }
+        }
+        
+        // 测试实时广播
+        function testRealtimeBroadcast() {
+            const testTaskId = `test_${Date.now()}`;
+            
+            $.ajax({
+                url: `/api/realtime/test/${testTaskId}`,
+                method: 'GET',
+                success: function(response) {
+                    logMessage(`✓ 实时广播测试完成: ${JSON.stringify(response, null, 2)}`, 'success');
+                },
+                error: function(xhr, status, error) {
+                    logMessage(`✗ 实时广播测试失败: ${error}`, 'error');
+                }
+            });
+        }
+        
+        // 刷新统计信息
+        function refreshStats() {
+            $.ajax({
+                url: '/api/realtime/stats',
+                method: 'GET',
+                success: function(stats) {
+                    document.getElementById('stats-display').textContent = JSON.stringify(stats, null, 2);
+                },
+                error: function(xhr, status, error) {
+                    document.getElementById('stats-display').textContent = `获取统计信息失败: ${error}`;
+                }
+            });
+        }
+        
+        // 记录日志消息
+        function logMessage(message, type = 'info') {
+            logCounter++;
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            
+            const logsContainer = document.getElementById('task-logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log-entry ${type}`;
+            logDiv.textContent = logEntry;
+            
+            logsContainer.appendChild(logDiv);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+            
+            // 同时记录到系统日志
+            const systemLogs = document.getElementById('system-logs');
+            const systemLogDiv = logDiv.cloneNode(true);
+            systemLogs.appendChild(systemLogDiv);
+            systemLogs.scrollTop = systemLogs.scrollHeight;
+        }
+        
+        // 清空日志
+        function clearLogs() {
+            document.getElementById('task-logs').innerHTML = '';
+            document.getElementById('system-logs').innerHTML = '';
+            logCounter = 0;
+        }
+        
+        // 监听全局任务状态更新事件
+        window.addEventListener('taskStatusUpdate', function(event) {
+            const data = event.detail;
+            logMessage(`🌐 全局任务状态更新: ${data.task_id} -> ${data.status}`, 'info');
+        });
+        
+        // 监听任务不存在事件
+        window.addEventListener('taskNotFound', function(event) {
+            const taskId = event.detail.task_id;
+            logMessage(`⚠️ 任务不存在: ${taskId}`, 'warning');
+            currentTasks.delete(taskId);
+        });
+    </script>
+</body>
+</html>

@@ -343,8 +343,16 @@ class UnifiedTaskManager:
                         continue
 
                     if task['status'] in [self.COMPLETED, self.FAILED, self.CANCELLED]:
-                        # 完成的任务，24小时后清理（大幅延长）
-                        should_delete = update_time_diff > 86400  # 24小时
+                        # 完成的任务，根据类型设置不同的保持时间
+                        if task.get('type') == 'stock_analysis':
+                            # 股票分析任务：保持2小时，确保前端有足够时间获取结果
+                            should_delete = update_time_diff > 7200  # 2小时
+                        elif task.get('type') == 'market_scan':
+                            # 市场扫描任务：保持4小时，结果较复杂需要更长查看时间
+                            should_delete = update_time_diff > 14400  # 4小时
+                        else:
+                            # 其他任务：保持1小时
+                            should_delete = update_time_diff > 3600  # 1小时
                     elif task['status'] == self.RUNNING:
                         # 运行中的任务，极其保守的清理策略
                         if update_time_diff > 86400:  # 24小时
@@ -410,6 +418,14 @@ class UnifiedTaskManager:
 
 # 创建全局统一任务管理器
 unified_task_manager = UnifiedTaskManager()
+
+# 导入实时通信集成
+try:
+    from realtime_integration import init_realtime_communication
+    REALTIME_AVAILABLE = True
+except ImportError:
+    REALTIME_AVAILABLE = False
+    app.logger.warning("实时通信模块不可用，将使用传统轮询方式")
 
 # 安全的兼容性接口 - 不直接暴露内部字典
 class SafeTaskInterface:
@@ -814,6 +830,9 @@ def start_stock_analysis():
                 # 更新任务状态为完成
                 unified_task_manager.update_task(task_id, status=TASK_COMPLETED, progress=100, result=result)
                 app.logger.info(f"分析任务 {task_id} 完成")
+
+                # 延长已完成任务的保护时间，确保前端有足够时间获取结果
+                unified_task_manager.protect_task(task_id, duration_seconds=7200)  # 额外保护2小时
 
             except Exception as e:
                 app.logger.error(f"分析任务 {task_id} 失败: {str(e)}")
@@ -1917,6 +1936,28 @@ cleaner_thread = threading.Thread(target=run_task_cleaner)
 cleaner_thread.daemon = True
 cleaner_thread.start()
 
+# 初始化实时通信功能
+if REALTIME_AVAILABLE:
+    try:
+        realtime_integration = init_realtime_communication(app, unified_task_manager)
+        app.logger.info("✓ 实时通信功能初始化成功")
+
+        # 获取SocketIO实例用于运行
+        socketio = realtime_integration.get_socketio()
+
+    except Exception as e:
+        app.logger.error(f"✗ 实时通信功能初始化失败: {str(e)}")
+        socketio = None
+else:
+    socketio = None
+
 if __name__ == '__main__':
     # 将 host 设置为 '0.0.0.0' 使其支持所有网络接口访问
-    app.run(host='0.0.0.0', port=8888, debug=False)
+    if socketio:
+        # 使用SocketIO运行应用（支持WebSocket）
+        app.logger.info("使用SocketIO运行应用（支持WebSocket和SSE）")
+        socketio.run(app, host='0.0.0.0', port=8888, debug=False)
+    else:
+        # 使用标准Flask运行应用（仅支持轮询）
+        app.logger.info("使用标准Flask运行应用（仅支持轮询）")
+        app.run(host='0.0.0.0', port=8888, debug=False)
