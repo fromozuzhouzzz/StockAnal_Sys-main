@@ -526,13 +526,19 @@
     }
 
     $(document).ready(function() {
+        console.log('页面加载完成，初始化股票详情页面');
+
+        // 清理可能残留的轮询状态
+        cleanupPollingState();
+
         addShimmerEffect();
-        
+
         // 初始加载
         loadStockData();
 
         // 刷新按钮点击事件
         $('#refresh-btn').click(function() {
+            console.log('用户点击刷新按钮');
             marketType = $('#market-type').val();
             period = $('#analysis-period').val();
             loadStockData();
@@ -541,22 +547,40 @@
         // 市场类型改变事件
         $('#market-type').change(function() {
             marketType = $(this).val();
+            console.log(`市场类型变更为: ${marketType}`);
         });
 
         // 分析周期改变事件
         $('#analysis-period').change(function() {
             period = $(this).val();
+            console.log(`分析周期变更为: ${period}`);
         });
-        
+
         // 取消分析按钮
         $('#cancel-analysis-btn').click(function() {
+            console.log('用户点击取消分析按钮');
             cancelAnalysis();
         });
-        
+
         // 重试按钮
         $('#retry-button').click(function() {
+            console.log('用户点击重试按钮');
             $('#error-retry').hide();
             startAIAnalysis();
+        });
+
+        // 页面离开时清理状态
+        $(window).on('beforeunload', function() {
+            console.log('页面即将离开，清理轮询状态');
+            cleanupPollingState();
+        });
+
+        // 页面隐藏时清理状态（如切换标签页）
+        $(document).on('visibilitychange', function() {
+            if (document.hidden) {
+                console.log('页面隐藏，清理轮询状态');
+                cleanupPollingState();
+            }
         });
     });
 
@@ -1438,19 +1462,21 @@
     
     // 启动AI分析
     function startAIAnalysis() {
+        console.log(`开始启动AI分析，股票代码: ${stockCode}, 市场类型: ${marketType}`);
+
         resetAIAnalysisUI();
-        
+
         // 启动处理时间计时器
         processingTime = 0;
         processingTimer = setInterval(function() {
             processingTime++;
             $('#ai-processing-time').text(processingTime);
-            
+
             // 更新进度条 - 创建一个假的进度
             const progressPercent = Math.min(95, processingTime / 2);
             $('#ai-progress-bar').css('width', progressPercent + '%');
         }, 1000);
-        
+
         // 启动AI分析任务
         $.ajax({
             url: '/api/start_stock_analysis',
@@ -1460,18 +1486,43 @@
                 stock_code: stockCode,
                 market_type: marketType
             }),
+            timeout: 30000, // 30秒超时
             success: function(response) {
+                console.log('AI分析任务启动响应:', response);
+
+                // 验证响应格式
+                if (!response || typeof response !== 'object') {
+                    console.error('无效的响应格式:', response);
+                    handleAIAnalysisError(null, 'invalid_response', '服务器响应格式错误');
+                    return;
+                }
+
                 // 检查是否已有结果
                 if (response.status === 'completed' && response.result) {
+                    console.log('任务已完成，直接处理结果');
                     // 任务已完成，直接处理结果
                     handleAIAnalysisResult(response.result);
                     return;
                 }
-                
+
+                // 验证任务ID
+                if (!response.task_id || typeof response.task_id !== 'string') {
+                    console.error('无效的任务ID:', response.task_id);
+                    handleAIAnalysisError(null, 'invalid_task_id', '服务器返回无效的任务ID');
+                    return;
+                }
+
+                console.log(`任务创建成功，任务ID: ${response.task_id}`);
+
                 // 开始轮询任务状态
                 pollAIAnalysisStatus(response.task_id);
             },
             error: function(xhr, status, error) {
+                console.error('启动AI分析失败:', {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    error: error
+                });
                 handleAIAnalysisError(xhr, status, error);
             }
         });
@@ -1479,44 +1530,119 @@
     
     // 轮询AI分析状态
     function pollAIAnalysisStatus(taskId) {
+        // 验证任务ID
+        if (!taskId || typeof taskId !== 'string') {
+            console.error('无效的任务ID:', taskId);
+            handleAIAnalysisError(null, 'invalid_task_id', '无效的任务ID');
+            return;
+        }
+
+        // 清理旧的轮询状态
+        cleanupPollingState();
+
         // 保存当前任务ID，用于取消
         window.currentAnalysisTaskId = taskId;
-        
+
+        // 初始化轮询状态
+        window.pollRetryCount = 0;
+        window.pollStartTime = Date.now();
+        window.maxPollRetries = 10; // 最大重试次数
+        window.maxPollDuration = 300000; // 最大轮询时间：5分钟
+
+        console.log(`开始轮询任务状态: ${taskId}`);
+
         function checkStatus() {
+            // 检查轮询超时
+            const elapsed = Date.now() - window.pollStartTime;
+            if (elapsed > window.maxPollDuration) {
+                console.error(`轮询超时，已运行 ${elapsed/1000} 秒`);
+                cleanupPollingState();
+                handleAIAnalysisError(null, 'timeout', '分析超时，请重试');
+                return;
+            }
+
+            // 检查重试次数
+            if (window.pollRetryCount >= window.maxPollRetries) {
+                console.error(`轮询重试次数超限: ${window.pollRetryCount}`);
+                cleanupPollingState();
+                handleAIAnalysisError(null, 'max_retries', '重试次数过多，请重试');
+                return;
+            }
+
             $.ajax({
                 url: `/api/analysis_status/${taskId}`,
                 type: 'GET',
+                timeout: 10000, // 10秒超时
                 success: function(response) {
+                    console.log(`轮询响应:`, response);
+
+                    // 重置重试计数
+                    window.pollRetryCount = 0;
+
                     // 根据任务状态处理
                     if (response.status === 'completed') {
                         // 分析完成，停止轮询和计时器
-                        clearInterval(window.analysisStatusInterval);
-                        
+                        console.log('任务完成，停止轮询');
+                        cleanupPollingState();
+
                         // 处理结果
                         handleAIAnalysisResult(response.result);
                     } else if (response.status === 'failed') {
                         // 分析失败，停止轮询
-                        clearInterval(window.analysisStatusInterval);
-                        
+                        console.log('任务失败，停止轮询');
+                        cleanupPollingState();
+
                         handleAIAnalysisError(null, 'failed', response.error || '未知错误');
                     } else {
                         // 更新进度
                         const progress = response.progress || 0;
                         $('#ai-progress-bar').css('width', progress + '%');
+                        console.log(`任务进行中，进度: ${progress}%`);
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.log("轮询状态出错:", error);
-                    // 错误时仍继续轮询
+                    console.error("轮询状态出错:", {
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                        error: error,
+                        taskId: taskId
+                    });
+
+                    // 404错误表示任务不存在，停止轮询
+                    if (xhr.status === 404) {
+                        console.error('任务不存在，停止轮询');
+                        cleanupPollingState();
+                        handleAIAnalysisError(xhr, 'not_found', '分析任务已丢失，请重新开始分析');
+                        return;
+                    }
+
+                    // 其他错误增加重试计数
+                    window.pollRetryCount++;
+                    console.warn(`轮询错误，重试次数: ${window.pollRetryCount}/${window.maxPollRetries}`);
+
+                    // 如果是网络错误或服务器错误，继续重试
+                    if (xhr.status === 0 || xhr.status >= 500) {
+                        console.log('网络或服务器错误，继续重试');
+                        return; // 继续轮询
+                    }
+
+                    // 其他客户端错误，停止轮询
+                    if (xhr.status >= 400 && xhr.status < 500) {
+                        console.error('客户端错误，停止轮询');
+                        cleanupPollingState();
+                        handleAIAnalysisError(xhr, 'client_error', '请求错误，请重试');
+                        return;
+                    }
                 }
             });
         }
-        
+
         // 立即执行一次
         checkStatus();
-        
+
         // 设置轮询间隔
         window.analysisStatusInterval = setInterval(checkStatus, 2000);
+        console.log('轮询定时器已启动，间隔2秒');
     }
     
     // 处理AI分析结果
@@ -1612,34 +1738,58 @@
         }
     }
     
+    // 清理轮询状态
+    function cleanupPollingState() {
+        console.log('清理轮询状态');
+
+        // 停止轮询定时器
+        if (window.analysisStatusInterval) {
+            clearInterval(window.analysisStatusInterval);
+            window.analysisStatusInterval = null;
+            console.log('轮询定时器已清理');
+        }
+
+        // 清理轮询相关的全局变量
+        window.currentAnalysisTaskId = null;
+        window.pollRetryCount = 0;
+        window.pollStartTime = null;
+        window.maxPollRetries = null;
+        window.maxPollDuration = null;
+
+        console.log('轮询状态已清理');
+    }
+
     // 重置AI分析UI
     function resetAIAnalysisUI() {
-        // 停止现有计时器和轮询
+        console.log('重置AI分析UI');
+
+        // 清理轮询状态
+        cleanupPollingState();
+
+        // 停止现有计时器
         if (processingTimer) {
             clearInterval(processingTimer);
             processingTimer = null;
         }
-        
-        if (window.analysisStatusInterval) {
-            clearInterval(window.analysisStatusInterval);
-        }
-        
+
         // 重置处理时间
         processingTime = 0;
         $('#ai-processing-time').text('0');
-        
+
         // 重置进度条
         $('#ai-progress-bar').css('width', '0%');
-        
+
         // 更新状态显示
         $('#ai-analysis-status').text('正在分析...').removeClass('bg-success bg-danger bg-warning').addClass('bg-info');
-        
+
         // 显示加载动画，隐藏内容
         $('#ai-analysis-loader').show();
         $('#ai-analysis-content').css('opacity', '0');
-        
+
         // 隐藏错误重试区域
         $('#error-retry').hide();
+
+        console.log('AI分析UI已重置');
     }
     
     // 格式化AI分析

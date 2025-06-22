@@ -1,0 +1,58 @@
+[
+  {
+    "test_name": "服务器连接",
+    "success": true,
+    "message": "服务器正常运行",
+    "timestamp": "2025-06-22T10:05:58.961678",
+    "details": null
+  },
+  {
+    "test_name": "无效任务ID测试",
+    "success": true,
+    "message": "无效任务ID正确返回404",
+    "timestamp": "2025-06-22T10:06:00.986176",
+    "details": null
+  },
+  {
+    "test_name": "股票分析任务创建",
+    "success": true,
+    "message": "任务创建成功，ID: 7b863883-700c-4782-a433-1b18802cdc46",
+    "timestamp": "2025-06-22T10:06:03.015776",
+    "details": null
+  },
+  {
+    "test_name": "任务状态查询-尝试1",
+    "success": true,
+    "message": "查询成功，状态: running",
+    "timestamp": "2025-06-22T10:06:05.041942",
+    "details": null
+  },
+  {
+    "test_name": "任务状态查询-尝试2",
+    "success": true,
+    "message": "查询成功，状态: running",
+    "timestamp": "2025-06-22T10:06:10.074347",
+    "details": null
+  },
+  {
+    "test_name": "任务状态查询-尝试3",
+    "success": true,
+    "message": "查询成功，状态: completed",
+    "timestamp": "2025-06-22T10:06:15.107202",
+    "details": null
+  },
+  {
+    "test_name": "任务状态查询",
+    "success": true,
+    "message": "任务最终状态: completed",
+    "timestamp": "2025-06-22T10:06:15.107202",
+    "details": null
+  },
+  {
+    "test_name": "并发分析请求",
+    "success": true,
+    "message": "3/3 个请求成功",
+    "timestamp": "2025-06-22T10:06:17.149265",
+    "details": null
+  }
+]
