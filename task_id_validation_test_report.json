@@ -1,0 +1,177 @@
+[
+  {
+    "test_name": "服务器连接",
+    "success": true,
+    "message": "服务器正常运行",
+    "timestamp": "2025-06-22T10:34:06.897691",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-空字符串",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:08.947927",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-None值",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:11.007812",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-数字",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:13.038850",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-短字符串",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:15.089960",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-长字符串",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:17.138049",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-错误格式1",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:19.183461",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-错误格式2",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:21.234202",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-包含特殊字符",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:23.452467",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-大写UUID",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:25.502437",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-缺少连字符",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:27.572110",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-SQL注入尝试",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:29.658190",
+    "details": null
+  },
+  {
+    "test_name": "无效ID测试-XSS尝试",
+    "success": true,
+    "message": "正确拒绝无效ID，返回404",
+    "timestamp": "2025-06-22T10:34:31.710686",
+    "details": null
+  },
+  {
+    "test_name": "无效任务ID格式测试",
+    "success": true,
+    "message": "12/12 个测试通过",
+    "timestamp": "2025-06-22T10:34:31.710686",
+    "details": null
+  },
+  {
+    "test_name": "有效任务ID测试",
+    "success": true,
+    "message": "有效ID 3d682d5f-303a-4c56-920f-b3b9cd23ae8a 查询成功",
+    "timestamp": "2025-06-22T10:34:35.779936",
+    "details": null
+  },
+  {
+    "test_name": "API错误响应-分析状态API",
+    "success": true,
+    "message": "错误响应格式正确",
+    "timestamp": "2025-06-22T10:34:37.825614",
+    "details": null
+  },
+  {
+    "test_name": "API错误响应-扫描状态API",
+    "success": true,
+    "message": "错误响应格式正确",
+    "timestamp": "2025-06-22T10:34:39.879263",
+    "details": null
+  },
+  {
+    "test_name": "API错误响应-取消分析API",
+    "success": true,
+    "message": "错误响应格式正确",
+    "timestamp": "2025-06-22T10:34:41.925420",
+    "details": null
+  },
+  {
+    "test_name": "API错误响应测试",
+    "success": true,
+    "message": "3/3 个测试通过",
+    "timestamp": "2025-06-22T10:34:41.926419",
+    "details": null
+  },
+  {
+    "test_name": "安全测试-'; DROP TABLE tasks;...",
+    "success": true,
+    "message": "恶意输入被正确拒绝",
+    "timestamp": "2025-06-22T10:34:43.969987",
+    "details": null
+  },
+  {
+    "test_name": "安全测试-<script>alert('xss')...",
+    "success": true,
+    "message": "恶意输入被正确拒绝",
+    "timestamp": "2025-06-22T10:34:46.024171",
+    "details": null
+  },
+  {
+    "test_name": "安全测试-../../../etc/passwd...",
+    "success": true,
+    "message": "恶意输入被正确拒绝",
+    "timestamp": "2025-06-22T10:34:48.089173",
+    "details": null
+  },
+  {
+    "test_name": "安全测试-{{7*7}}...",
+    "success": true,
+    "message": "恶意输入被正确拒绝",
+    "timestamp": "2025-06-22T10:34:50.150702",
+    "details": null
+  },
+  {
+    "test_name": "安全测试-${jndi:ldap://evil.c...",
+    "success": true,
+    "message": "恶意输入被正确拒绝",
+    "timestamp": "2025-06-22T10:34:52.203452",
+    "details": null
+  },
+  {
+    "test_name": "安全验证测试",
+    "success": true,
+    "message": "5/5 个测试通过",
+    "timestamp": "2025-06-22T10:34:52.203452",
+    "details": null
+  }
+]

@@ -130,6 +130,7 @@ class UnifiedTaskManager:
     def __init__(self):
         self.tasks = {}  # 统一的任务存储
         self.lock = threading.RLock()  # 使用可重入锁，避免死锁
+        self.protected_tasks = set()  # 受保护的任务ID集合
 
         # 任务状态常量
         self.PENDING = 'pending'
@@ -137,6 +138,27 @@ class UnifiedTaskManager:
         self.COMPLETED = 'completed'
         self.FAILED = 'failed'
         self.CANCELLED = 'cancelled'
+
+    def protect_task(self, task_id, duration_seconds=3600):
+        """保护任务不被清理，默认保护1小时"""
+        with self.lock:
+            self.protected_tasks.add(task_id)
+            app.logger.info(f"统一任务管理器: 任务 {task_id} 已加入保护列表")
+
+            # 设置定时器自动移除保护
+            def remove_protection():
+                time.sleep(duration_seconds)
+                with self.lock:
+                    self.protected_tasks.discard(task_id)
+                    app.logger.info(f"统一任务管理器: 任务 {task_id} 保护期结束")
+
+            protection_thread = threading.Thread(target=remove_protection)
+            protection_thread.daemon = True
+            protection_thread.start()
+
+    def is_task_protected(self, task_id):
+        """检查任务是否受保护"""
+        return task_id in self.protected_tasks
 
     def create_task(self, task_type, **params):
         """创建新任务 - 线程安全，增强调试"""
@@ -287,10 +309,12 @@ class UnifiedTaskManager:
             return True
 
     def cleanup_old_tasks(self):
-        """清理旧任务 - 保守策略，增强新任务保护"""
+        """清理旧任务 - 超保守策略，最大化任务保护"""
         with self.lock:
             now = datetime.now()
             to_delete = []
+
+            app.logger.info(f"统一任务管理器: 开始清理检查，当前任务数: {len(self.tasks)}")
 
             for task_id, task in self.tasks.items():
                 try:
@@ -303,40 +327,68 @@ class UnifiedTaskManager:
 
                     should_delete = False
 
-                    # 新任务保护机制：创建时间少于10分钟的任务不会被清理
-                    if creation_time_diff < 600:  # 10分钟保护期
-                        app.logger.debug(f"统一任务管理器: 任务 {task_id} 创建时间少于10分钟，受保护不被清理")
+                    # 超强新任务保护机制：创建时间少于30分钟的任务绝对不会被清理
+                    if creation_time_diff < 1800:  # 30分钟绝对保护期
+                        app.logger.debug(f"统一任务管理器: 任务 {task_id} 创建时间少于30分钟，绝对保护不被清理")
+                        continue
+
+                    # 活跃任务保护：最近5分钟内有更新的任务不会被清理
+                    if update_time_diff < 300:  # 5分钟活跃保护
+                        app.logger.debug(f"统一任务管理器: 任务 {task_id} 最近5分钟内有更新，活跃保护不被清理")
+                        continue
+
+                    # 检查任务是否在保护列表中
+                    if self.is_task_protected(task_id):
+                        app.logger.info(f"统一任务管理器: 任务 {task_id} 在保护列表中，不被清理")
                         continue
 
                     if task['status'] in [self.COMPLETED, self.FAILED, self.CANCELLED]:
-                        # 完成的任务，6小时后清理
-                        should_delete = update_time_diff > 21600
+                        # 完成的任务，24小时后清理（大幅延长）
+                        should_delete = update_time_diff > 86400  # 24小时
                     elif task['status'] == self.RUNNING:
-                        # 运行中的任务，只有在超过12小时且无进度更新时才清理
-                        if update_time_diff > 43200:  # 12小时
+                        # 运行中的任务，极其保守的清理策略
+                        if update_time_diff > 86400:  # 24小时
+                            # 检查进度更新
                             progress_updated_at = datetime.strptime(
                                 task.get('progress_updated_at', task['updated_at']),
                                 '%Y-%m-%d %H:%M:%S'
                             )
                             progress_time_diff = (now - progress_updated_at).total_seconds()
-                            if progress_time_diff > 7200:  # 2小时内无进度更新
+
+                            # 只有在24小时内完全没有进度更新才清理
+                            if progress_time_diff > 86400:  # 24小时内无进度更新
                                 should_delete = True
-                                app.logger.warning(f"统一任务管理器: 任务 {task_id} 运行超过12小时且2小时内无进度更新，判定为卡死")
+                                app.logger.warning(f"统一任务管理器: 任务 {task_id} 运行超过24小时且24小时内无进度更新，判定为卡死")
+                            else:
+                                app.logger.info(f"统一任务管理器: 任务 {task_id} 虽然运行超过24小时，但最近有进度更新，继续保护")
                     elif task['status'] == self.PENDING:
-                        # 等待中的任务，延长到2小时后清理（原来是4小时，但增加了10分钟新任务保护）
-                        should_delete = update_time_diff > 7200  # 2小时
+                        # 等待中的任务，12小时后清理（大幅延长）
+                        should_delete = update_time_diff > 43200  # 12小时
 
                     if should_delete:
+                        # 最后一次确认：检查任务是否真的应该被删除
+                        task_age_hours = creation_time_diff / 3600
+                        update_age_hours = update_time_diff / 3600
+
+                        # 额外保护：如果任务类型是stock_analysis且年龄小于2小时，不删除
+                        if task.get('type') == 'stock_analysis' and task_age_hours < 2:
+                            app.logger.warning(f"统一任务管理器: 任务 {task_id} 是股票分析任务且年龄小于2小时，额外保护不删除")
+                            continue
+
                         to_delete.append(task_id)
-                        app.logger.info(f"统一任务管理器: 准备清理任务 {task_id}，状态: {task['status']}, 创建: {creation_time_diff/60:.1f}分钟前, 更新: {update_time_diff/60:.1f}分钟前")
+                        app.logger.info(f"统一任务管理器: 准备清理任务 {task_id}，状态: {task['status']}, 类型: {task.get('type', '未知')}, 创建: {task_age_hours:.1f}小时前, 更新: {update_age_hours:.1f}小时前")
 
                 except Exception as e:
                     app.logger.error(f"统一任务管理器: 清理任务 {task_id} 时出错: {str(e)}")
 
             # 删除旧任务
-            for task_id in to_delete:
-                del self.tasks[task_id]
-                app.logger.info(f"统一任务管理器: 清理任务 {task_id}")
+            if to_delete:
+                app.logger.info(f"统一任务管理器: 准备删除 {len(to_delete)} 个任务")
+                for task_id in to_delete:
+                    del self.tasks[task_id]
+                    app.logger.info(f"统一任务管理器: 已清理任务 {task_id}")
+            else:
+                app.logger.info(f"统一任务管理器: 没有需要清理的任务")
 
             return len(to_delete)
 
@@ -359,9 +411,54 @@ class UnifiedTaskManager:
 # 创建全局统一任务管理器
 unified_task_manager = UnifiedTaskManager()
 
-# 为了兼容性，保留旧的变量名和函数，但指向新的统一管理器
-scan_tasks = unified_task_manager.tasks  # 兼容性别名
-task_lock = unified_task_manager.lock    # 兼容性别名
+# 安全的兼容性接口 - 不直接暴露内部字典
+class SafeTaskInterface:
+    """安全的任务接口，防止直接操作内部字典"""
+
+    def __init__(self, task_manager):
+        self._task_manager = task_manager
+
+    def __contains__(self, task_id):
+        """检查任务是否存在"""
+        return self._task_manager.get_task(task_id) is not None
+
+    def __getitem__(self, task_id):
+        """获取任务"""
+        task = self._task_manager.get_task(task_id)
+        if task is None:
+            raise KeyError(f"任务 {task_id} 不存在")
+        return task
+
+    def __setitem__(self, task_id, task_data):
+        """设置任务 - 不推荐直接使用，应该通过任务管理器方法"""
+        app.logger.warning(f"直接设置任务 {task_id} - 建议使用任务管理器方法")
+        # 这里可以添加逻辑来处理直接设置的情况
+        pass
+
+    def __delitem__(self, task_id):
+        """删除任务 - 不推荐直接使用，应该通过任务管理器方法"""
+        app.logger.warning(f"直接删除任务 {task_id} - 建议使用任务管理器方法")
+        # 不执行实际删除，记录警告
+        pass
+
+    def items(self):
+        """获取所有任务项"""
+        with self._task_manager.lock:
+            return list(self._task_manager.tasks.items())
+
+    def keys(self):
+        """获取所有任务ID"""
+        with self._task_manager.lock:
+            return list(self._task_manager.tasks.keys())
+
+    def values(self):
+        """获取所有任务"""
+        with self._task_manager.lock:
+            return list(self._task_manager.tasks.values())
+
+# 创建安全的兼容性接口
+scan_tasks = SafeTaskInterface(unified_task_manager)
+task_lock = unified_task_manager.lock    # 锁可以安全共享
 
 # 任务状态常量 - 兼容性
 TASK_PENDING = unified_task_manager.PENDING
@@ -703,6 +800,9 @@ def start_stock_analysis():
             market_type=market_type
         )
 
+        # 立即保护新创建的任务，防止被意外清理
+        unified_task_manager.protect_task(task_id, duration_seconds=7200)  # 保护2小时
+
         # 启动后台线程执行分析
         def run_analysis():
             try:
@@ -739,11 +839,18 @@ def start_stock_analysis():
 
 @app.route('/api/analysis_status/<task_id>', methods=['GET'])
 def get_analysis_status(task_id):
-    """获取个股分析任务状态 - 使用统一任务管理器"""
+    """获取个股分析任务状态 - 使用统一任务管理器，增强日志追踪"""
+    # 记录状态查询请求
+    app.logger.info(f"API请求: 查询分析任务状态 {task_id}")
+
     task = unified_task_manager.get_task(task_id)
 
     if not task:
+        app.logger.warning(f"API响应: 分析任务 {task_id} 不存在，返回404")
         return jsonify({'error': '找不到指定的分析任务'}), 404
+
+    # 记录成功获取任务状态
+    app.logger.info(f"API响应: 成功获取分析任务 {task_id} 状态: {task['status']}, 进度: {task.get('progress', 0)}%")
 
     # 基本状态信息
     status = {
@@ -757,10 +864,12 @@ def get_analysis_status(task_id):
     # 如果任务完成，包含结果
     if task['status'] == TASK_COMPLETED and 'result' in task:
         status['result'] = task['result']
+        app.logger.info(f"API响应: 分析任务 {task_id} 已完成，包含结果数据")
 
     # 如果任务失败，包含错误信息
     if task['status'] == TASK_FAILED and 'error' in task:
         status['error'] = task['error']
+        app.logger.warning(f"API响应: 分析任务 {task_id} 失败，错误: {task['error']}")
 
     return custom_jsonify(status)
 
