@@ -448,8 +448,11 @@
                     <h4 style="color: var(--md-sys-color-on-surface); font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); font-weight: 500; margin-bottom: 16px;">
                         正在对 <span id="ai-analysis-stock-name" style="color: var(--md-sys-color-primary);">该股票</span> 进行智能分析
                     </h4>
-                    <p style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); margin-bottom: 16px;">
+                    <p style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); margin-bottom: 8px;">
                         已用时 <span id="ai-processing-time" style="color: var(--md-sys-color-primary); font-weight: 500;">0</span> 秒
+                    </p>
+                    <p id="ai-analysis-tips" style="color: var(--md-sys-color-on-surface-variant); font-family: var(--md-sys-typescale-body-small-font); font-size: var(--md-sys-typescale-body-small-size); margin-bottom: 16px; font-style: italic;">
+                        正在分析技术指标和基本面数据...
                     </p>
                     <div class="typing-animation">
                         <div class="typing-dot"></div>
@@ -1528,7 +1531,7 @@
         });
     }
     
-    // 轮询AI分析状态
+    // 轮询AI分析状态 - 优化版本
     function pollAIAnalysisStatus(taskId) {
         // 验证任务ID
         if (!taskId || typeof taskId !== 'string') {
@@ -1545,11 +1548,73 @@
 
         // 初始化轮询状态
         window.pollRetryCount = 0;
+        window.poll404RetryCount = 0; // 404错误专用重试计数
+        window.pollNetworkRetryCount = 0; // 网络错误专用重试计数
         window.pollStartTime = Date.now();
         window.maxPollRetries = 10; // 最大重试次数
-        window.maxPollDuration = 300000; // 最大轮询时间：5分钟
+        window.max404Retries = 3; // 404错误最大重试次数
+        window.maxNetworkRetries = 5; // 网络错误最大重试次数
+        window.maxPollDuration = 600000; // 最大轮询时间：10分钟（适应长时间任务）
 
         console.log(`开始轮询任务状态: ${taskId}`);
+
+        // 计算动态轮询间隔
+        function getPollingInterval() {
+            const elapsed = Date.now() - window.pollStartTime;
+
+            if (elapsed < 30000) {
+                return 2000; // 0-30秒：每2秒轮询
+            } else if (elapsed < 120000) {
+                return 5000; // 30秒-2分钟：每5秒轮询
+            } else if (elapsed < 300000) {
+                return 10000; // 2-5分钟：每10秒轮询
+            } else {
+                return 15000; // 5分钟以上：每15秒轮询
+            }
+        }
+
+        // 更新用户界面显示
+        function updatePollingUI() {
+            const elapsed = Math.floor((Date.now() - window.pollStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            const timeStr = minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`;
+
+            // 更新处理时间显示
+            $('#ai-processing-time').text(elapsed);
+
+            // 根据时间长度显示不同的提示和状态
+            let statusText = '正在分析...';
+            let tipsText = '正在分析技术指标和基本面数据...';
+            let statusClass = 'md3-badge-info';
+
+            if (elapsed > 300) { // 5分钟以上
+                statusText = `深度分析中... (${timeStr})`;
+                tipsText = '正在进行复杂的量化分析，请耐心等待...';
+                statusClass = 'md3-badge-warning';
+            } else if (elapsed > 180) { // 3分钟以上
+                statusText = `深度分析中... (${timeStr})`;
+                tipsText = '正在分析历史数据和市场趋势...';
+                statusClass = 'md3-badge-warning';
+            } else if (elapsed > 60) { // 1分钟以上
+                statusText = `智能分析中... (${timeStr})`;
+                tipsText = '正在计算技术指标和风险评估...';
+                statusClass = 'md3-badge-info';
+            } else if (elapsed > 30) { // 30秒以上
+                statusText = `分析中... (${timeStr})`;
+                tipsText = '正在获取最新数据和基本面信息...';
+                statusClass = 'md3-badge-info';
+            }
+
+            // 更新状态显示
+            $('#ai-analysis-status')
+                .text(statusText)
+                .removeClass('md3-badge-info md3-badge-warning md3-badge-error md3-badge-success')
+                .addClass(statusClass);
+
+            // 更新提示信息
+            $('#ai-analysis-tips').text(tipsText);
+        }
 
         function checkStatus() {
             // 检查轮询超时
@@ -1569,15 +1634,20 @@
                 return;
             }
 
+            // 更新UI显示
+            updatePollingUI();
+
             $.ajax({
                 url: `/api/analysis_status/${taskId}`,
                 type: 'GET',
-                timeout: 10000, // 10秒超时
+                timeout: 15000, // 增加超时时间到15秒
                 success: function(response) {
                     console.log(`轮询响应:`, response);
 
-                    // 重置重试计数
+                    // 重置所有重试计数
                     window.pollRetryCount = 0;
+                    window.poll404RetryCount = 0;
+                    window.pollNetworkRetryCount = 0;
 
                     // 根据任务状态处理
                     if (response.status === 'completed') {
@@ -1598,6 +1668,11 @@
                         const progress = response.progress || 0;
                         $('#ai-progress-bar').css('width', progress + '%');
                         console.log(`任务进行中，进度: ${progress}%`);
+
+                        // 继续轮询，使用动态间隔
+                        const interval = getPollingInterval();
+                        console.log(`下次轮询间隔: ${interval}ms`);
+                        window.analysisStatusTimeout = setTimeout(checkStatus, interval);
                     }
                 },
                 error: function(xhr, status, error) {
@@ -1605,30 +1680,62 @@
                         status: xhr.status,
                         statusText: xhr.statusText,
                         error: error,
-                        taskId: taskId
+                        taskId: taskId,
+                        retryCount: window.pollRetryCount,
+                        retry404Count: window.poll404RetryCount,
+                        retryNetworkCount: window.pollNetworkRetryCount
                     });
 
-                    // 404错误表示任务不存在，停止轮询
+                    // 404错误 - 智能重试机制
                     if (xhr.status === 404) {
-                        console.error('任务不存在，停止轮询');
-                        cleanupPollingState();
-                        handleAIAnalysisError(xhr, 'not_found', '分析任务已丢失，请重新开始分析');
-                        return;
+                        window.poll404RetryCount++;
+                        console.warn(`任务404错误，重试次数: ${window.poll404RetryCount}/${window.max404Retries}`);
+
+                        if (window.poll404RetryCount <= window.max404Retries) {
+                            // 404错误重试，使用递增延迟
+                            const retryDelay = 3000 + (window.poll404RetryCount * 2000); // 3秒、5秒、7秒
+                            console.log(`404错误重试，${retryDelay}ms后重试`);
+                            window.analysisStatusTimeout = setTimeout(checkStatus, retryDelay);
+                            return;
+                        } else {
+                            console.error('404错误重试次数用尽，停止轮询');
+                            cleanupPollingState();
+                            handleAIAnalysisError(xhr, 'not_found', '分析任务已丢失，请重新开始分析');
+                            return;
+                        }
                     }
 
-                    // 其他错误增加重试计数
+                    // 网络错误或服务器错误 - 智能重试
+                    if (xhr.status === 0 || xhr.status >= 500 || status === 'timeout') {
+                        window.pollNetworkRetryCount++;
+                        console.warn(`网络/服务器错误，重试次数: ${window.pollNetworkRetryCount}/${window.maxNetworkRetries}`);
+
+                        if (window.pollNetworkRetryCount <= window.maxNetworkRetries) {
+                            // 网络错误重试，使用指数退避
+                            const retryDelay = Math.min(2000 * Math.pow(2, window.pollNetworkRetryCount - 1), 30000); // 最大30秒
+                            console.log(`网络错误重试，${retryDelay}ms后重试`);
+                            window.analysisStatusTimeout = setTimeout(checkStatus, retryDelay);
+                            return;
+                        } else {
+                            console.error('网络错误重试次数用尽，停止轮询');
+                            cleanupPollingState();
+                            handleAIAnalysisError(xhr, 'network_error', '网络连接问题，请检查网络后重试');
+                            return;
+                        }
+                    }
+
+                    // 其他客户端错误，增加通用重试计数
                     window.pollRetryCount++;
-                    console.warn(`轮询错误，重试次数: ${window.pollRetryCount}/${window.maxPollRetries}`);
+                    console.warn(`其他错误，重试次数: ${window.pollRetryCount}/${window.maxPollRetries}`);
 
-                    // 如果是网络错误或服务器错误，继续重试
-                    if (xhr.status === 0 || xhr.status >= 500) {
-                        console.log('网络或服务器错误，继续重试');
-                        return; // 继续轮询
-                    }
-
-                    // 其他客户端错误，停止轮询
-                    if (xhr.status >= 400 && xhr.status < 500) {
-                        console.error('客户端错误，停止轮询');
+                    if (window.pollRetryCount <= window.maxPollRetries) {
+                        // 其他错误重试
+                        const retryDelay = 5000; // 5秒后重试
+                        console.log(`其他错误重试，${retryDelay}ms后重试`);
+                        window.analysisStatusTimeout = setTimeout(checkStatus, retryDelay);
+                        return;
+                    } else {
+                        console.error('通用错误重试次数用尽，停止轮询');
                         cleanupPollingState();
                         handleAIAnalysisError(xhr, 'client_error', '请求错误，请重试');
                         return;
@@ -1639,10 +1746,7 @@
 
         // 立即执行一次
         checkStatus();
-
-        // 设置轮询间隔
-        window.analysisStatusInterval = setInterval(checkStatus, 2000);
-        console.log('轮询定时器已启动，间隔2秒');
+        console.log('智能轮询已启动，使用动态间隔策略');
     }
     
     // 处理AI分析结果
@@ -1683,27 +1787,56 @@
             clearInterval(processingTimer);
             processingTimer = null;
         }
-        
+
         // 更新AI分析状态
-        $('#ai-analysis-status').text('分析失败').removeClass('bg-info bg-success').addClass('bg-danger');
-        
-        // 构建错误消息
+        $('#ai-analysis-status')
+            .text('分析失败')
+            .removeClass('md3-badge-info md3-badge-warning md3-badge-success')
+            .addClass('md3-badge-error');
+
+        // 构建友好的错误消息
         let errorMsg = '分析过程中出错';
+        let userTip = '请稍后重试';
+
         if (status === 'timeout') {
-            errorMsg = '请求超时，分析可能需要较长时间';
-        } else if (xhr && xhr.status === 524 || xhr && xhr.status === 504) {
-            errorMsg = '请求超时，服务器处理时间过长';
+            errorMsg = '分析超时';
+            userTip = '该股票分析需要较长时间，请稍后重试';
+        } else if (status === 'not_found') {
+            errorMsg = '分析任务丢失';
+            userTip = '任务可能因为网络问题丢失，请重新开始分析';
+        } else if (status === 'network_error') {
+            errorMsg = '网络连接问题';
+            userTip = '请检查网络连接后重试';
+        } else if (status === 'max_retries') {
+            errorMsg = '重试次数过多';
+            userTip = '服务器可能繁忙，请稍后重试';
+        } else if (xhr && (xhr.status === 524 || xhr.status === 504)) {
+            errorMsg = '服务器处理超时';
+            userTip = '服务器处理时间过长，请稍后重试';
         } else if (xhr && xhr.responseJSON && xhr.responseJSON.error) {
-            errorMsg += ': ' + xhr.responseJSON.error;
+            errorMsg = xhr.responseJSON.error;
+            userTip = '请检查股票代码是否正确';
         } else if (error) {
-            errorMsg += ': ' + error;
+            errorMsg = error;
         }
-        
+
+        // 更新提示信息
+        $('#ai-analysis-tips').text(userTip);
+
         // 显示错误重试区域
         $('#error-retry').show();
-        
+
         // 隐藏加载动画
         $('#ai-analysis-loader').hide();
+
+        // 显示详细错误信息
+        console.error('AI分析错误详情:', {
+            status: status,
+            error: error,
+            xhr: xhr,
+            errorMsg: errorMsg,
+            userTip: userTip
+        });
     }
     
     // 取消AI分析
@@ -1720,9 +1853,7 @@
                     }
                     
                     // 停止轮询
-                    if (window.analysisStatusInterval) {
-                        clearInterval(window.analysisStatusInterval);
-                    }
+                    cleanupPollingState();
                     
                     // 更新UI
                     $('#ai-analysis-status').text('已取消').removeClass('bg-info bg-success').addClass('bg-warning');
@@ -1749,11 +1880,22 @@
             console.log('轮询定时器已清理');
         }
 
+        // 停止轮询超时器
+        if (window.analysisStatusTimeout) {
+            clearTimeout(window.analysisStatusTimeout);
+            window.analysisStatusTimeout = null;
+            console.log('轮询超时器已清理');
+        }
+
         // 清理轮询相关的全局变量
         window.currentAnalysisTaskId = null;
         window.pollRetryCount = 0;
+        window.poll404RetryCount = 0;
+        window.pollNetworkRetryCount = 0;
         window.pollStartTime = null;
         window.maxPollRetries = null;
+        window.max404Retries = null;
+        window.maxNetworkRetries = null;
         window.maxPollDuration = null;
 
         console.log('轮询状态已清理');

@@ -801,7 +801,7 @@ def start_stock_analysis():
         )
 
         # 立即保护新创建的任务，防止被意外清理
-        unified_task_manager.protect_task(task_id, duration_seconds=7200)  # 保护2小时
+        unified_task_manager.protect_task(task_id, duration_seconds=14400)  # 保护4小时，适应长时间分析任务
 
         # 启动后台线程执行分析
         def run_analysis():
@@ -839,27 +839,43 @@ def start_stock_analysis():
 
 @app.route('/api/analysis_status/<task_id>', methods=['GET'])
 def get_analysis_status(task_id):
-    """获取个股分析任务状态 - 使用统一任务管理器，增强日志追踪"""
+    """获取个股分析任务状态 - 使用统一任务管理器，增强日志追踪和错误处理"""
     # 记录状态查询请求
     app.logger.info(f"API请求: 查询分析任务状态 {task_id}")
+    app.logger.info(f"当前统一任务管理器中的任务数: {len(unified_task_manager.tasks)}")
 
-    task = unified_task_manager.get_task(task_id)
+    try:
+        task = unified_task_manager.get_task(task_id)
 
-    if not task:
-        app.logger.warning(f"API响应: 分析任务 {task_id} 不存在，返回404")
-        return jsonify({'error': '找不到指定的分析任务'}), 404
+        if not task:
+            app.logger.warning(f"API响应: 分析任务 {task_id} 不存在，返回404")
+            app.logger.warning(f"当前任务列表: {list(unified_task_manager.tasks.keys())}")
+            return jsonify({
+                'error': '找不到指定的分析任务',
+                'task_id': task_id,
+                'available_tasks': len(unified_task_manager.tasks)
+            }), 404
 
-    # 记录成功获取任务状态
-    app.logger.info(f"API响应: 成功获取分析任务 {task_id} 状态: {task['status']}, 进度: {task.get('progress', 0)}%")
+        # 记录成功获取任务状态
+        app.logger.info(f"API响应: 成功获取分析任务 {task_id} 状态: {task['status']}, 进度: {task.get('progress', 0)}%")
 
-    # 基本状态信息
-    status = {
-        'id': task['id'],
-        'status': task['status'],
-        'progress': task.get('progress', 0),
-        'created_at': task['created_at'],
-        'updated_at': task['updated_at']
-    }
+        # 基本状态信息
+        status = {
+            'id': task['id'],
+            'status': task['status'],
+            'progress': task.get('progress', 0),
+            'created_at': task['created_at'],
+            'updated_at': task['updated_at'],
+            'task_type': task.get('type', 'stock_analysis')
+        }
+
+    except Exception as e:
+        app.logger.error(f"查询分析任务状态时出错: {str(e)}")
+        app.logger.error(traceback.format_exc())
+        return jsonify({
+            'error': '查询任务状态时发生内部错误',
+            'task_id': task_id
+        }), 500
 
     # 如果任务完成，包含结果
     if task['status'] == TASK_COMPLETED and 'result' in task:
