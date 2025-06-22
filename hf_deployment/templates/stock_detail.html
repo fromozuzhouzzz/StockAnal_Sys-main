@@ -738,7 +738,21 @@
         $('#open-price').text(latestData.open ? parseFloat(latestData.open).toFixed(2) : '--');
         $('#high-price').text(latestData.high ? parseFloat(latestData.high).toFixed(2) : '--');
         $('#low-price').text(latestData.low ? parseFloat(latestData.low).toFixed(2) : '--');
-        
+
+        // 更新成交量信息
+        const volume = latestData.volume;
+        let volumeText = '--';
+        if (volume && volume > 0) {
+            if (volume >= 100000000) {
+                volumeText = (volume / 100000000).toFixed(2) + '亿';
+            } else if (volume >= 10000) {
+                volumeText = (volume / 10000).toFixed(2) + '万';
+            } else {
+                volumeText = volume.toFixed(0);
+            }
+        }
+        $('#volume-info').text(volumeText);
+
         // 更新AI分析股票名称
         $('#ai-analysis-stock-name').text(stockName);
     }
