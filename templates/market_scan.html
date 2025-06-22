@@ -337,13 +337,14 @@
         });
     }
 
-    // 轮询扫描任务状态 - 改进版
+    // 轮询扫描任务状态 - 优化版
     function pollScanStatus(taskId) {
         console.log('开始轮询任务状态:', taskId);
         const startTime = Date.now();
         let pollCount = 0;
-        let consecutiveErrors = 0;
-        const maxConsecutiveErrors = 5;
+        let retryCount = 0;
+        const maxRetries = 10;
+        const pollInterval = 30000; // 30秒间隔
 
         function checkStatus() {
             pollCount++;
@@ -411,46 +412,32 @@
                         $('#scan-error-retry').show();
 
                     } else {
-                        // 继续轮询
-                        setTimeout(checkStatus, 2000);
+                        // 继续轮询，使用30秒间隔
+                        setTimeout(checkStatus, pollInterval);
                     }
                 },
                 error: function(xhr, status, error) {
-                    consecutiveErrors++;
-                    console.error(`轮询状态失败 (第${consecutiveErrors}次):`, {
+                    retryCount++;
+                    console.error(`轮询状态失败 (第${retryCount}次):`, {
                         status: xhr.status,
                         statusText: xhr.statusText,
                         error: error,
                         response: xhr.responseText
                     });
 
-                    if (xhr.status === 404) {
-                        console.error('任务不存在，停止轮询');
-                        $('#cancel-scan-btn').hide();
-                        currentTaskId = null;
-                        $('#scan-loading').hide();
-                        $('#scan-results').show();
-                        showError('扫描任务已丢失，可能被系统清理。请重新开始扫描。');
-                        $('#scan-error-retry').show();
+                    if (retryCount <= maxRetries) {
+                        // 继续重试，使用固定30秒间隔
+                        console.log(`轮询错误重试，${pollInterval/1000}秒后重试`);
+                        setTimeout(checkStatus, pollInterval);
+                        return;
+                    } else {
+                        // 重试次数用尽，但不清理状态，继续30秒后重试
+                        console.warn('重试次数用尽，但继续保持轮询状态');
+                        retryCount = 0; // 重置重试计数，继续轮询
+                        console.log(`重置重试计数，${pollInterval/1000}秒后继续轮询`);
+                        setTimeout(checkStatus, pollInterval);
                         return;
                     }
-
-                    // 如果连续错误次数过多，停止轮询
-                    if (consecutiveErrors >= maxConsecutiveErrors) {
-                        console.error('连续错误次数过多，停止轮询');
-                        $('#cancel-scan-btn').hide();
-                        currentTaskId = null;
-                        $('#scan-loading').hide();
-                        $('#scan-results').show();
-                        showError(`网络连接异常，已停止轮询。错误: ${error}`);
-                        $('#scan-error-retry').show();
-                        return;
-                    }
-
-                    // 其他错误，延长间隔后继续尝试
-                    const retryDelay = Math.min(3000 + consecutiveErrors * 1000, 10000); // 最多10秒
-                    console.log(`${retryDelay/1000}秒后重试...`);
-                    setTimeout(checkStatus, retryDelay);
                 }
             });
         }

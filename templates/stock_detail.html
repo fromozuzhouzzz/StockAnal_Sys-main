@@ -578,11 +578,12 @@
             cleanupPollingState();
         });
 
-        // 页面隐藏时清理状态（如切换标签页）
+        // 页面隐藏时不清理状态，保持任务连续性
         $(document).on('visibilitychange', function() {
             if (document.hidden) {
-                console.log('页面隐藏，清理轮询状态');
-                cleanupPollingState();
+                console.log('页面隐藏，但保持轮询状态以确保任务连续性');
+            } else {
+                console.log('页面重新显示，轮询状态保持不变');
             }
         });
     });
@@ -1548,29 +1549,15 @@
 
         // 初始化轮询状态
         window.pollRetryCount = 0;
-        window.poll404RetryCount = 0; // 404错误专用重试计数
-        window.pollNetworkRetryCount = 0; // 网络错误专用重试计数
         window.pollStartTime = Date.now();
-        window.maxPollRetries = 10; // 最大重试次数
-        window.max404Retries = 3; // 404错误最大重试次数
-        window.maxNetworkRetries = 5; // 网络错误最大重试次数
-        window.maxPollDuration = 600000; // 最大轮询时间：10分钟（适应长时间任务）
+        window.maxPollRetries = 10; // 最大重试次数：10次
+        window.maxPollDuration = 1800000; // 最大轮询时间：30分钟（适应长时间任务）
 
         console.log(`开始轮询任务状态: ${taskId}`);
 
-        // 计算动态轮询间隔
+        // 固定轮询间隔：30秒
         function getPollingInterval() {
-            const elapsed = Date.now() - window.pollStartTime;
-
-            if (elapsed < 30000) {
-                return 2000; // 0-30秒：每2秒轮询
-            } else if (elapsed < 120000) {
-                return 5000; // 30秒-2分钟：每5秒轮询
-            } else if (elapsed < 300000) {
-                return 10000; // 2-5分钟：每10秒轮询
-            } else {
-                return 15000; // 5分钟以上：每15秒轮询
-            }
+            return 30000; // 统一使用30秒间隔
         }
 
         // 更新用户界面显示
@@ -1644,10 +1631,8 @@
                 success: function(response) {
                     console.log(`轮询响应:`, response);
 
-                    // 重置所有重试计数
+                    // 重置重试计数
                     window.pollRetryCount = 0;
-                    window.poll404RetryCount = 0;
-                    window.pollNetworkRetryCount = 0;
 
                     // 根据任务状态处理
                     if (response.status === 'completed') {
@@ -1681,63 +1666,26 @@
                         statusText: xhr.statusText,
                         error: error,
                         taskId: taskId,
-                        retryCount: window.pollRetryCount,
-                        retry404Count: window.poll404RetryCount,
-                        retryNetworkCount: window.pollNetworkRetryCount
+                        retryCount: window.pollRetryCount
                     });
 
-                    // 404错误 - 智能重试机制
-                    if (xhr.status === 404) {
-                        window.poll404RetryCount++;
-                        console.warn(`任务404错误，重试次数: ${window.poll404RetryCount}/${window.max404Retries}`);
-
-                        if (window.poll404RetryCount <= window.max404Retries) {
-                            // 404错误重试，使用递增延迟
-                            const retryDelay = 3000 + (window.poll404RetryCount * 2000); // 3秒、5秒、7秒
-                            console.log(`404错误重试，${retryDelay}ms后重试`);
-                            window.analysisStatusTimeout = setTimeout(checkStatus, retryDelay);
-                            return;
-                        } else {
-                            console.error('404错误重试次数用尽，停止轮询');
-                            cleanupPollingState();
-                            handleAIAnalysisError(xhr, 'not_found', '分析任务已丢失，请重新开始分析');
-                            return;
-                        }
-                    }
-
-                    // 网络错误或服务器错误 - 智能重试
-                    if (xhr.status === 0 || xhr.status >= 500 || status === 'timeout') {
-                        window.pollNetworkRetryCount++;
-                        console.warn(`网络/服务器错误，重试次数: ${window.pollNetworkRetryCount}/${window.maxNetworkRetries}`);
-
-                        if (window.pollNetworkRetryCount <= window.maxNetworkRetries) {
-                            // 网络错误重试，使用指数退避
-                            const retryDelay = Math.min(2000 * Math.pow(2, window.pollNetworkRetryCount - 1), 30000); // 最大30秒
-                            console.log(`网络错误重试，${retryDelay}ms后重试`);
-                            window.analysisStatusTimeout = setTimeout(checkStatus, retryDelay);
-                            return;
-                        } else {
-                            console.error('网络错误重试次数用尽，停止轮询');
-                            cleanupPollingState();
-                            handleAIAnalysisError(xhr, 'network_error', '网络连接问题，请检查网络后重试');
-                            return;
-                        }
-                    }
-
-                    // 其他客户端错误，增加通用重试计数
+                    // 统一错误处理：所有错误都使用相同的重试策略
                     window.pollRetryCount++;
-                    console.warn(`其他错误，重试次数: ${window.pollRetryCount}/${window.maxPollRetries}`);
+                    console.warn(`轮询错误，重试次数: ${window.pollRetryCount}/${window.maxPollRetries}`);
 
                     if (window.pollRetryCount <= window.maxPollRetries) {
-                        // 其他错误重试
-                        const retryDelay = 5000; // 5秒后重试
-                        console.log(`其他错误重试，${retryDelay}ms后重试`);
+                        // 继续重试，使用固定30秒间隔
+                        const retryDelay = 30000; // 30秒后重试
+                        console.log(`轮询错误重试，${retryDelay}ms后重试`);
                         window.analysisStatusTimeout = setTimeout(checkStatus, retryDelay);
                         return;
                     } else {
-                        console.error('通用错误重试次数用尽，停止轮询');
-                        cleanupPollingState();
-                        handleAIAnalysisError(xhr, 'client_error', '请求错误，请重试');
+                        // 重试次数用尽，但不清理状态，继续30秒后重试
+                        console.warn('重试次数用尽，但继续保持轮询状态');
+                        window.pollRetryCount = 0; // 重置重试计数，继续轮询
+                        const retryDelay = 30000; // 30秒后继续
+                        console.log(`重置重试计数，${retryDelay}ms后继续轮询`);
+                        window.analysisStatusTimeout = setTimeout(checkStatus, retryDelay);
                         return;
                     }
                 }
@@ -1890,12 +1838,8 @@
         // 清理轮询相关的全局变量
         window.currentAnalysisTaskId = null;
         window.pollRetryCount = 0;
-        window.poll404RetryCount = 0;
-        window.pollNetworkRetryCount = 0;
         window.pollStartTime = null;
         window.maxPollRetries = null;
-        window.max404Retries = null;
-        window.maxNetworkRetries = null;
         window.maxPollDuration = null;
 
         console.log('轮询状态已清理');
