@@ -770,12 +770,38 @@
             <div class="price-change ${priceChangeClass}">${priceChangeDisplay}</div>
         `);
         
-        // 更新开盘、最高、最低价格
-        $('#open-price').text(latestData.open ? parseFloat(latestData.open).toFixed(2) : '--');
-        $('#high-price').text(latestData.high ? parseFloat(latestData.high).toFixed(2) : '--');
-        $('#low-price').text(latestData.low ? parseFloat(latestData.low).toFixed(2) : '--');
+        // 更新开盘、最高、最低价格，并清除shimmer-skeleton样式
+        $('#open-price')
+            .removeClass('shimmer-skeleton')
+            .removeAttr('style')
+            .text(latestData.open ? parseFloat(latestData.open).toFixed(2) : '--')
+            .css({
+                'color': 'var(--md-sys-color-on-primary-container)',
+                'font-size': '16px',
+                'font-weight': '500'
+            });
 
-        // 更新成交量信息
+        $('#high-price')
+            .removeClass('shimmer-skeleton')
+            .removeAttr('style')
+            .text(latestData.high ? parseFloat(latestData.high).toFixed(2) : '--')
+            .css({
+                'color': 'var(--md-sys-color-on-primary-container)',
+                'font-size': '16px',
+                'font-weight': '500'
+            });
+
+        $('#low-price')
+            .removeClass('shimmer-skeleton')
+            .removeAttr('style')
+            .text(latestData.low ? parseFloat(latestData.low).toFixed(2) : '--')
+            .css({
+                'color': 'var(--md-sys-color-on-primary-container)',
+                'font-size': '16px',
+                'font-weight': '500'
+            });
+
+        // 更新成交量信息，并清除shimmer-skeleton样式
         const volume = latestData.volume;
         let volumeText = '--';
         if (volume && volume > 0) {
@@ -787,7 +813,15 @@
                 volumeText = volume.toFixed(0);
             }
         }
-        $('#volume-info').text(volumeText);
+        $('#volume-info')
+            .removeClass('shimmer-skeleton')
+            .removeAttr('style')
+            .text(volumeText)
+            .css({
+                'color': 'var(--md-sys-color-on-primary-container)',
+                'font-size': '16px',
+                'font-weight': '500'
+            });
 
         // 更新AI分析股票名称
         $('#ai-analysis-stock-name').text(stockName);
