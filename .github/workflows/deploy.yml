@@ -141,6 +141,7 @@ jobs:
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
         HF_SPACE: ${{ secrets.HF_SPACE }}
+        GITHUB_SHA: ${{ github.sha }}
       run: |
         echo "🚀 开始部署到 Hugging Face Spaces..."
         

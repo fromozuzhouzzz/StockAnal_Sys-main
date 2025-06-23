@@ -24,8 +24,20 @@ from flask_caching import Cache
 import threading
 import sys
 from flask_swagger_ui import get_swaggerui_blueprint
-from database import get_session, USE_DATABASE
 from dotenv import load_dotenv
+
+# 条件导入数据库模块
+try:
+    from database import get_session, USE_DATABASE
+    DATABASE_AVAILABLE = True
+except ImportError as e:
+    print(f"数据库模块导入失败: {e}")
+    DATABASE_AVAILABLE = False
+    USE_DATABASE = False
+
+    def get_session():
+        """数据库不可用时的占位函数"""
+        return None
 from industry_analyzer import IndustryAnalyzer
 from fundamental_analyzer import FundamentalAnalyzer
 from capital_flow_analyzer import CapitalFlowAnalyzer
@@ -39,9 +51,15 @@ from news_fetcher import news_fetcher, start_news_scheduler
 load_dotenv()
 
 # 检查是否需要初始化数据库
-if USE_DATABASE:
-    from database import init_db
-    init_db()
+if DATABASE_AVAILABLE and USE_DATABASE:
+    try:
+        from database import init_db
+        init_db()
+        print("数据库初始化成功")
+    except Exception as e:
+        print(f"数据库初始化失败: {e}")
+        DATABASE_AVAILABLE = False
+        USE_DATABASE = False
 
 # 配置Swagger
 SWAGGER_URL = '/api/docs'
@@ -1730,7 +1748,7 @@ def api_industry_compare():
 # 保存股票分析结果到数据库
 def save_analysis_result(stock_code, market_type, result):
     """保存分析结果到数据库"""
-    if not USE_DATABASE:
+    if not (DATABASE_AVAILABLE and USE_DATABASE):
         return
 
     try:
@@ -1765,7 +1783,7 @@ def save_analysis_result(stock_code, market_type, result):
 @app.route('/api/history_analysis', methods=['GET'])
 def get_history_analysis():
     """获取股票的历史分析结果"""
-    if not USE_DATABASE:
+    if not (DATABASE_AVAILABLE and USE_DATABASE):
         return jsonify({'error': '数据库功能未启用'}), 400
 
     stock_code = request.args.get('stock_code')
