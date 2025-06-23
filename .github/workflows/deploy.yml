@@ -1,0 +1,265 @@
+# GitHub Actions 自动部署到 Hugging Face Spaces
+# 当推送到 main 分支时自动触发部署
+
+name: Deploy to Hugging Face Spaces
+
+# 触发条件
+on:
+  push:
+    branches: [ main, master ]  # 推送到 main 或 master 分支时触发
+  pull_request:
+    branches: [ main, master ]  # PR 到 main 或 master 分支时触发（可选）
+  workflow_dispatch:  # 允许手动触发
+
+# 环境变量
+env:
+  HF_HUB_ENABLE_HF_TRANSFER: 1  # 启用 Hugging Face 传输优化
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # 使用最新的 Ubuntu 环境
+    
+    steps:
+    # 步骤 1: 检出代码
+    - name: 检出代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取完整的 git 历史
+        lfs: true       # 支持 Git LFS（如果有大文件）
+
+    # 步骤 2: 设置 Python 环境
+    - name: 设置 Python 环境
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'  # 使用 Python 3.11
+        cache: 'pip'            # 缓存 pip 依赖
+
+    # 步骤 3: 安装依赖
+    - name: 安装依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install huggingface_hub
+        # 安装项目依赖（用于验证）
+        if [ -f requirements.txt ]; then
+          pip install -r requirements.txt
+        fi
+
+    # 步骤 4: 验证必需文件
+    - name: 验证部署文件
+      run: |
+        echo "🔍 检查必需文件..."
+        
+        # 检查入口文件
+        if [ ! -f "app.py" ]; then
+          echo "❌ 错误: app.py 文件不存在"
+          exit 1
+        fi
+        echo "✅ app.py 文件存在"
+        
+        # 检查依赖文件
+        if [ ! -f "requirements.txt" ]; then
+          echo "❌ 错误: requirements.txt 文件不存在"
+          exit 1
+        fi
+        echo "✅ requirements.txt 文件存在"
+        
+        # 检查 README 文件
+        if [ -f "README_HF.md" ]; then
+          echo "✅ README_HF.md 文件存在"
+        elif [ -f "README.md" ]; then
+          echo "✅ README.md 文件存在"
+        else
+          echo "⚠️ 警告: 没有找到 README 文件"
+        fi
+        
+        echo "📋 文件验证完成"
+
+    # 步骤 5: 创建 Hugging Face Spaces 配置
+    - name: 创建 Spaces 配置
+      run: |
+        echo "📝 创建 Hugging Face Spaces 配置文件..."
+        
+        # 创建或更新 README.md（Hugging Face Spaces 的配置文件）
+        if [ -f "README_HF.md" ]; then
+          cp README_HF.md README.md
+          echo "✅ 使用 README_HF.md 作为 Spaces 配置"
+        else
+          # 如果没有专门的 HF README，创建一个基本的
+          cat > README.md << 'EOF'
+---
+title: 智能分析系统（股票）
+emoji: 📈
+colorFrom: blue
+colorTo: green
+sdk: gradio
+sdk_version: 4.44.0
+app_file: app.py
+pinned: false
+license: mit
+---
+
+# 智能分析系统（股票）
+
+这是一个基于Python和Flask的智能股票分析系统，现已部署到Hugging Face Spaces平台。
+
+## 功能特点
+
+- 多维度股票分析：技术面、基本面、资金面综合分析
+- AI增强分析：集成AI API提供专业投资建议
+- 实时数据：获取最新股票数据和财经新闻
+- 可视化图表：交互式K线图和技术指标
+- 智能评分：100分制综合评分系统
+
+## 免责声明
+
+本系统仅供学习和研究使用，AI生成的内容可能存在错误，请勿作为投资建议。投资有风险，决策需谨慎。
+EOF
+          echo "✅ 创建了基本的 Spaces 配置文件"
+        fi
+
+    # 步骤 6: 设置环境变量文件
+    - name: 设置环境变量
+      run: |
+        echo "🔧 配置环境变量..."
+        
+        # 创建 .env 文件用于 Hugging Face Spaces
+        cat > .env << EOF
+        # Hugging Face Spaces 环境变量配置
+        API_PROVIDER=openai
+        USE_DATABASE=False
+        USE_REDIS_CACHE=False
+        PORT=7860
+        FLASK_ENV=production
+        PYTHONUNBUFFERED=1
+        PYTHONDONTWRITEBYTECODE=1
+        EOF
+        
+        echo "✅ 环境变量配置完成"
+
+    # 步骤 7: 部署到 Hugging Face Spaces
+    - name: 部署到 Hugging Face Spaces
+      env:
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        HF_SPACE: ${{ secrets.HF_SPACE }}
+      run: |
+        echo "🚀 开始部署到 Hugging Face Spaces..."
+        
+        # 验证必需的 secrets
+        if [ -z "$HF_TOKEN" ]; then
+          echo "❌ 错误: HF_TOKEN secret 未设置"
+          exit 1
+        fi
+        
+        if [ -z "$HF_SPACE" ]; then
+          echo "❌ 错误: HF_SPACE secret 未设置"
+          exit 1
+        fi
+        
+        echo "✅ Secrets 验证通过"
+        echo "📍 目标 Space: $HF_SPACE"
+        
+        # 使用 huggingface_hub 进行部署
+        python -c "
+import os
+from huggingface_hub import HfApi, upload_folder
+import sys
+
+try:
+    # 初始化 HF API
+    api = HfApi(token=os.environ['HF_TOKEN'])
+    
+    # 获取 Space 信息
+    space_id = os.environ['HF_SPACE']
+    print(f'🔍 检查 Space: {space_id}')
+    
+    # 检查 Space 是否存在
+    try:
+        space_info = api.space_info(space_id)
+        print(f'✅ Space 存在: {space_info.id}')
+    except Exception as e:
+        print(f'❌ Space 不存在或无法访问: {e}')
+        sys.exit(1)
+    
+    # 上传文件到 Space
+    print('📤 开始上传文件...')
+    
+    # 定义要忽略的文件和目录
+    ignore_patterns = [
+        '.git*',
+        '__pycache__',
+        '*.pyc',
+        '.env.example',
+        '.env-example',
+        'logs/',
+        'data/news/',
+        '.pytest_cache',
+        'tests/',
+        'docs/',
+        'images/',
+        '*.log',
+        'fly.toml',
+        'render.yaml',
+        'railway.json',
+        'vercel.json',
+        'Dockerfile',
+        'docker-compose.yml',
+        'start.sh',
+        '部署检查清单.md',
+        'hf_deployment_check.py'
+    ]
+    
+    # 上传整个项目到 Space
+    upload_folder(
+        folder_path='.',
+        repo_id=space_id,
+        repo_type='space',
+        token=os.environ['HF_TOKEN'],
+        ignore_patterns=ignore_patterns,
+        commit_message=f'Auto-deploy from GitHub Actions - {os.environ.get(\"GITHUB_SHA\", \"unknown\")[:7]}'
+    )
+    
+    print('✅ 部署完成!')
+    print(f'🌐 访问地址: https://huggingface.co/spaces/{space_id}')
+    
+except Exception as e:
+    print(f'❌ 部署失败: {e}')
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+        "
+
+    # 步骤 8: 部署后验证
+    - name: 部署后验证
+      if: success()
+      run: |
+        echo "🔍 部署后验证..."
+        echo "✅ 部署成功完成!"
+        echo "🌐 您的应用将在几分钟内在以下地址可用:"
+        echo "   https://huggingface.co/spaces/${{ secrets.HF_SPACE }}"
+        echo ""
+        echo "📋 后续步骤:"
+        echo "1. 等待 2-5 分钟让 Hugging Face 构建您的应用"
+        echo "2. 访问上述链接查看部署状态"
+        echo "3. 如果需要设置环境变量，请在 Space 设置中添加"
+        echo ""
+        echo "🔧 如需设置环境变量:"
+        echo "1. 访问您的 Space 页面"
+        echo "2. 点击 'Settings' 选项卡"
+        echo "3. 在 'Variables and secrets' 部分添加必要的环境变量"
+
+    # 步骤 9: 错误处理
+    - name: 部署失败处理
+      if: failure()
+      run: |
+        echo "❌ 部署失败!"
+        echo ""
+        echo "🔍 常见问题排查:"
+        echo "1. 检查 HF_TOKEN 是否正确设置且有写入权限"
+        echo "2. 检查 HF_SPACE 格式是否正确 (用户名/space名称)"
+        echo "3. 确认 Space 存在且您有访问权限"
+        echo "4. 检查 app.py 和 requirements.txt 文件是否存在"
+        echo ""
+        echo "📋 获取帮助:"
+        echo "1. 查看 GitHub Actions 日志获取详细错误信息"
+        echo "2. 检查 Hugging Face Space 的构建日志"
+        echo "3. 参考项目文档中的故障排除部分"
