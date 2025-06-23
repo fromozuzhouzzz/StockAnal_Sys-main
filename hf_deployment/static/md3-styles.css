@@ -1052,6 +1052,24 @@ form[style*="grid-template-columns"] .md3-button {
     color: var(--md-sys-color-on-surface);
 }
 
+/* 股票价格容器样式 */
+.stock-price {
+    font-family: var(--md-sys-typescale-financial-large-font);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 8px;
+}
+
+.price-change {
+    font-family: var(--md-sys-typescale-financial-medium-font);
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .md3-stock-price-change {
     font-family: var(--md-sys-typescale-financial-medium-font);
     font-size: var(--md-sys-typescale-financial-medium-size);
