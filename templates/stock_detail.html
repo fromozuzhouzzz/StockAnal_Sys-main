@@ -52,9 +52,15 @@
 
     .stock-metrics-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 24px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
         margin-bottom: 32px;
+    }
+
+    @media (max-width: 768px) {
+        .stock-metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
 
     .metric-card {
@@ -875,7 +881,19 @@
             <div class="stat-value ${volumeStatus}">${volRatio.toFixed(1)}</div>
             <div class="stat-label">量比</div>
         `);
-        
+
+        // 计算成交量趋势指标
+        const currentVolume = parseFloat(latestData.volume || 0);
+        const avgVolume = parseFloat(latestData.Volume_MA || currentVolume);
+        const volumeTrendRatio = avgVolume > 0 ? (currentVolume / avgVolume) : 1;
+        const volumeTrendStatus = volumeTrendRatio > 1 ? 'trend-up' : 'trend-down';
+        const volumeTrendIcon = volumeTrendRatio > 1 ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
+
+        $('#volume-trend-container').html(`
+            <div class="stat-value ${volumeTrendStatus}">${volumeTrendIcon}</div>
+            <div class="stat-label">成交量趋势</div>
+        `);
+
         // 渲染雷达图
         renderRadarChart(rsi/10, (ma5 > ma20 ? 8 : 3), (macd > signal ? 8 : 3), (volRatio > 1 ? 8 : 3));
     }
