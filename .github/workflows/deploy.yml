@@ -123,16 +123,16 @@ EOF
         echo "🔧 配置环境变量..."
         
         # 创建 .env 文件用于 Hugging Face Spaces
-        cat > .env << EOF
-        # Hugging Face Spaces 环境变量配置
-        API_PROVIDER=openai
-        USE_DATABASE=False
-        USE_REDIS_CACHE=False
-        PORT=7860
-        FLASK_ENV=production
-        PYTHONUNBUFFERED=1
-        PYTHONDONTWRITEBYTECODE=1
-        EOF
+        cat > .env << 'EOF'
+# Hugging Face Spaces 环境变量配置
+API_PROVIDER=openai
+USE_DATABASE=False
+USE_REDIS_CACHE=False
+PORT=7860
+FLASK_ENV=production
+PYTHONUNBUFFERED=1
+PYTHONDONTWRITEBYTECODE=1
+EOF
         
         echo "✅ 环境变量配置完成"
 
