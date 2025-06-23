@@ -215,7 +215,7 @@ jobs:
                 repo_type="space",
                 token=os.environ["HF_TOKEN"],
                 ignore_patterns=ignore_patterns,
-                commit_message=f"Auto-deploy from GitHub Actions - {os.environ.get(\"GITHUB_SHA\", \"unknown\")[:7]}"
+                commit_message=f"Auto-deploy from GitHub Actions - {os.environ.get('GITHUB_SHA', 'unknown')[:7]}"
             )
 
             print("✅ 部署完成!")
