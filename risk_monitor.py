@@ -21,6 +21,9 @@ class RiskMonitor:
             df = self.analyzer.get_stock_data(stock_code, market_type)
             df = self.analyzer.calculate_indicators(df)
 
+            # 获取股票基本信息
+            stock_name, industry = self._get_stock_basic_info(stock_code, market_type)
+
             # 计算各类风险指标
             volatility_risk = self._analyze_volatility_risk(df)
             trend_risk = self._analyze_trend_risk(df)
@@ -79,6 +82,8 @@ class RiskMonitor:
                 })
 
             return {
+                "stock_name": stock_name,
+                "industry": industry,
                 "total_risk_score": total_risk_score,
                 "risk_level": risk_level,
                 "volatility_risk": volatility_risk,
@@ -373,3 +378,77 @@ class RiskMonitor:
             "max_industry_weight": max_industry[1],
             "high_risk_weight": high_risk_weight
         }
+
+    def _get_stock_basic_info(self, stock_code, market_type='A'):
+        """获取股票基本信息的备用方法"""
+        print(f"开始获取股票 {stock_code} 基本信息")
+
+        try:
+            # 首先尝试使用数据服务层
+            stock_info = self.analyzer.get_stock_info(stock_code, market_type)
+            if stock_info and stock_info.get('股票名称') != '未知':
+                stock_name = stock_info.get('股票名称', stock_code)
+                industry = stock_info.get('行业', '未知行业')
+                print(f"数据服务层成功获取: {stock_name}, {industry}")
+                return stock_name, industry
+        except Exception as e:
+            print(f"数据服务层获取股票信息失败: {str(e)}")
+
+        # 备用方法：直接使用AKShare API
+        print(f"使用备用方法获取股票 {stock_code} 信息")
+        try:
+            import akshare as ak
+
+            # 获取股票名称
+            stock_name = stock_code  # 默认值
+            industry = '未知行业'    # 默认值
+
+            # 尝试获取股票名称
+            try:
+                print("尝试获取股票名称...")
+                stock_name_df = ak.stock_info_a_code_name()
+                if not stock_name_df.empty:
+                    print(f"股票名称数据列: {stock_name_df.columns.tolist()}")
+                    # 检查列名
+                    if 'code' in stock_name_df.columns and 'name' in stock_name_df.columns:
+                        matched = stock_name_df[stock_name_df['code'] == stock_code]
+                        if not matched.empty:
+                            stock_name = matched['name'].iloc[0]
+                            print(f"找到股票名称: {stock_name}")
+                    elif '代码' in stock_name_df.columns and '名称' in stock_name_df.columns:
+                        matched = stock_name_df[stock_name_df['代码'] == stock_code]
+                        if not matched.empty:
+                            stock_name = matched['名称'].iloc[0]
+                            print(f"找到股票名称: {stock_name}")
+            except Exception as e:
+                print(f"获取股票名称失败: {str(e)}")
+
+            # 尝试获取行业信息
+            try:
+                print("尝试获取行业信息...")
+                stock_info = ak.stock_individual_info_em(symbol=stock_code)
+                if not stock_info.empty:
+                    print(f"股票信息数据形状: {stock_info.shape}")
+                    # 处理数据
+                    info_dict = {}
+                    for _, row in stock_info.iterrows():
+                        if len(row) >= 2:
+                            info_dict[row.iloc[0]] = row.iloc[1]
+
+                    print(f"股票信息字典: {list(info_dict.keys())}")
+                    # 查找行业信息
+                    if '行业' in info_dict:
+                        industry = info_dict['行业']
+                        print(f"找到行业信息: {industry}")
+                    elif '所属行业' in info_dict:
+                        industry = info_dict['所属行业']
+                        print(f"找到所属行业信息: {industry}")
+            except Exception as e:
+                print(f"获取行业信息失败: {str(e)}")
+
+            print(f"最终结果: {stock_name}, {industry}")
+            return stock_name, industry
+
+        except Exception as e:
+            print(f"备用方法获取股票信息失败: {str(e)}")
+            return stock_code, '未知行业'
