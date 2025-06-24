@@ -730,20 +730,42 @@
         const previousPrice = stockData.length > 1 ? parseFloat(stockData[stockData.length - 2].close) : currentPrice;
         const priceChange = currentPrice - previousPrice;
         const priceChangePercent = (priceChange / previousPrice) * 100;
-        
-        // 初始设置占位值，等待AI分析结果
+
+        // 尝试从多个来源获取股票名称
         let stockName = "加载中...";
         let industry = "行业数据加载中...";
-    
-        // 设置页面中的股票代码和默认值
-        $('#stock-title').html(`${stockName} <span class="text-muted">${stockCode}</span>`);
-        $('#stock-info').text(`${industry} | 数据日期: ${new Date(latestData.date).toLocaleDateString()}`);
-    
-        
-        // 更新股票标题
-        // const stockName = latestData.stockName || "未知";
-        // $('#stock-title').html(`${stockName} <span class="text-muted">${stockCode}</span>`);
-        
+
+        // 调试：检查latestData中的字段
+        console.log('latestData字段:', Object.keys(latestData));
+        console.log('latestData.stockName:', latestData.stockName);
+        console.log('latestData.stock_name:', latestData.stock_name);
+
+        // 1. 首先尝试从latestData获取股票名称
+        if (latestData.stockName && latestData.stockName !== "未知") {
+            stockName = latestData.stockName;
+            console.log('使用latestData.stockName:', stockName);
+
+            // 设置页面中的股票代码和名称
+            $('#stock-title').html(`${stockName} <span class="text-muted">${stockCode}</span>`);
+            $('#stock-info').text(`${industry} | 数据日期: ${new Date(latestData.date).toLocaleDateString()}`);
+        } else if (latestData.stock_name && latestData.stock_name !== "未知") {
+            stockName = latestData.stock_name;
+            console.log('使用latestData.stock_name:', stockName);
+
+            // 设置页面中的股票代码和名称
+            $('#stock-title').html(`${stockName} <span class="text-muted">${stockCode}</span>`);
+            $('#stock-info').text(`${industry} | 数据日期: ${new Date(latestData.date).toLocaleDateString()}`);
+        } else {
+            // 2. 如果没有股票名称，立即发起API请求获取基本信息
+            console.log('latestData中没有有效的股票名称，调用fetchStockBasicInfo');
+
+            // 先设置临时的加载状态
+            $('#stock-title').html(`${stockName} <span class="text-muted">${stockCode}</span>`);
+            $('#stock-info').text(`${industry} | 数据日期: ${new Date(latestData.date).toLocaleDateString()}`);
+
+            // 然后异步获取股票名称
+            fetchStockBasicInfo(stockCode, marketType);
+        }
         // 根据市场类型显示不同标签
         let marketBadge = '';
         if (marketType === 'A') {
@@ -825,6 +847,135 @@
 
         // 更新AI分析股票名称
         $('#ai-analysis-stock-name').text(stockName);
+    }
+
+    // 常见股票代码到名称的映射表
+    const stockNameMap = {
+        '000001': '平安银行',
+        '000002': '万科A',
+        '000858': '五粮液',
+        '000725': '京东方A',
+        '600519': '贵州茅台',
+        '600036': '招商银行',
+        '000858': '五粮液',
+        '002415': '海康威视',
+        '600276': '恒瑞医药',
+        '000063': '中兴通讯',
+        '002594': '比亚迪',
+        '600887': '伊利股份',
+        '000166': '申万宏源',
+        '600031': '三一重工',
+        '002304': '洋河股份',
+        '600900': '长江电力',
+        '000568': '泸州老窖',
+        '002142': '宁波银行',
+        '600585': '海螺水泥',
+        '000338': '潍柴动力'
+    };
+
+    // 获取股票基本信息的函数
+    function fetchStockBasicInfo(stockCode, marketType) {
+        // 首先尝试从本地映射表获取股票名称
+        const localStockName = stockNameMap[stockCode];
+        if (localStockName) {
+            const stockName = localStockName;
+            const industry = "未知行业";
+
+            // 调试：检查元素是否存在
+            console.log('检查#stock-title元素:', $('#stock-title').length);
+            console.log('当前#stock-title内容:', $('#stock-title').html());
+
+            // 更新股票标题 - 使用完整的HTML结构
+            $('#stock-title').html(`
+                <h1 style="font-size: 28px; font-weight: 600; margin: 0; color: var(--md-sys-color-on-surface); line-height: 1.2;">
+                    ${stockName} <span style="color: var(--md-sys-color-outline); font-size: 20px; font-weight: 400;">${stockCode}</span>
+                </h1>
+                <div style="color: var(--md-sys-color-outline); font-size: 14px; margin-top: 4px;">
+                    ${industry} | 数据日期: ${new Date().toLocaleDateString()}
+                </div>
+            `);
+
+            // 调试：检查更新后的内容
+            console.log('更新后#stock-title内容:', $('#stock-title').html());
+
+            // 更新AI分析区域的股票名称
+            $('#ai-analysis-stock-name').text(stockName);
+
+            console.log(`使用本地映射获取股票名称: ${stockName}`);
+            return;
+        }
+
+        // 如果本地映射表没有，再尝试API调用
+        $.ajax({
+            url: '/api/stock_basic_info',
+            method: 'GET',
+            data: {
+                stock_code: stockCode,
+                market_type: marketType || 'A'
+            },
+            success: function(response) {
+                if (response && response.stock_name) {
+                    // 更新股票名称
+                    const stockName = response.stock_name;
+                    const industry = response.industry || "未知行业";
+
+                    // 更新股票标题 - 使用完整的HTML结构
+                    $('#stock-title').html(`
+                        <h1 style="font-size: 28px; font-weight: 600; margin: 0; color: var(--md-sys-color-on-surface); line-height: 1.2;">
+                            ${stockName} <span style="color: var(--md-sys-color-outline); font-size: 20px; font-weight: 400;">${stockCode}</span>
+                        </h1>
+                        <div style="color: var(--md-sys-color-outline); font-size: 14px; margin-top: 4px;">
+                            ${industry} | 数据日期: ${new Date().toLocaleDateString()}
+                        </div>
+                    `);
+
+                    // 更新AI分析区域的股票名称
+                    $('#ai-analysis-stock-name').text(stockName);
+
+                    console.log(`成功获取股票基本信息: ${stockName} (${industry})`);
+                } else {
+                    console.warn('股票基本信息响应格式异常:', response);
+                    // 使用备用名称
+                    useFallbackStockName(stockCode);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('获取股票基本信息失败:', error);
+                // 使用备用名称
+                useFallbackStockName(stockCode);
+            }
+        });
+    }
+
+    // 使用备用股票名称的函数
+    function useFallbackStockName(stockCode) {
+        let fallbackName;
+
+        // 根据股票代码前缀判断市场和生成合适的名称
+        if (stockCode.startsWith('00')) {
+            fallbackName = `深市股票${stockCode}`;
+        } else if (stockCode.startsWith('60')) {
+            fallbackName = `沪市股票${stockCode}`;
+        } else if (stockCode.startsWith('30')) {
+            fallbackName = `创业板${stockCode}`;
+        } else {
+            fallbackName = `股票${stockCode}`;
+        }
+
+        // 更新股票标题 - 使用完整的HTML结构
+        $('#stock-title').html(`
+            <h1 style="font-size: 28px; font-weight: 600; margin: 0; color: var(--md-sys-color-on-surface); line-height: 1.2;">
+                ${fallbackName} <span style="color: var(--md-sys-color-outline); font-size: 20px; font-weight: 400;">${stockCode}</span>
+            </h1>
+            <div style="color: var(--md-sys-color-outline); font-size: 14px; margin-top: 4px;">
+                未知行业 | 数据日期: ${new Date().toLocaleDateString()}
+            </div>
+        `);
+
+        // 更新AI分析区域的股票名称
+        $('#ai-analysis-stock-name').text(fallbackName);
+
+        console.log(`使用备用名称: ${fallbackName}`);
     }
     
     // 计算技术评分并渲染

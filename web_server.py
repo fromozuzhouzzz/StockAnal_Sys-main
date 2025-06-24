@@ -46,6 +46,7 @@ from stock_qa import StockQA
 from risk_monitor import RiskMonitor
 from index_industry_analyzer import IndexIndustryAnalyzer
 from news_fetcher import news_fetcher, start_news_scheduler
+from data_service import DataService
 
 # 加载环境变量
 load_dotenv()
@@ -115,6 +116,7 @@ stock_qa = StockQA(analyzer, os.getenv('OPENAI_API_KEY'), os.getenv('OPENAI_API_
 risk_monitor = RiskMonitor(analyzer)
 index_industry_analyzer = IndexIndustryAnalyzer(analyzer)
 industry_analyzer = IndustryAnalyzer()
+data_service = DataService()
 
 start_news_scheduler()
 
@@ -978,6 +980,35 @@ def server_error(error):
 
 
 # Update the get_stock_data function in web_server.py to handle date formatting properly
+@app.route('/api/stock_basic_info', methods=['GET'])
+@cache.cached(timeout=1800, query_string=True)  # 缓存30分钟
+def get_stock_basic_info():
+    """获取股票基本信息API"""
+    try:
+        stock_code = request.args.get('stock_code')
+        market_type = request.args.get('market_type', 'A')
+
+        if not stock_code:
+            return jsonify({'error': '请提供股票代码'}), 400
+
+        app.logger.info(f"获取股票 {stock_code} 基本信息，市场类型: {market_type}")
+
+        # 使用数据服务获取基本信息
+        basic_info = data_service.get_stock_basic_info(stock_code, market_type)
+
+        if basic_info:
+            app.logger.info(f"成功获取股票基本信息: {basic_info.get('stock_name', '未知')}")
+            return jsonify(basic_info)
+        else:
+            app.logger.warning(f"未找到股票 {stock_code} 的基本信息")
+            return jsonify({'error': '未找到股票基本信息'}), 404
+
+    except Exception as e:
+        app.logger.error(f"获取股票基本信息时出错: {str(e)}")
+        app.logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/stock_data', methods=['GET'])
 @cache.cached(timeout=300, query_string=True)
 def get_stock_data():
