@@ -34,6 +34,10 @@ class ScenarioPredictor:
         try:
             # 获取股票数据和技术指标
             df = self.analyzer.get_stock_data(stock_code, market_type)
+            if df is None or df.empty:
+                print(f"无法获取股票 {stock_code} 的数据")
+                return self._get_error_response("无法获取股票数据")
+
             df = self.analyzer.calculate_indicators(df)
 
             # 获取股票信息
@@ -50,12 +54,18 @@ class ScenarioPredictor:
             if self.openai_api_key:
                 ai_analysis = self._generate_ai_analysis(stock_code, stock_info, df, scenarios)
                 scenarios.update(ai_analysis)
+            else:
+                # 如果没有AI API密钥，使用默认分析
+                default_analysis = self._get_default_analysis()
+                scenarios.update(default_analysis)
 
             # logging.info(f"返回前的情景预测：{scenarios}")
             return scenarios
         except Exception as e:
-            # logging.info(f"生成情景预测出错: {str(e)}")
-            return {}
+            print(f"生成情景预测出错: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return self._get_error_response(f"生成情景预测失败: {str(e)}")
 
     def _calculate_scenarios(self, df, days):
         """基于历史数据计算三种情景的价格预测"""
@@ -248,6 +258,33 @@ class ScenarioPredictor:
             "pessimistic_analysis": "悲观情景分析暂无",
             "risk_factors": self._get_default_risk_factors(),
             "opportunity_factors": self._get_default_opportunity_factors()
+        }
+
+    def _get_error_response(self, error_message):
+        """返回错误响应，包含基本的数据结构以避免前端错误"""
+        return {
+            "error": error_message,
+            "current_price": 0,
+            "optimistic": {
+                "target_price": 0,
+                "change_percent": 0,
+                "path": {}
+            },
+            "neutral": {
+                "target_price": 0,
+                "change_percent": 0,
+                "path": {}
+            },
+            "pessimistic": {
+                "target_price": 0,
+                "change_percent": 0,
+                "path": {}
+            },
+            "optimistic_analysis": "数据获取失败，无法生成分析",
+            "neutral_analysis": "数据获取失败，无法生成分析",
+            "pessimistic_analysis": "数据获取失败，无法生成分析",
+            "risk_factors": ["数据获取失败"],
+            "opportunity_factors": ["请稍后重试"]
         }
     
     

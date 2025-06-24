@@ -210,6 +210,19 @@
             }),
             success: function(response) {
                 $('#loading-panel').hide();
+
+                // 检查响应是否包含错误
+                if (response.error) {
+                    showError('情景预测失败: ' + response.error);
+                    return;
+                }
+
+                // 检查响应数据完整性
+                if (!response.optimistic || !response.neutral || !response.pessimistic) {
+                    showError('情景预测数据不完整，请稍后重试');
+                    return;
+                }
+
                 renderScenarioPrediction(response, stockCode);
                 $('#scenario-result').show();
             },
@@ -227,20 +240,21 @@
     }
 
     function renderScenarioPrediction(data, stockCode) {
-    // 设置乐观情景数据
-    $('#optimistic-price').text('¥' + formatNumber(data.optimistic.target_price, 2));
-    $('#optimistic-change').text(formatPercent(data.optimistic.change_percent, 2));
-    $('#optimistic-analysis').text(data.optimistic_analysis || '暂无分析');
+    try {
+        // 安全地设置乐观情景数据
+        $('#optimistic-price').text('¥' + formatNumber(data.optimistic?.target_price || 0, 2));
+        $('#optimistic-change').text(formatPercent(data.optimistic?.change_percent || 0, 2));
+        $('#optimistic-analysis').text(data.optimistic_analysis || '暂无分析');
 
-    // 设置中性情景数据
-    $('#neutral-price').text('¥' + formatNumber(data.neutral.target_price, 2));
-    $('#neutral-change').text(formatPercent(data.neutral.change_percent, 2));
-    $('#neutral-analysis').text(data.neutral_analysis || '暂无分析');
+        // 安全地设置中性情景数据
+        $('#neutral-price').text('¥' + formatNumber(data.neutral?.target_price || 0, 2));
+        $('#neutral-change').text(formatPercent(data.neutral?.change_percent || 0, 2));
+        $('#neutral-analysis').text(data.neutral_analysis || '暂无分析');
 
-    // 设置悲观情景数据
-    $('#pessimistic-price').text('¥' + formatNumber(data.pessimistic.target_price, 2));
-    $('#pessimistic-change').text(formatPercent(data.pessimistic.change_percent, 2));
-    $('#pessimistic-analysis').text(data.pessimistic_analysis || '暂无分析');
+        // 安全地设置悲观情景数据
+        $('#pessimistic-price').text('¥' + formatNumber(data.pessimistic?.target_price || 0, 2));
+        $('#pessimistic-change').text(formatPercent(data.pessimistic?.change_percent || 0, 2));
+        $('#pessimistic-analysis').text(data.pessimistic_analysis || '暂无分析');
 
     // 设置风险与机会因素 - 使用API返回的数据
     if (data.risk_factors && Array.isArray(data.risk_factors)) {
@@ -265,8 +279,12 @@
         setDefaultOpportunityFactors();
     }
 
-    // 渲染价格预测图表
-    renderPricePredictionChart(data);
+        // 渲染价格预测图表
+        renderPricePredictionChart(data);
+    } catch (error) {
+        console.error('渲染情景预测数据时出错:', error);
+        showError('渲染预测结果时出错，请稍后重试');
+    }
 }
 
     // 将原来的 setDefaultRiskOpportunityFactors 函数拆分为两个函数
@@ -342,14 +360,25 @@
     }
 
     function renderPricePredictionChart(data) {
-        // 准备数据
-        const currentPrice = data.current_price;
+        try {
+            // 准备数据
+            const currentPrice = data.current_price || 0;
 
-        // 提取日期和价格路径
-        const dates = Object.keys(data.optimistic.path);
-        const optimisticPrices = Object.values(data.optimistic.path);
-        const neutralPrices = Object.values(data.neutral.path);
-        const pessimisticPrices = Object.values(data.pessimistic.path);
+            // 安全地提取日期和价格路径
+            const optimisticPath = data.optimistic?.path || {};
+            const neutralPath = data.neutral?.path || {};
+            const pessimisticPath = data.pessimistic?.path || {};
+
+            const dates = Object.keys(optimisticPath);
+            const optimisticPrices = Object.values(optimisticPath);
+            const neutralPrices = Object.values(neutralPath);
+            const pessimisticPrices = Object.values(pessimisticPath);
+
+            // 检查数据是否有效
+            if (dates.length === 0) {
+                console.warn('价格预测路径数据为空，跳过图表渲染');
+                return;
+            }
 
         const options = {
             series: [
@@ -454,8 +483,13 @@
             }
         };
 
-        const chart = new ApexCharts(document.querySelector("#price-prediction-chart"), options);
-        chart.render();
+            const chart = new ApexCharts(document.querySelector("#price-prediction-chart"), options);
+            chart.render();
+        } catch (error) {
+            console.error('渲染价格预测图表时出错:', error);
+            // 在图表容器中显示错误信息
+            $('#price-prediction-chart').html('<div class="text-center text-muted p-4">图表渲染失败，请稍后重试</div>');
+        }
     }
 </script>
 {% endblock %}
