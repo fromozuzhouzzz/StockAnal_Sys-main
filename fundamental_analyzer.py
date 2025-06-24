@@ -83,8 +83,22 @@ class FundamentalAnalyzer:
 
     def calculate_fundamental_score(self, stock_code):
         """计算基本面综合评分"""
+        # 获取股票基本信息
+        try:
+            basic_info = data_service.get_stock_basic_info(stock_code)
+            stock_name = basic_info.get('stock_name', stock_code) if basic_info else stock_code
+            industry = basic_info.get('industry', '未知行业') if basic_info else '未知行业'
+        except Exception as e:
+            print(f"获取股票基本信息失败: {str(e)}")
+            stock_name = stock_code
+            industry = '未知行业'
+
         indicators = self.get_financial_indicators(stock_code)
         growth = self.get_growth_data(stock_code)
+
+        # 将基本信息添加到indicators中
+        indicators['stock_name'] = stock_name
+        indicators['industry'] = industry
 
         # 估值评分 (30分)
         valuation_score = 0
