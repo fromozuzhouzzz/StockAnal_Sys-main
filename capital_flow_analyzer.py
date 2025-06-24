@@ -13,6 +13,7 @@ from data_service import data_service
 class CapitalFlowAnalyzer:
     def __init__(self):
         self.data_cache = {}
+        self.stock_name_cache = {}  # 股票名称缓存
         self.max_retries = 3  # 最大重试次数
         self.api_timeout = 30  # API调用超时时间
 
@@ -38,6 +39,66 @@ class CapitalFlowAnalyzer:
                     time.sleep(wait_time)
                 else:
                     raise e
+
+    def get_stock_name_mapping(self):
+        """获取股票代码到名称的映射"""
+        try:
+            # 检查缓存
+            cache_key = "stock_name_mapping"
+            if cache_key in self.stock_name_cache:
+                cache_time, cached_data = self.stock_name_cache[cache_key]
+                # 如果在24小时内有缓存数据，则返回缓存数据
+                if (datetime.now() - cache_time).total_seconds() < 86400:
+                    return cached_data
+
+            self.logger.info("获取股票代码名称映射...")
+
+            # 尝试获取A股股票基本信息
+            stock_info = self._retry_api_call(ak.stock_info_a_code_name)
+
+            # 创建代码到名称的映射
+            name_mapping = {}
+            if not stock_info.empty:
+                # 检查列名
+                if 'code' in stock_info.columns and 'name' in stock_info.columns:
+                    for _, row in stock_info.iterrows():
+                        code = str(row['code']).zfill(6)  # 确保代码为6位
+                        name = row['name']
+                        name_mapping[code] = name
+                elif '代码' in stock_info.columns and '名称' in stock_info.columns:
+                    for _, row in stock_info.iterrows():
+                        code = str(row['代码']).zfill(6)  # 确保代码为6位
+                        name = row['名称']
+                        name_mapping[code] = name
+                else:
+                    self.logger.warning(f"股票信息DataFrame列名不符合预期: {stock_info.columns.tolist()}")
+
+            # 缓存结果
+            self.stock_name_cache[cache_key] = (datetime.now(), name_mapping)
+            self.logger.info(f"成功获取 {len(name_mapping)} 个股票名称映射")
+
+            return name_mapping
+
+        except Exception as e:
+            self.logger.error(f"获取股票名称映射失败: {str(e)}")
+            # 返回一些常见股票的映射作为降级方案
+            return self._get_fallback_stock_mapping()
+
+    def _get_fallback_stock_mapping(self):
+        """获取降级股票名称映射"""
+        return {
+            "000001": "平安银行", "000002": "万科A", "000858": "五粮液", "000725": "京东方A",
+            "600519": "贵州茅台", "600036": "招商银行", "002415": "海康威视", "600276": "恒瑞医药",
+            "000063": "中兴通讯", "002594": "比亚迪", "600887": "伊利股份", "000166": "申万宏源",
+            "600031": "三一重工", "002304": "洋河股份", "600900": "长江电力", "000568": "泸州老窖",
+            "002142": "宁波银行", "600585": "海螺水泥", "000338": "潍柴动力", "600000": "浦发银行",
+            "601318": "中国平安", "000333": "美的集团", "601888": "中国中免", "600030": "中信证券",
+            "601166": "兴业银行", "601398": "工商银行", "600028": "中国石化", "601988": "中国银行",
+            "601857": "中国石油", "600019": "宝钢股份", "600050": "中国联通", "601328": "交通银行",
+            "601668": "中国建筑", "601288": "农业银行", "000012": "南玻A", "000016": "深康佳A",
+            "000021": "深科技", "000027": "深圳能源", "000039": "中集集团", "000060": "中金岭南",
+            "000069": "华侨城A", "000100": "TCL科技", "000157": "中联重科", "000338": "潍柴动力"
+        }
 
     def get_concept_fund_flow(self, period="10日排行"):
         """获取概念/行业资金流向数据，使用缓存机制"""
@@ -219,9 +280,9 @@ class CapitalFlowAnalyzer:
             return self._generate_mock_individual_fund_flow(stock_code, market_type)
 
     def get_sector_stocks(self, sector):
-        """获取特定行业的股票"""
+        """获取特定行业的股票，带重试机制和详细错误处理"""
         try:
-            self.logger.info(f"Getting stocks for sector: {sector}")
+            self.logger.info(f"正在获取行业 '{sector}' 的成分股数据")
 
             # 检查缓存
             cache_key = f"sector_stocks_{sector}"
@@ -229,47 +290,82 @@ class CapitalFlowAnalyzer:
                 cache_time, cached_data = self.data_cache[cache_key]
                 # 如果在一小时内有缓存数据，则返回缓存数据
                 if (datetime.now() - cache_time).total_seconds() < 3600:
+                    self.logger.info(f"使用缓存的行业成分股数据: {sector}")
                     return cached_data
 
-            # 尝试从akshare获取数据
-            try:
-                # For industry sectors (using 东方财富 interface)
-                stocks = ak.stock_board_industry_cons_em(symbol=sector)
+            # 尝试多种API接口获取数据
+            api_methods = [
+                # 方法1：使用行业板块成分股接口
+                lambda: self._retry_api_call(ak.stock_board_industry_cons_em, symbol=sector),
+                # 方法2：尝试概念板块成分股接口
+                lambda: self._retry_api_call(ak.stock_board_concept_cons_em, symbol=sector)
+            ]
 
-                # 提取股票列表
-                if not stocks.empty and '代码' in stocks.columns:
+            for i, api_method in enumerate(api_methods):
+                try:
+                    self.logger.info(f"尝试API方法 {i+1} 获取 '{sector}' 成分股")
+                    stocks = api_method()
+
+                    # 验证数据有效性
+                    if stocks is None or stocks.empty:
+                        self.logger.warning(f"API方法 {i+1} 返回空数据")
+                        continue
+
+                    # 检查必要的列是否存在
+                    required_columns = ['代码']
+                    if not all(col in stocks.columns for col in required_columns):
+                        self.logger.warning(f"API方法 {i+1} 返回数据缺少必要列: {stocks.columns.tolist()}")
+                        continue
+
+                    # 处理数据
                     result = []
+                    processed_count = 0
                     for _, row in stocks.iterrows():
                         try:
+                            # 获取股票代码和名称
+                            stock_code = str(row.get("代码", "")).strip()
+                            stock_name = str(row.get("名称", "")).strip()
+
+                            # 验证股票代码格式
+                            if not stock_code or len(stock_code) != 6 or not stock_code.isdigit():
+                                continue
+
                             item = {
-                                "code": row.get("代码", ""),
-                                "name": row.get("名称", ""),
-                                "price": float(row.get("最新价", 0)),
-                                "change_percent": float(row.get("涨跌幅", 0)) if "涨跌幅" in row else 0,
-                                "main_net_inflow": 0,  # We'll get this data separately if needed
-                                "main_net_inflow_percent": 0  # We'll get this data separately if needed
+                                "code": stock_code,
+                                "name": stock_name if stock_name else f"股票{stock_code}",
+                                "price": float(row.get("最新价", 0)) if pd.notna(row.get("最新价")) else 0.0,
+                                "change_percent": float(row.get("涨跌幅", 0)) if pd.notna(row.get("涨跌幅")) else 0.0,
+                                "main_net_inflow": 0,  # 资金流向数据需要单独获取
+                                "main_net_inflow_percent": 0
                             }
                             result.append(item)
+                            processed_count += 1
                         except Exception as e:
-                            # self.logger.warning(f"Error processing row in sector stocks: {str(e)}")
+                            self.logger.warning(f"处理股票数据行时出错: {str(e)}")
                             continue
 
-                    # 缓存结果
-                    self.data_cache[cache_key] = (datetime.now(), result)
-                    return result
-            except Exception as e:
-                self.logger.warning(f"Failed to get sector stocks from API: {str(e)}")
-                # 降级到模拟数据
+                    if result:
+                        self.logger.info(f"成功从API方法 {i+1} 获取到 {processed_count} 只 '{sector}' 成分股")
+                        # 缓存结果
+                        self.data_cache[cache_key] = (datetime.now(), result)
+                        return result
+                    else:
+                        self.logger.warning(f"API方法 {i+1} 处理后无有效数据")
 
-            # 如果到达这里，说明无法从API获取数据，返回模拟数据
+                except Exception as e:
+                    self.logger.warning(f"API方法 {i+1} 调用失败: {str(e)}")
+                    continue
+
+            # 所有API方法都失败，使用模拟数据
+            self.logger.warning(f"所有API方法都失败，使用模拟数据生成 '{sector}' 成分股")
             result = self._generate_mock_sector_stocks(sector)
             self.data_cache[cache_key] = (datetime.now(), result)
             return result
 
         except Exception as e:
-            self.logger.error(f"Error getting sector stocks: {str(e)}")
+            self.logger.error(f"获取行业成分股时发生严重错误: {str(e)}")
             self.logger.error(traceback.format_exc())
-            # 如果API调用失败则返回模拟数据
+            # 最终降级方案
             return self._generate_mock_sector_stocks(sector)
 
     def calculate_capital_flow_score(self, stock_code, market_type=""):
@@ -585,22 +681,36 @@ class CapitalFlowAnalyzer:
         return result
 
     def _generate_mock_sector_stocks(self, sector):
-        """生成模拟行业股票数据"""
-        # self.logger.warning(f"Generating mock sector stocks for: {sector}")
+        """生成模拟行业股票数据，使用真实的股票代码和名称"""
+        self.logger.warning(f"使用模拟数据生成 {sector} 行业股票")
 
-        # 要生成的股票数量
-        num_stocks = np.random.randint(20, 50)
+        # 获取股票名称映射
+        stock_name_mapping = self.get_stock_name_mapping()
+
+        # 从映射中获取可用的股票代码列表
+        available_stocks = list(stock_name_mapping.keys())
+
+        # 如果没有获取到股票映射，使用降级方案
+        if not available_stocks:
+            available_stocks = list(self._get_fallback_stock_mapping().keys())
+            stock_name_mapping = self._get_fallback_stock_mapping()
+
+        # 要生成的股票数量（从可用股票中随机选择）
+        num_stocks = min(np.random.randint(20, 40), len(available_stocks))
+
+        # 随机选择股票代码
+        selected_stocks = np.random.choice(available_stocks, size=num_stocks, replace=False)
 
         result = []
-        for i in range(num_stocks):
-            prefix = "6" if np.random.random() > 0.5 else "0"
-            stock_code = prefix + str(100000 + i).zfill(5)[-5:]
-
+        for i, stock_code in enumerate(selected_stocks):
             change_percent = round(np.random.uniform(-5, 5), 2)
+
+            # 获取真实的股票名称
+            stock_name = stock_name_mapping.get(stock_code, f"{sector}股票{i + 1}")
 
             item = {
                 "code": stock_code,
-                "name": f"{sector}股票{i + 1}",
+                "name": stock_name,
                 "price": round(np.random.uniform(10, 100), 2),
                 "change_percent": change_percent,
                 "main_net_inflow": round(np.random.uniform(-1e6, 1e6), 2),
