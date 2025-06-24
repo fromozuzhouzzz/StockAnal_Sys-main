@@ -231,6 +231,78 @@
         color: var(--md-sys-color-on-bear-container);
         border-left: 4px solid var(--md-sys-color-bear);
     }
+
+    /* Enhanced Material Design 3 Tab Styles */
+    .md3-tab-bar {
+        display: flex;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        background-color: var(--md-sys-color-surface);
+        border-radius: var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large) 0 0;
+        overflow: hidden;
+    }
+
+    .md3-tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 16px 24px;
+        border: none;
+        background: none;
+        color: var(--md-sys-color-on-surface-variant);
+        font-family: var(--md-sys-typescale-title-small-font);
+        font-size: var(--md-sys-typescale-title-small-size);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
+        border-bottom: 3px solid transparent;
+        flex: 1;
+        justify-content: center;
+        min-height: 48px;
+    }
+
+    .md3-tab:hover {
+        background-color: var(--md-sys-color-surface-container-high);
+        color: var(--md-sys-color-on-surface);
+    }
+
+    .md3-tab.md3-tab-active {
+        color: var(--md-sys-color-primary);
+        border-bottom-color: var(--md-sys-color-primary);
+        background-color: var(--md-sys-color-primary-container);
+    }
+
+    .md3-tab-content {
+        margin-top: 0;
+    }
+
+    .md3-tab-panel {
+        display: none;
+    }
+
+    .md3-tab-panel.md3-tab-panel-active {
+        display: block;
+    }
+
+    /* Tab Icons */
+    .md3-tab i {
+        font-size: 20px;
+    }
+
+    /* Responsive Tab Design */
+    @media (max-width: 768px) {
+        .md3-tab {
+            padding: 12px 16px;
+            font-size: 14px;
+        }
+
+        .md3-tab span {
+            display: none;
+        }
+
+        .md3-tab i {
+            font-size: 18px;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -593,6 +665,23 @@
             } else {
                 console.log('页面重新显示，轮询状态保持不变');
             }
+        });
+
+        // Enhanced Material Design 3 Tab functionality
+        $('.md3-tab').click(function() {
+            console.log('标签切换被点击:', $(this).attr('id'));
+            const targetId = $(this).data('target');
+            console.log('目标面板ID:', targetId);
+
+            // Remove active class from all tabs and panels
+            $('.md3-tab').removeClass('md3-tab-active');
+            $('.md3-tab-panel').removeClass('md3-tab-panel-active');
+
+            // Add active class to clicked tab and corresponding panel
+            $(this).addClass('md3-tab-active');
+            $(`#${targetId}`).addClass('md3-tab-panel-active');
+
+            console.log('标签切换完成，当前激活面板:', targetId);
         });
     });
 
