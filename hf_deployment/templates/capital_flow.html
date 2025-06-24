@@ -307,12 +307,41 @@
                 renderConceptStocks(response, sector);
                 $('#loading-panel').hide();
                 $('#concept-stocks-panel').show();
+
+                // 添加平滑滚动到成分股结果区域
+                setTimeout(() => {
+                    scrollToConceptStocks();
+                }, 300); // 等待面板显示动画完成
             },
             error: function(xhr, status, error) {
                 $('#loading-panel').hide();
                 showError('获取概念成分股数据失败: ' + error);
             }
         });
+    }
+
+    // 平滑滚动到成分股面板
+    function scrollToConceptStocks() {
+        const conceptStocksPanel = document.getElementById('concept-stocks-panel');
+        if (conceptStocksPanel) {
+            // 添加高亮动画类
+            conceptStocksPanel.classList.add('md3-animate-scroll-to');
+
+            // 计算滚动位置（考虑导航栏高度）
+            const navHeight = 80; // 导航栏高度
+            const elementTop = conceptStocksPanel.offsetTop - navHeight;
+
+            // 平滑滚动
+            window.scrollTo({
+                top: elementTop,
+                behavior: 'smooth'
+            });
+
+            // 移除高亮动画类
+            setTimeout(() => {
+                conceptStocksPanel.classList.remove('md3-animate-scroll-to');
+            }, 2000);
+        }
     }
 
     // 加载个股资金流向

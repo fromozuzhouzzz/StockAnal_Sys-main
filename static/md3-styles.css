@@ -1157,16 +1157,68 @@ form[style*="grid-template-columns"] .md3-button {
     text-align: center;
     white-space: nowrap;
     min-width: 120px;
+    vertical-align: middle;
+    display: table-cell;
 }
 
 .md3-data-table .action-buttons .md3-button {
     margin: 0 2px;
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 强制操作按钮对齐 */
+.md3-data-table .force-center {
+    text-align: center !important;
+    vertical-align: middle !important;
+    display: table-cell !important;
+}
+
+.md3-data-table .force-center .md3-button {
+    vertical-align: middle !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 2px !important;
 }
 
 /* 确保内联样式优先级 - 让内联样式生效 */
 .md3-data-table th[style*="text-align: center"],
 .md3-data-table td[style*="text-align: center"] {
     text-align: center !important;
+}
+
+/* 平滑滚动样式 */
+html {
+    scroll-behavior: smooth;
+}
+
+/* 成分股面板滚动目标样式 */
+#concept-stocks-panel {
+    scroll-margin-top: 80px; /* 为导航栏留出空间 */
+}
+
+/* 滚动动画增强 */
+.md3-animate-scroll-to {
+    animation: md3-scroll-highlight 2s ease-out;
+}
+
+@keyframes md3-scroll-highlight {
+    0% {
+        background-color: var(--md-sys-color-primary-container);
+        transform: scale(1.02);
+    }
+    50% {
+        background-color: var(--md-sys-color-primary-container);
+        transform: scale(1.01);
+    }
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+}
 }
 
 .md3-data-table th[style*="text-align: right"],
