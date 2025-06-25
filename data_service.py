@@ -24,12 +24,13 @@ import ssl
 
 # 导入数据库模型
 from database import (
-    get_session, USE_DATABASE, 
-    StockBasicInfo, StockPriceHistory, StockRealtimeData, 
+    get_session, USE_DATABASE,
+    StockBasicInfo, StockPriceHistory, StockRealtimeData,
     FinancialData, CapitalFlowData,
     CACHE_DEFAULT_TTL, REALTIME_DATA_TTL, BASIC_INFO_TTL, FINANCIAL_DATA_TTL,
     cleanup_expired_cache, get_cache_stats
 )
+from database_optimizer import db_optimizer, get_optimized_session, batch_get_stock_data
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -218,22 +219,19 @@ class DataService:
         if cached_data:
             return cached_data
         
-        # 2. 检查数据库缓存
+        # 2. 检查数据库缓存（使用优化的会话）
         if USE_DATABASE:
             try:
-                session = get_session()
-                db_record = session.query(StockBasicInfo).filter(
-                    StockBasicInfo.stock_code == stock_code,
-                    StockBasicInfo.market_type == market_type
-                ).first()
-                
-                if db_record and not db_record.is_expired():
-                    data = db_record.to_dict()
-                    session.close()
-                    self._set_memory_cache(cache_key, data)
-                    return data
-                
-                session.close()
+                with get_optimized_session() as session:
+                    db_record = session.query(StockBasicInfo).filter(
+                        StockBasicInfo.stock_code == stock_code,
+                        StockBasicInfo.market_type == market_type
+                    ).first()
+
+                    if db_record and not db_record.is_expired():
+                        data = db_record.to_dict()
+                        self._set_memory_cache(cache_key, data)
+                        return data
             except Exception as e:
                 self.logger.error(f"数据库查询失败: {e}")
         
@@ -287,36 +285,12 @@ class DataService:
                     'pb_ratio': 0
                 }
             
-            # 4. 保存到数据库缓存
+            # 4. 保存到数据库缓存（使用优化的批量保存）
             if USE_DATABASE:
                 try:
-                    session = get_session()
-                    
-                    # 删除旧记录
-                    session.query(StockBasicInfo).filter(
-                        StockBasicInfo.stock_code == stock_code,
-                        StockBasicInfo.market_type == market_type
-                    ).delete()
-                    
-                    # 插入新记录
-                    expires_at = datetime.now() + timedelta(seconds=BASIC_INFO_TTL)
-                    db_record = StockBasicInfo(
-                        stock_code=stock_code,
-                        stock_name=data['stock_name'],
-                        market_type=market_type,
-                        industry=data['industry'],
-                        sector=data['sector'],
-                        list_date=data['list_date'],
-                        total_share=data['total_share'],
-                        float_share=data['float_share'],
-                        market_cap=data['market_cap'],
-                        pe_ratio=data['pe_ratio'],
-                        pb_ratio=data['pb_ratio'],
-                        expires_at=expires_at
-                    )
-                    session.add(db_record)
-                    session.commit()
-                    session.close()
+                    stock_data = data.copy()
+                    stock_data['ttl'] = BASIC_INFO_TTL
+                    db_optimizer.batch_save_stock_basic_info([stock_data])
                 except Exception as e:
                     self.logger.error(f"保存基本信息到数据库失败: {e}")
             
@@ -344,12 +318,79 @@ class DataService:
             'database_enabled': USE_DATABASE,
             'memory_cache_size': len(memory_cache)
         }
-        
+
         if USE_DATABASE:
             db_stats = get_cache_stats()
             stats.update(db_stats)
-        
+
+            # 添加数据库优化器统计
+            optimizer_stats = db_optimizer.get_database_stats()
+            stats.update(optimizer_stats)
+
         return stats
+
+    def batch_get_stock_basic_info(self, stock_codes: List[str],
+                                  market_type: str = 'A') -> Dict[str, Dict]:
+        """批量获取股票基本信息"""
+        results = {}
+        cache_hits = []
+        cache_misses = []
+
+        # 1. 检查内存缓存
+        for stock_code in stock_codes:
+            cache_key = self._get_cache_key('basic_info', stock_code=stock_code, market_type=market_type)
+            cached_data = self._check_memory_cache(cache_key, BASIC_INFO_TTL)
+            if cached_data:
+                results[stock_code] = cached_data
+                cache_hits.append(stock_code)
+            else:
+                cache_misses.append(stock_code)
+
+        # 2. 批量查询数据库缓存
+        if cache_misses and USE_DATABASE:
+            db_results = db_optimizer.batch_get_stock_basic_info(cache_misses, market_type)
+            for stock_code, data in db_results.items():
+                results[stock_code] = data
+                # 更新内存缓存
+                cache_key = self._get_cache_key('basic_info', stock_code=stock_code, market_type=market_type)
+                self._set_memory_cache(cache_key, data)
+                cache_misses.remove(stock_code)
+
+        self.logger.info(f"批量查询基本信息: 内存命中 {len(cache_hits)}, 数据库命中 {len(db_results) if 'db_results' in locals() else 0}, 需要API {len(cache_misses)}")
+
+        # 3. 对于仍然缺失的数据，需要调用API（这里返回缺失列表，由调用方处理）
+        return results, cache_misses
+
+    def batch_get_stock_realtime_data(self, stock_codes: List[str],
+                                     market_type: str = 'A') -> Tuple[Dict[str, Dict], List[str]]:
+        """批量获取股票实时数据"""
+        results = {}
+        cache_hits = []
+        cache_misses = []
+
+        # 1. 检查内存缓存
+        for stock_code in stock_codes:
+            cache_key = self._get_cache_key('realtime_data', stock_code=stock_code, market_type=market_type)
+            cached_data = self._check_memory_cache(cache_key, REALTIME_DATA_TTL)
+            if cached_data:
+                results[stock_code] = cached_data
+                cache_hits.append(stock_code)
+            else:
+                cache_misses.append(stock_code)
+
+        # 2. 批量查询数据库缓存
+        if cache_misses and USE_DATABASE:
+            db_results = db_optimizer.batch_get_stock_realtime_data(cache_misses, market_type)
+            for stock_code, data in db_results.items():
+                results[stock_code] = data
+                # 更新内存缓存
+                cache_key = self._get_cache_key('realtime_data', stock_code=stock_code, market_type=market_type)
+                self._set_memory_cache(cache_key, data)
+                cache_misses.remove(stock_code)
+
+        self.logger.info(f"批量查询实时数据: 内存命中 {len(cache_hits)}, 数据库命中 {len(db_results) if 'db_results' in locals() else 0}, 需要API {len(cache_misses)}")
+
+        return results, cache_misses
 
 
     def get_stock_price_history(self, stock_code: str, market_type: str = 'A',
@@ -368,28 +409,25 @@ class DataService:
         if cached_data is not None:
             return cached_data
 
-        # 2. 检查数据库缓存
+        # 2. 检查数据库缓存（使用优化的会话）
         if USE_DATABASE:
             try:
-                session = get_session()
-                db_records = session.query(StockPriceHistory).filter(
-                    StockPriceHistory.stock_code == stock_code,
-                    StockPriceHistory.market_type == market_type,
-                    StockPriceHistory.trade_date >= start_date.replace('-', ''),
-                    StockPriceHistory.trade_date <= end_date.replace('-', '')
-                ).order_by(StockPriceHistory.trade_date).all()
+                with get_optimized_session() as session:
+                    db_records = session.query(StockPriceHistory).filter(
+                        StockPriceHistory.stock_code == stock_code,
+                        StockPriceHistory.market_type == market_type,
+                        StockPriceHistory.trade_date >= start_date.replace('-', ''),
+                        StockPriceHistory.trade_date <= end_date.replace('-', '')
+                    ).order_by(StockPriceHistory.trade_date).all()
 
-                if db_records:
-                    # 转换为DataFrame
-                    data_list = [record.to_dict() for record in db_records]
-                    df = pd.DataFrame(data_list)
-                    df['date'] = pd.to_datetime(df['trade_date'])
-                    df = df.drop('trade_date', axis=1)
-                    session.close()
-                    self._set_memory_cache(cache_key, df)
-                    return df
-
-                session.close()
+                    if db_records:
+                        # 转换为DataFrame
+                        data_list = [record.to_dict() for record in db_records]
+                        df = pd.DataFrame(data_list)
+                        df['date'] = pd.to_datetime(df['trade_date'])
+                        df = df.drop('trade_date', axis=1)
+                        self._set_memory_cache(cache_key, df)
+                        return df
             except Exception as e:
                 self.logger.error(f"数据库查询历史价格失败: {e}")
 
@@ -446,26 +484,26 @@ class DataService:
             df = df.dropna()
             df = df.sort_values('date')
 
-            # 4. 保存到数据库缓存
+            # 4. 保存到数据库缓存（使用优化的批量保存）
             if USE_DATABASE:
                 try:
-                    session = get_session()
-
-                    for _, row in df.iterrows():
-                        trade_date = row['date'].strftime('%Y-%m-%d')
-
-                        # 检查是否已存在
-                        existing = session.query(StockPriceHistory).filter(
+                    with get_optimized_session() as session:
+                        # 批量插入，先删除已存在的记录
+                        session.query(StockPriceHistory).filter(
                             StockPriceHistory.stock_code == stock_code,
                             StockPriceHistory.market_type == market_type,
-                            StockPriceHistory.trade_date == trade_date.replace('-', '')
-                        ).first()
+                            StockPriceHistory.trade_date >= start_date.replace('-', ''),
+                            StockPriceHistory.trade_date <= end_date.replace('-', '')
+                        ).delete(synchronize_session=False)
 
-                        if not existing:
-                            db_record = StockPriceHistory(
+                        # 批量插入新记录
+                        records = []
+                        for _, row in df.iterrows():
+                            trade_date = row['date'].strftime('%Y%m%d')
+                            record = StockPriceHistory(
                                 stock_code=stock_code,
                                 market_type=market_type,
-                                trade_date=trade_date.replace('-', ''),
+                                trade_date=trade_date,
                                 open_price=row['open'],
                                 close_price=row['close'],
                                 high_price=row['high'],
@@ -474,10 +512,10 @@ class DataService:
                                 amount=row.get('amount', 0),
                                 change_pct=row.get('change_pct', 0)
                             )
-                            session.add(db_record)
+                            records.append(record)
 
-                    session.commit()
-                    session.close()
+                        session.bulk_save_objects(records)
+                        self.logger.info(f"批量保存历史价格: {len(records)} 条记录")
                 except Exception as e:
                     self.logger.error(f"保存历史价格到数据库失败: {e}")
 
