@@ -183,17 +183,37 @@
                     <table class="md3-data-table">
                         <thead>
                             <tr>
-                                <th>代码</th>
-                                <th>名称</th>
-                                <th>行业</th>
-                                <th>得分</th>
-                                <th>价格</th>
-                                <th>涨跌幅</th>
-                                <th>RSI</th>
-                                <th>MA趋势</th>
-                                <th>成交量</th>
-                                <th>建议</th>
-                                <th>操作</th>
+                                <th class="sortable" data-column="stock_code" data-type="text" style="text-align: left; cursor: pointer; user-select: none;">
+                                    代码 <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable" data-column="stock_name" data-type="text" style="text-align: left; cursor: pointer; user-select: none;">
+                                    名称 <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable" data-column="industry" data-type="text" style="text-align: left; cursor: pointer; user-select: none;">
+                                    行业 <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable" data-column="score" data-type="number" style="text-align: center; cursor: pointer; user-select: none;">
+                                    得分 <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable" data-column="price" data-type="number" style="text-align: right; cursor: pointer; user-select: none;">
+                                    价格 <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable" data-column="price_change" data-type="number" style="text-align: center; cursor: pointer; user-select: none;">
+                                    涨跌幅 <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable" data-column="rsi" data-type="number" style="text-align: center; cursor: pointer; user-select: none;">
+                                    RSI <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable" data-column="ma_trend" data-type="text" style="text-align: center; cursor: pointer; user-select: none;">
+                                    MA趋势 <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable" data-column="volume_status" data-type="text" style="text-align: center; cursor: pointer; user-select: none;">
+                                    成交量 <span class="sort-indicator"></span>
+                                </th>
+                                <th class="sortable" data-column="recommendation" data-type="text" style="text-align: center; cursor: pointer; user-select: none;">
+                                    建议 <span class="sort-indicator"></span>
+                                </th>
+                                <th style="text-align: center;">操作</th>
                             </tr>
                         </thead>
                         <tbody id="results-table">
@@ -213,6 +233,54 @@
     0% { transform: translateX(-100%); }
     50% { transform: translateX(0%); }
     100% { transform: translateX(100%); }
+}
+
+/* 表头排序样式 */
+.sortable {
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+.sortable:hover {
+    background-color: var(--md-sys-color-surface-variant) !important;
+}
+
+.sort-indicator {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 16px;
+    color: var(--md-sys-color-outline);
+    transition: color 0.2s ease;
+}
+
+.sort-indicator:before {
+    content: '↕';
+    font-family: 'Material Icons';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 16px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+}
+
+.sortable.sort-asc .sort-indicator:before {
+    content: '↑';
+    color: var(--md-sys-color-primary);
+}
+
+.sortable.sort-desc .sort-indicator:before {
+    content: '↓';
+    color: var(--md-sys-color-primary);
+}
+
+.sortable.sort-asc .sort-indicator,
+.sortable.sort-desc .sort-indicator {
+    color: var(--md-sys-color-primary);
 }
 </style>
 {% endblock %}
@@ -485,9 +553,38 @@
             `;
         });
 
-        $('#results-table').html(html);
+        $('#results-table tbody').html(html);
         $('#result-count').text(results.length);
         $('#export-btn').show();
+
+        // 存储原始数据用于排序
+        tableData = results.map(result => ({
+            stock_code: result.stock_code,
+            stock_name: result.stock_name || '未知',
+            industry: result.industry || '-',
+            score: result.score,
+            price: result.price,
+            price_change: result.price_change,
+            rsi: result.rsi,
+            ma_trend: result.ma_trend,
+            volume_status: result.volume_status,
+            recommendation: result.recommendation
+        }));
+
+        // 重置排序状态
+        currentSortColumn = null;
+        currentSortDirection = 'asc';
+
+        // 初始化排序功能
+        setTimeout(() => {
+            initTableSort();
+
+            // 清除所有排序指示器
+            const sortableHeaders = document.querySelectorAll('.sortable');
+            sortableHeaders.forEach(header => {
+                header.classList.remove('sort-asc', 'sort-desc');
+            });
+        }, 100);
     }
 
     // 取消扫描任务
@@ -600,6 +697,113 @@
 
         console.log('页面初始化完成');
     });
+    // 表格排序功能
+    let currentSortColumn = null;
+    let currentSortDirection = 'asc';
+    let tableData = []; // 存储原始数据
+
+    // 初始化表格排序功能
+    function initTableSort() {
+        const sortableHeaders = document.querySelectorAll('.sortable');
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const column = this.getAttribute('data-column');
+                const type = this.getAttribute('data-type');
+                sortTable(column, type);
+            });
+        });
+    }
+
+    // 排序表格
+    function sortTable(column, type) {
+        // 确定排序方向
+        if (currentSortColumn === column) {
+            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortDirection = 'asc';
+        }
+        currentSortColumn = column;
+
+        // 更新排序指示器
+        updateSortIndicators();
+
+        // 排序数据
+        const sortedData = [...tableData].sort((a, b) => {
+            let valueA = a[column];
+            let valueB = b[column];
+
+            if (type === 'number') {
+                valueA = parseFloat(valueA) || 0;
+                valueB = parseFloat(valueB) || 0;
+            } else {
+                valueA = String(valueA).toLowerCase();
+                valueB = String(valueB).toLowerCase();
+            }
+
+            if (currentSortDirection === 'asc') {
+                return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+            } else {
+                return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+            }
+        });
+
+        // 重新渲染表格
+        renderSortedTable(sortedData);
+    }
+
+    // 更新排序指示器
+    function updateSortIndicators() {
+        const sortableHeaders = document.querySelectorAll('.sortable');
+        sortableHeaders.forEach(header => {
+            header.classList.remove('sort-asc', 'sort-desc');
+            if (header.getAttribute('data-column') === currentSortColumn) {
+                header.classList.add(currentSortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+            }
+        });
+    }
+
+    // 渲染排序后的表格
+    function renderSortedTable(sortedData) {
+        let html = '';
+        if (!sortedData || sortedData.length === 0) {
+            html = '<tr><td colspan="11" class="text-center">暂无数据</td></tr>';
+        } else {
+            sortedData.forEach((item, index) => {
+                // 使用中国股市习惯：上涨红色向上箭头，下跌绿色向下箭头
+                const changePercent = parseFloat(item.price_change) || 0;
+                const changeIcon = changePercent >= 0 ?
+                    '<i class="material-icons" style="color: #d32f2f; font-size: 16px;">arrow_upward</i>' :
+                    '<i class="material-icons" style="color: #2e7d32; font-size: 16px;">arrow_downward</i>';
+                const changeColor = changePercent >= 0 ? '#d32f2f' : '#2e7d32';
+
+                html += `
+                    <tr>
+                        <td style="text-align: left;">${item.stock_code}</td>
+                        <td style="text-align: left;">${item.stock_name}</td>
+                        <td style="text-align: left;">${item.industry || '--'}</td>
+                        <td style="text-align: center;">${item.score || '--'}</td>
+                        <td style="text-align: right;">${item.price || '--'}</td>
+                        <td style="text-align: center;">
+                            <span style="color: ${changeColor}; font-weight: 500;">
+                                ${changeIcon} ${item.price_change || '--'}%
+                            </span>
+                        </td>
+                        <td style="text-align: center;">${item.rsi || '--'}</td>
+                        <td style="text-align: center;">${item.ma_trend || '--'}</td>
+                        <td style="text-align: center;">${item.volume_status || '--'}</td>
+                        <td style="text-align: center;">${item.recommendation || '--'}</td>
+                        <td style="text-align: center;">
+                            <a href="/stock_analysis?code=${item.stock_code}" target="_blank" class="md3-button md3-button-outlined md3-button-small">
+                                <i class="material-icons">analytics</i>
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        $('#results-table tbody').html(html);
+    }
 
 
 
