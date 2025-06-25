@@ -31,6 +31,7 @@ from database import (
     cleanup_expired_cache, get_cache_stats
 )
 from database_optimizer import db_optimizer, get_optimized_session, batch_get_stock_data
+from stock_cache_manager import stock_cache_manager
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -210,30 +211,37 @@ class DataService:
         self.logger.error(f"API调用最终失败，已重试 {self.max_retries} 次")
         raise last_exception
     
-    def get_stock_basic_info(self, stock_code: str, market_type: str = 'A') -> Optional[Dict]:
+    def get_stock_basic_info(self, stock_code: str, market_type: str = 'A', use_advanced_cache: bool = True) -> Optional[Dict]:
         """获取股票基本信息"""
-        cache_key = self._get_cache_key('basic_info', stock_code=stock_code, market_type=market_type)
-        
-        # 1. 检查内存缓存
-        cached_data = self._check_memory_cache(cache_key, BASIC_INFO_TTL)
-        if cached_data:
-            return cached_data
-        
-        # 2. 检查数据库缓存（使用优化的会话）
-        if USE_DATABASE:
-            try:
-                with get_optimized_session() as session:
-                    db_record = session.query(StockBasicInfo).filter(
-                        StockBasicInfo.stock_code == stock_code,
-                        StockBasicInfo.market_type == market_type
-                    ).first()
+        # 优先使用高级缓存管理器
+        if use_advanced_cache:
+            cached_data = stock_cache_manager.get_stock_basic_info(stock_code, market_type)
+            if cached_data:
+                return cached_data
+        else:
+            # 使用传统缓存逻辑
+            cache_key = self._get_cache_key('basic_info', stock_code=stock_code, market_type=market_type)
 
-                    if db_record and not db_record.is_expired():
-                        data = db_record.to_dict()
-                        self._set_memory_cache(cache_key, data)
-                        return data
-            except Exception as e:
-                self.logger.error(f"数据库查询失败: {e}")
+            # 1. 检查内存缓存
+            cached_data = self._check_memory_cache(cache_key, BASIC_INFO_TTL)
+            if cached_data:
+                return cached_data
+
+            # 2. 检查数据库缓存（使用优化的会话）
+            if USE_DATABASE:
+                try:
+                    with get_optimized_session() as session:
+                        db_record = session.query(StockBasicInfo).filter(
+                            StockBasicInfo.stock_code == stock_code,
+                            StockBasicInfo.market_type == market_type
+                        ).first()
+
+                        if db_record and not db_record.is_expired():
+                            data = db_record.to_dict()
+                            self._set_memory_cache(cache_key, data)
+                            return data
+                except Exception as e:
+                    self.logger.error(f"数据库查询失败: {e}")
         
         # 3. 从API获取新数据
         try:
@@ -285,17 +293,23 @@ class DataService:
                     'pb_ratio': 0
                 }
             
-            # 4. 保存到数据库缓存（使用优化的批量保存）
-            if USE_DATABASE:
-                try:
-                    stock_data = data.copy()
-                    stock_data['ttl'] = BASIC_INFO_TTL
-                    db_optimizer.batch_save_stock_basic_info([stock_data])
-                except Exception as e:
-                    self.logger.error(f"保存基本信息到数据库失败: {e}")
-            
-            # 5. 保存到内存缓存
-            self._set_memory_cache(cache_key, data)
+            # 4. 保存到高级缓存管理器
+            if use_advanced_cache:
+                stock_cache_manager.set_stock_basic_info(stock_code, data, market_type)
+            else:
+                # 传统缓存保存
+                if USE_DATABASE:
+                    try:
+                        stock_data = data.copy()
+                        stock_data['ttl'] = BASIC_INFO_TTL
+                        db_optimizer.batch_save_stock_basic_info([stock_data])
+                    except Exception as e:
+                        self.logger.error(f"保存基本信息到数据库失败: {e}")
+
+                # 5. 保存到内存缓存
+                cache_key = self._get_cache_key('basic_info', stock_code=stock_code, market_type=market_type)
+                self._set_memory_cache(cache_key, data)
+
             return data
             
         except Exception as e:
