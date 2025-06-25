@@ -16,6 +16,11 @@ import traceback
 import threading
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 import time
+import requests
+import urllib3
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+import ssl
 
 # 导入数据库模型
 from database import (
@@ -35,19 +40,60 @@ data_lock = threading.Lock()
 
 # 内存缓存作为降级方案
 memory_cache = {}
-MEMORY_CACHE_SIZE = 1000  # 最大缓存条目数
+MEMORY_CACHE_SIZE = 10000  # 增加缓存大小到10000条目
+cache_access_count = {}  # 缓存访问计数，用于LRU策略
 
 
 class DataService:
     """统一数据访问服务"""
-    
+
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.api_timeout = 30  # API调用超时时间
         self.max_retries = 3   # 最大重试次数
-        
+
+        # 配置网络会话
+        self._setup_session()
+
         # 定期清理过期缓存
         self._schedule_cache_cleanup()
+
+    def _setup_session(self):
+        """配置优化的网络会话"""
+        # 禁用SSL警告
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+        # 创建会话
+        self.session = requests.Session()
+
+        # 配置重试策略
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1
+        )
+
+        # 配置适配器
+        adapter = HTTPAdapter(
+            max_retries=retry_strategy,
+            pool_connections=20,
+            pool_maxsize=20
+        )
+
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+
+        # 设置请求头
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+        })
+
+        # 配置超时
+        self.session.timeout = (10, 30)  # 连接超时10秒，读取超时30秒
     
     def _schedule_cache_cleanup(self):
         """定期清理过期缓存"""
@@ -64,15 +110,24 @@ class DataService:
         cleanup_thread.start()
     
     def _cleanup_memory_cache(self):
-        """清理内存缓存"""
+        """清理内存缓存 - 使用LRU策略"""
         with data_lock:
             if len(memory_cache) > MEMORY_CACHE_SIZE:
-                # 删除最旧的缓存项
-                sorted_items = sorted(memory_cache.items(), 
+                # 删除最旧的缓存项，保留最近使用的
+                sorted_items = sorted(memory_cache.items(),
                                     key=lambda x: x[1].get('timestamp', 0))
-                items_to_remove = len(memory_cache) - MEMORY_CACHE_SIZE + 100
-                for i in range(items_to_remove):
-                    del memory_cache[sorted_items[i][0]]
+                items_to_remove = len(memory_cache) - MEMORY_CACHE_SIZE + 1000
+
+                removed_count = 0
+                for i in range(min(items_to_remove, len(sorted_items))):
+                    key = sorted_items[i][0]
+                    if key in memory_cache:
+                        del memory_cache[key]
+                        removed_count += 1
+                    if key in cache_access_count:
+                        del cache_access_count[key]
+
+                self.logger.info(f"清理了 {removed_count} 个缓存项，当前缓存大小: {len(memory_cache)}")
     
     def _get_cache_key(self, data_type: str, **kwargs) -> str:
         """生成缓存键"""
@@ -88,9 +143,14 @@ class DataService:
                 cache_item = memory_cache[cache_key]
                 timestamp = cache_item.get('timestamp', 0)
                 if time.time() - timestamp < ttl:
+                    # 更新访问计数
+                    cache_access_count[cache_key] = cache_access_count.get(cache_key, 0) + 1
                     return cache_item.get('data')
                 else:
+                    # 缓存过期，删除
                     del memory_cache[cache_key]
+                    if cache_key in cache_access_count:
+                        del cache_access_count[cache_key]
         return None
     
     def _set_memory_cache(self, cache_key: str, data: Any):
@@ -100,6 +160,12 @@ class DataService:
                 'data': data,
                 'timestamp': time.time()
             }
+            # 初始化访问计数
+            cache_access_count[cache_key] = 1
+
+            # 检查是否需要清理缓存
+            if len(memory_cache) > MEMORY_CACHE_SIZE:
+                self._cleanup_memory_cache()
     
     def _fetch_with_timeout(self, fetch_func, *args, **kwargs):
         """带超时的数据获取"""
@@ -113,20 +179,35 @@ class DataService:
     
     def _retry_api_call(self, api_func, *args, **kwargs):
         """带重试机制的API调用"""
+        last_exception = None
+
         for attempt in range(self.max_retries):
             try:
+                # 配置akshare使用我们的session
+                if hasattr(ak, '_session'):
+                    ak._session = self.session
+
                 return self._fetch_with_timeout(api_func, *args, **kwargs)
+
             except Exception as e:
+                last_exception = e
                 error_msg = str(e)
                 self.logger.warning(f"API调用第 {attempt + 1} 次尝试失败: {error_msg}")
-                
+
+                # 检查是否是SSL错误
+                if "SSL" in error_msg or "EOF occurred" in error_msg:
+                    self.logger.info("检测到SSL错误，尝试重新配置连接...")
+                    self._setup_session()
+
                 if attempt < self.max_retries - 1:
-                    # 指数退避
-                    wait_time = 2 ** attempt
+                    # 指数退避，但最大等待时间不超过10秒
+                    wait_time = min(2 ** attempt, 10)
                     self.logger.info(f"等待 {wait_time} 秒后重试...")
                     time.sleep(wait_time)
-                else:
-                    raise e
+
+        # 所有重试都失败了，抛出最后一个异常
+        self.logger.error(f"API调用最终失败，已重试 {self.max_retries} 次")
+        raise last_exception
     
     def get_stock_basic_info(self, stock_code: str, market_type: str = 'A') -> Optional[Dict]:
         """获取股票基本信息"""
