@@ -243,8 +243,8 @@
 {% block scripts %}
 <script>
     $(document).ready(function() {
-        // 默认加载概念资金流向
-        loadConceptFundFlow('90日排行');
+        // 页面加载完成，等待用户选择搜索条件
+        // 移除自动搜索，让用户主动触发搜索
 
         // 表单提交事件
         $('#capital-flow-form').submit(function(e) {
