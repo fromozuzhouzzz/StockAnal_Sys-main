@@ -573,8 +573,117 @@ class DataService:
         try:
             self.logger.info(f"从API获取股票 {stock_code} 实时数据")
 
-            # 这里可以根据需要调用相应的实时数据API
-            # 暂时返回基础结构
+            def safe_float_convert(value, default=0.0):
+                """安全的浮点数转换"""
+                try:
+                    if pd.isna(value) or value is None or value == '' or value == '-':
+                        return default
+                    return float(value)
+                except (ValueError, TypeError):
+                    return default
+
+            def fetch_realtime_data():
+                """获取实时股票数据"""
+                if market_type == 'A':
+                    # A股实时数据
+                    df = ak.stock_zh_a_spot_em()
+                    if df is not None and not df.empty:
+                        # 查找指定股票
+                        stock_data = df[df['代码'] == stock_code]
+                        if not stock_data.empty:
+                            row = stock_data.iloc[0]
+                            return {
+                                'stock_code': stock_code,
+                                'market_type': market_type,
+                                'current_price': safe_float_convert(row.get('最新价')),
+                                'change_amount': safe_float_convert(row.get('涨跌额')),
+                                'change_pct': safe_float_convert(row.get('涨跌幅')),
+                                'volume': safe_float_convert(row.get('成交量')),
+                                'amount': safe_float_convert(row.get('成交额')),
+                                'turnover_rate': safe_float_convert(row.get('换手率')),
+                                'pe_ratio': safe_float_convert(row.get('市盈率-动态')),
+                                'pb_ratio': safe_float_convert(row.get('市净率')),
+                                'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            }
+                elif market_type == 'HK':
+                    # 港股实时数据
+                    df = ak.stock_hk_spot_em()
+                    if df is not None and not df.empty:
+                        # 查找指定股票
+                        stock_data = df[df['代码'] == stock_code]
+                        if not stock_data.empty:
+                            row = stock_data.iloc[0]
+                            return {
+                                'stock_code': stock_code,
+                                'market_type': market_type,
+                                'current_price': safe_float_convert(row.get('最新价')),
+                                'change_amount': safe_float_convert(row.get('涨跌额')),
+                                'change_pct': safe_float_convert(row.get('涨跌幅')),
+                                'volume': safe_float_convert(row.get('成交量')),
+                                'amount': safe_float_convert(row.get('成交额')),
+                                'turnover_rate': safe_float_convert(row.get('换手率')),
+                                'pe_ratio': safe_float_convert(row.get('市盈率')),
+                                'pb_ratio': safe_float_convert(row.get('市净率')),
+                                'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            }
+                elif market_type == 'US':
+                    # 美股实时数据
+                    df = ak.stock_us_spot_em()
+                    if df is not None and not df.empty:
+                        # 查找指定股票
+                        stock_data = df[df['代码'] == stock_code]
+                        if not stock_data.empty:
+                            row = stock_data.iloc[0]
+                            return {
+                                'stock_code': stock_code,
+                                'market_type': market_type,
+                                'current_price': safe_float_convert(row.get('最新价')),
+                                'change_amount': safe_float_convert(row.get('涨跌额')),
+                                'change_pct': safe_float_convert(row.get('涨跌幅')),
+                                'volume': safe_float_convert(row.get('成交量')),
+                                'amount': safe_float_convert(row.get('成交额')),
+                                'turnover_rate': safe_float_convert(row.get('换手率')),
+                                'pe_ratio': safe_float_convert(row.get('市盈率')),
+                                'pb_ratio': safe_float_convert(row.get('市净率')),
+                                'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            }
+
+                # 如果没有找到数据，返回None
+                return None
+
+            # 使用重试机制调用API
+            data = self._retry_api_call(fetch_realtime_data)
+
+            if data is None:
+                raise Exception(f"未找到股票 {stock_code} 的实时数据")
+
+            self.logger.info(f"成功获取股票 {stock_code} 实时数据: 价格={data['current_price']}")
+
+        except Exception as api_error:
+            self.logger.error(f"API获取实时数据失败: {api_error}")
+
+            # 降级策略：尝试返回过期的缓存数据
+            if USE_DATABASE:
+                try:
+                    session = get_session()
+                    db_record = session.query(StockRealtimeData).filter(
+                        StockRealtimeData.stock_code == stock_code,
+                        StockRealtimeData.market_type == market_type
+                    ).first()
+
+                    if db_record:
+                        self.logger.warning(f"API失败，返回过期缓存数据: {stock_code}")
+                        data = db_record.to_dict()
+                        session.close()
+                        self._set_memory_cache(cache_key, data)
+                        return data
+
+                    session.close()
+                except Exception as db_error:
+                    self.logger.error(f"降级查询数据库也失败: {db_error}")
+
+            # 最后的降级：返回基础结构
+            self.logger.warning(f"所有数据源都失败，返回基础数据结构: {stock_code}")
             data = {
                 'stock_code': stock_code,
                 'market_type': market_type,
