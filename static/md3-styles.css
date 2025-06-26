@@ -982,6 +982,17 @@ form[style*="grid-template-columns"] .md3-button {
     color: var(--md-sys-color-on-surface-variant);
 }
 
+/* 中国股市颜色习惯：上涨红色，下跌绿色 */
+.md3-text-bull {
+    color: #d32f2f !important; /* 红色 - 上涨 */
+    font-weight: 500;
+}
+
+.md3-text-bear {
+    color: #388e3c !important; /* 绿色 - 下跌 */
+    font-weight: 500;
+}
+
 .md3-bg-surface {
     background-color: var(--md-sys-color-surface);
 }

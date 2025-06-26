@@ -534,17 +534,17 @@
 
             html += `
                 <tr>
-                    <td>${result.stock_code}</td>
-                    <td>${result.stock_name || '未知'}</td>
-                    <td>${result.industry || '-'}</td>
-                    <td><span class="badge ${scoreClass}">${result.score}</span></td>
-                    <td>${formatNumber(result.price)}</td>
-                    <td class="${priceChangeClass}">${priceChangeIcon} ${formatPercent(result.price_change)}</td>
-                    <td>${formatNumber(result.rsi)}</td>
-                    <td class="${maTrendClass}">${maTrendIcon} ${result.ma_trend}</td>
-                    <td>${result.volume_status}</td>
-                    <td>${result.recommendation}</td>
-                    <td>
+                    <td style="text-align: left;">${result.stock_code}</td>
+                    <td style="text-align: left;">${result.stock_name || '未知'}</td>
+                    <td style="text-align: left;">${result.industry || '-'}</td>
+                    <td style="text-align: center;"><span class="badge ${scoreClass}">${result.score}</span></td>
+                    <td style="text-align: right;">${formatNumber(result.price)}</td>
+                    <td style="text-align: center;" class="${priceChangeClass}">${priceChangeIcon} ${formatPercent(result.price_change)}</td>
+                    <td style="text-align: center;">${formatNumber(result.rsi)}</td>
+                    <td style="text-align: center;" class="${maTrendClass}">${maTrendIcon} ${result.ma_trend}</td>
+                    <td style="text-align: center;">${result.volume_status}</td>
+                    <td style="text-align: center;">${result.recommendation}</td>
+                    <td style="text-align: center;">
                         <a href="/stock_detail/${result.stock_code}" class="btn btn-sm btn-primary">
                             <i class="fas fa-chart-line"></i> 详情
                         </a>
@@ -575,16 +575,23 @@
         currentSortColumn = null;
         currentSortDirection = 'asc';
 
-        // 初始化排序功能
-        setTimeout(() => {
-            initTableSort();
+        // 立即初始化排序功能，无需延迟
+        initTableSort();
 
-            // 清除所有排序指示器
-            const sortableHeaders = document.querySelectorAll('.sortable');
-            sortableHeaders.forEach(header => {
-                header.classList.remove('sort-asc', 'sort-desc');
-            });
-        }, 100);
+        // 清除所有排序指示器
+        const sortableHeaders = document.querySelectorAll('.sortable');
+        sortableHeaders.forEach(header => {
+            header.classList.remove('sort-asc', 'sort-desc');
+        });
+
+        // 强制重新计算表格布局
+        const table = document.querySelector('.md3-data-table');
+        if (table) {
+            table.style.tableLayout = 'fixed';
+            // 触发重排
+            table.offsetHeight;
+            table.style.tableLayout = 'auto';
+        }
     }
 
     // 取消扫描任务
