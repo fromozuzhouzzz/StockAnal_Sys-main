@@ -393,18 +393,6 @@
         fetchStockData(stockCode);
     }
 
-    // 在渲染函数中添加重试按钮
-    html += `
-        <tr>
-            <td>${stock.stock_code}</td>
-            <td>${stockName} ${stock.stock_name === '获取失败' ?
-                `<button class="btn btn-sm btn-link p-0 ml-2" onclick="retryFetchStockData('${stock.stock_code}')">
-                    <i class="fas fa-sync-alt"></i> 重试
-                </button>` : ''}
-            </td>
-            ...
-    `;
-
     // 获取股票数据
     function fetchStockData(stockCode) {
         const index = portfolio.findIndex(s => s.stock_code === stockCode);
