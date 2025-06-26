@@ -2,6 +2,7 @@
 /* Professional Financial Analysis System Design */
 
 /* Material Design 3 Design Tokens - Enhanced Financial Theme */
+/* CSS变量兼容性：为不支持CSS变量的浏览器提供fallback */
 :root {
     /* Primary Colors - Professional Financial Blue */
     --md-sys-color-primary: #1565C0;

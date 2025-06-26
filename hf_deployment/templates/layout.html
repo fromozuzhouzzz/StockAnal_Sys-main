@@ -667,6 +667,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.min.js"></script>
+    <!-- 统一主题管理器 - 解决跨浏览器兼容性问题 -->
+    <script src="{{ url_for('static', filename='js/theme-manager.js') }}"></script>
     <!-- Common JS -->
     <script>
         // Material Design 3 Loading Functions
@@ -783,50 +785,8 @@
             return trend === 'UP' ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
         }
 
-        // 主题切换功能
-        function initThemeToggle() {
-            const themeToggle = document.getElementById('global-theme-toggle');
-            const themeIcon = document.getElementById('global-theme-icon');
-            const body = document.body;
-
-            // 从localStorage获取保存的主题
-            const savedTheme = localStorage.getItem('theme') || 'light';
-
-            // 应用保存的主题
-            if (savedTheme === 'dark') {
-                body.setAttribute('data-theme', 'dark');
-                themeIcon.textContent = 'dark_mode';
-                themeToggle.title = '切换到浅色模式';
-            } else {
-                body.removeAttribute('data-theme');
-                themeIcon.textContent = 'light_mode';
-                themeToggle.title = '切换到深色模式';
-            }
-
-            // 主题切换事件
-            themeToggle.addEventListener('click', function() {
-                const currentTheme = body.getAttribute('data-theme');
-
-                if (currentTheme === 'dark') {
-                    // 切换到浅色模式
-                    body.removeAttribute('data-theme');
-                    themeIcon.textContent = 'light_mode';
-                    themeToggle.title = '切换到深色模式';
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    // 切换到深色模式
-                    body.setAttribute('data-theme', 'dark');
-                    themeIcon.textContent = 'dark_mode';
-                    themeToggle.title = '切换到浅色模式';
-                    localStorage.setItem('theme', 'dark');
-                }
-            });
-        }
-
-        // 页面加载完成后初始化主题切换
-        $(document).ready(function() {
-            initThemeToggle();
-        });
+        // 主题切换功能已移至统一的theme-manager.js文件
+        // 支持更好的跨浏览器兼容性和错误处理
     </script>
     {% block scripts %}{% endblock %}
 </body>

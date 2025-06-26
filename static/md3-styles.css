@@ -2,6 +2,7 @@
 /* Professional Financial Analysis System Design */
 
 /* Material Design 3 Design Tokens - Enhanced Financial Theme */
+/* CSS变量兼容性：为不支持CSS变量的浏览器提供fallback */
 :root {
     /* Primary Colors - Professional Financial Blue */
     --md-sys-color-primary: #1565C0;
@@ -710,18 +711,27 @@ body {
     justify-content: center;
     width: 48px;
     height: 48px;
+    /* Fallback for browsers without CSS variable support */
+    border-radius: 24px;
     border-radius: var(--md-sys-shape-corner-full);
     border: none;
     background-color: transparent;
+    /* Fallback color */
+    color: #49454F;
     color: var(--md-sys-color-on-surface-variant);
     cursor: pointer;
+    /* Fallback transition */
+    transition: all 0.2s ease;
     transition: all var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
     position: relative;
     overflow: hidden;
 }
 
 .md3-icon-button:hover {
+    /* Fallback colors */
+    background-color: #E3F2FD;
     background-color: var(--md-sys-color-primary-container);
+    color: #0D47A1;
     color: var(--md-sys-color-on-primary-container);
 }
 

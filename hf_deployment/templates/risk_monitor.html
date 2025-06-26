@@ -813,44 +813,10 @@
             analyzePortfolioRisk();
         });
 
-        // 主题切换功能
-        initializeTheme();
-        $('#theme-toggle-btn').click(function() {
-            toggleTheme();
-        });
+        // 主题切换功能已移至统一的theme-manager.js文件
     });
 
-    // 主题管理功能
-    function initializeTheme() {
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        applyTheme(savedTheme);
-    }
-
-    function toggleTheme() {
-        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        applyTheme(newTheme);
-        localStorage.setItem('theme', newTheme);
-    }
-
-    function applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-
-        const themeIcon = $('#theme-icon');
-        const themeText = $('#theme-text');
-
-        if (theme === 'dark') {
-            themeIcon.text('dark_mode');
-            themeText.text('深色模式');
-        } else {
-            themeIcon.text('light_mode');
-            themeText.text('浅色模式');
-        }
-
-        // 更新图表主题
-        updateChartsTheme(theme);
-    }
-
+    // 图表主题更新功能 - 监听主题变化事件
     function updateChartsTheme(theme) {
         // 如果有图表实例，重新渲染以适应新主题
         if (window.portfolioRiskGaugeChart) {
@@ -869,6 +835,11 @@
             });
         }
     }
+
+    // 监听主题变化事件，自动更新图表主题
+    document.addEventListener('themechange', function(e) {
+        updateChartsTheme(e.detail.theme);
+    });
 
     function analyzeStockRisk(stockCode, marketType) {
         $('#loading-panel').show();

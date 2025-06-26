@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主题切换兼容性测试</title>
+    <!-- Material Design Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Enhanced Material Design 3 Styles -->
+    <link href="static/md3-styles.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--md-sys-color-background, #FEFBFF);
+            color: var(--md-sys-color-on-background, #1C1B1F);
+            transition: all 0.3s ease;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .test-section {
+            background-color: var(--md-sys-color-surface, #FFFFFF);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--md-sys-color-outline-variant, #CAC4D0);
+        }
+        
+        .test-result {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+        
+        .test-result.pass {
+            background-color: #E8F5E8;
+            color: #2E7D32;
+        }
+        
+        .test-result.fail {
+            background-color: #FFEBEE;
+            color: #C62828;
+        }
+        
+        .test-result.warning {
+            background-color: #FFF3E0;
+            color: #F57C00;
+        }
+        
+        .theme-demo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .demo-card {
+            background-color: var(--md-sys-color-surface-container, #F3EDF7);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .browser-info {
+            font-family: monospace;
+            background-color: var(--md-sys-color-surface-variant, #E7E0EC);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>主题切换兼容性测试</h1>
+            <!-- 主题切换开关 -->
+            <div class="md3-theme-switcher">
+                <button id="global-theme-toggle" class="md3-icon-button" title="切换主题">
+                    <i class="material-icons" id="global-theme-icon">light_mode</i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 浏览器信息 -->
+        <div class="test-section">
+            <h2>浏览器信息</h2>
+            <div class="browser-info" id="browser-info">
+                正在检测浏览器信息...
+            </div>
+        </div>
+
+        <!-- 兼容性测试结果 -->
+        <div class="test-section">
+            <h2>兼容性测试结果</h2>
+            <div id="compatibility-results">
+                正在运行兼容性测试...
+            </div>
+        </div>
+
+        <!-- 功能测试 -->
+        <div class="test-section">
+            <h2>功能测试</h2>
+            <div id="function-tests">
+                <button onclick="testThemeToggle()" class="md3-button md3-button-filled">测试主题切换</button>
+                <button onclick="testLocalStorage()" class="md3-button md3-button-outlined">测试本地存储</button>
+                <button onclick="testEventListeners()" class="md3-button md3-button-outlined">测试事件监听</button>
+            </div>
+            <div id="function-results" style="margin-top: 16px;"></div>
+        </div>
+
+        <!-- 主题演示 -->
+        <div class="test-section">
+            <h2>主题演示</h2>
+            <div class="theme-demo">
+                <div class="demo-card">
+                    <h3>主色调</h3>
+                    <div style="width: 50px; height: 50px; background-color: var(--md-sys-color-primary, #1565C0); border-radius: 50%; margin: 0 auto;"></div>
+                </div>
+                <div class="demo-card">
+                    <h3>表面色</h3>
+                    <div style="width: 50px; height: 50px; background-color: var(--md-sys-color-surface, #FFFFFF); border: 2px solid var(--md-sys-color-outline, #79747E); border-radius: 50%; margin: 0 auto;"></div>
+                </div>
+                <div class="demo-card">
+                    <h3>背景色</h3>
+                    <div style="width: 50px; height: 50px; background-color: var(--md-sys-color-background, #FEFBFF); border: 2px solid var(--md-sys-color-outline, #79747E); border-radius: 50%; margin: 0 auto;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 测试日志 -->
+        <div class="test-section">
+            <h2>测试日志</h2>
+            <div id="test-log" style="font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; background-color: var(--md-sys-color-surface-variant, #E7E0EC); padding: 12px; border-radius: 8px;">
+                测试开始...<br>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统一主题管理器 -->
+    <script src="static/js/theme-manager.js"></script>
+    
+    <script>
+        // 测试工具函数
+        function log(message) {
+            const logElement = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}<br>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function addTestResult(container, test, result, message) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${result}`;
+            resultDiv.innerHTML = `
+                <i class="material-icons">${result === 'pass' ? 'check_circle' : result === 'fail' ? 'error' : 'warning'}</i>
+                <strong>${test}:</strong> ${message}
+            `;
+            container.appendChild(resultDiv);
+        }
+
+        // 浏览器信息检测
+        function detectBrowserInfo() {
+            const info = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                cookieEnabled: navigator.cookieEnabled,
+                onLine: navigator.onLine,
+                screenResolution: `${screen.width}x${screen.height}`,
+                colorDepth: screen.colorDepth,
+                pixelRatio: window.devicePixelRatio || 1
+            };
+
+            const browserInfoElement = document.getElementById('browser-info');
+            browserInfoElement.innerHTML = Object.entries(info)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('<br>');
+
+            log('浏览器信息检测完成');
+        }
+
+        // 兼容性测试
+        function runCompatibilityTests() {
+            const resultsContainer = document.getElementById('compatibility-results');
+            resultsContainer.innerHTML = '';
+
+            // 测试CSS变量支持
+            const cssVariablesSupported = window.CSS && CSS.supports && CSS.supports('color', 'var(--test)');
+            addTestResult(resultsContainer, 'CSS变量支持', cssVariablesSupported ? 'pass' : 'warning', 
+                cssVariablesSupported ? '支持CSS自定义属性' : '不支持CSS变量，将使用fallback样式');
+
+            // 测试localStorage支持
+            let localStorageSupported = false;
+            try {
+                localStorage.setItem('__test__', 'test');
+                localStorage.removeItem('__test__');
+                localStorageSupported = true;
+            } catch (e) {
+                localStorageSupported = false;
+            }
+            addTestResult(resultsContainer, 'localStorage支持', localStorageSupported ? 'pass' : 'fail',
+                localStorageSupported ? '支持本地存储' : '不支持localStorage，主题设置不会保存');
+
+            // 测试事件监听器支持
+            const eventListenerSupported = !!(document.addEventListener);
+            addTestResult(resultsContainer, '事件监听器支持', eventListenerSupported ? 'pass' : 'fail',
+                eventListenerSupported ? '支持现代事件监听器' : '不支持addEventListener');
+
+            // 测试querySelector支持
+            const querySelectorSupported = !!(document.querySelector);
+            addTestResult(resultsContainer, 'querySelector支持', querySelectorSupported ? 'pass' : 'fail',
+                querySelectorSupported ? '支持CSS选择器API' : '不支持querySelector');
+
+            // 测试CustomEvent支持
+            const customEventSupported = typeof CustomEvent === 'function';
+            addTestResult(resultsContainer, 'CustomEvent支持', customEventSupported ? 'pass' : 'warning',
+                customEventSupported ? '支持自定义事件' : '不支持CustomEvent，将使用兼容性方案');
+
+            // 测试ThemeManager是否加载
+            const themeManagerLoaded = typeof window.ThemeManager !== 'undefined';
+            addTestResult(resultsContainer, 'ThemeManager加载', themeManagerLoaded ? 'pass' : 'fail',
+                themeManagerLoaded ? '主题管理器已加载' : '主题管理器未加载');
+
+            log('兼容性测试完成');
+        }
+
+        // 功能测试
+        function testThemeToggle() {
+            const resultsContainer = document.getElementById('function-results');
+            
+            if (window.ThemeManager) {
+                const currentTheme = ThemeManager.getCurrentTheme();
+                const newTheme = ThemeManager.toggleTheme();
+                
+                const testDiv = document.createElement('div');
+                testDiv.className = 'test-result pass';
+                testDiv.innerHTML = `<i class="material-icons">check_circle</i> 主题切换测试：从 ${currentTheme} 切换到 ${newTheme}`;
+                resultsContainer.appendChild(testDiv);
+                
+                log(`主题切换测试：${currentTheme} -> ${newTheme}`);
+            } else {
+                const testDiv = document.createElement('div');
+                testDiv.className = 'test-result fail';
+                testDiv.innerHTML = `<i class="material-icons">error</i> 主题切换测试：ThemeManager未找到`;
+                resultsContainer.appendChild(testDiv);
+                
+                log('主题切换测试失败：ThemeManager未找到');
+            }
+        }
+
+        function testLocalStorage() {
+            const resultsContainer = document.getElementById('function-results');
+            
+            if (window.ThemeManager) {
+                const testKey = 'theme_test_' + Date.now();
+                const testValue = 'test_value';
+                
+                const setResult = ThemeManager.storage.set(testKey, testValue);
+                const getValue = ThemeManager.storage.get(testKey);
+                
+                const success = setResult && getValue === testValue;
+                
+                const testDiv = document.createElement('div');
+                testDiv.className = `test-result ${success ? 'pass' : 'fail'}`;
+                testDiv.innerHTML = `<i class="material-icons">${success ? 'check_circle' : 'error'}</i> 本地存储测试：${success ? '成功' : '失败'}`;
+                resultsContainer.appendChild(testDiv);
+                
+                // 清理测试数据
+                try {
+                    localStorage.removeItem(testKey);
+                } catch (e) {}
+                
+                log(`本地存储测试：${success ? '成功' : '失败'}`);
+            }
+        }
+
+        function testEventListeners() {
+            const resultsContainer = document.getElementById('function-results');
+            
+            let eventFired = false;
+            
+            function testHandler(e) {
+                eventFired = true;
+                log('主题变化事件触发：' + e.detail.theme);
+            }
+            
+            // 监听主题变化事件
+            document.addEventListener('themechange', testHandler);
+            
+            // 触发主题切换
+            if (window.ThemeManager) {
+                ThemeManager.toggleTheme();
+            }
+            
+            // 检查事件是否触发
+            setTimeout(() => {
+                const testDiv = document.createElement('div');
+                testDiv.className = `test-result ${eventFired ? 'pass' : 'fail'}`;
+                testDiv.innerHTML = `<i class="material-icons">${eventFired ? 'check_circle' : 'error'}</i> 事件监听测试：${eventFired ? '成功' : '失败'}`;
+                resultsContainer.appendChild(testDiv);
+                
+                // 清理事件监听器
+                document.removeEventListener('themechange', testHandler);
+                
+                log(`事件监听测试：${eventFired ? '成功' : '失败'}`);
+            }, 100);
+        }
+
+        // 页面加载完成后运行测试
+        document.addEventListener('DOMContentLoaded', function() {
+            log('页面加载完成，开始测试');
+            detectBrowserInfo();
+            runCompatibilityTests();
+        });
+
+        // 监听主题变化
+        document.addEventListener('themechange', function(e) {
+            log('主题已切换到：' + e.detail.theme);
+        });
+    </script>
+</body>
+</html>
