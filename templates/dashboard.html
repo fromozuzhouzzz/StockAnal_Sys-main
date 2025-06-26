@@ -500,7 +500,12 @@
         // 添加蜡烛图数据
         const candleData = stockData.map(item => ({
             x: new Date(item.date),
-            y: [item.open, item.high, item.low, item.close]
+            y: [
+                item.open ? parseFloat(item.open) : null,
+                item.high ? parseFloat(item.high) : null,
+                item.low ? parseFloat(item.low) : null,
+                item.close ? parseFloat(item.close) : null
+            ]
         }));
         seriesData.push({
             name: '价格',
@@ -511,7 +516,7 @@
         // 添加均线数据
         const ma5Data = stockData.map(item => ({
             x: new Date(item.date),
-            y: item.MA5
+            y: item.MA5 ? parseFloat(item.MA5) : null
         }));
         seriesData.push({
             name: 'MA5',
@@ -521,7 +526,7 @@
 
         const ma20Data = stockData.map(item => ({
             x: new Date(item.date),
-            y: item.MA20
+            y: item.MA20 ? parseFloat(item.MA20) : null
         }));
         seriesData.push({
             name: 'MA20',
@@ -531,7 +536,7 @@
 
         const ma60Data = stockData.map(item => ({
             x: new Date(item.date),
-            y: item.MA60
+            y: item.MA60 ? parseFloat(item.MA60) : null
         }));
         seriesData.push({
             name: 'MA60',

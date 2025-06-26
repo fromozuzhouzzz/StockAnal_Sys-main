@@ -1394,17 +1394,17 @@
             
             const ma5Data = stockData.map(item => ({
                 x: new Date(item.date),
-                y: parseFloat(item.MA5 || null)
+                y: item.MA5 ? parseFloat(item.MA5) : null
             }));
-            
+
             const ma20Data = stockData.map(item => ({
                 x: new Date(item.date),
-                y: parseFloat(item.MA20 || null)
+                y: item.MA20 ? parseFloat(item.MA20) : null
             }));
-            
+
             const ma60Data = stockData.map(item => ({
                 x: new Date(item.date),
-                y: parseFloat(item.MA60 || null)
+                y: item.MA60 ? parseFloat(item.MA60) : null
             }));
             
             // 创建图表配置
@@ -1526,22 +1526,22 @@
             // 准备数据
             const macdData = stockData.map(item => ({
                 x: new Date(item.date),
-                y: parseFloat(item.MACD || 0)
+                y: item.MACD ? parseFloat(item.MACD) : 0
             }));
-            
+
             const signalData = stockData.map(item => ({
                 x: new Date(item.date),
-                y: parseFloat(item.Signal || 0)
+                y: item.Signal ? parseFloat(item.Signal) : 0
             }));
-            
+
             const histogramData = stockData.map(item => ({
                 x: new Date(item.date),
-                y: parseFloat(item.MACD_hist || 0)
+                y: item.MACD_hist ? parseFloat(item.MACD_hist) : 0
             }));
-            
+
             const rsiData = stockData.map(item => ({
                 x: new Date(item.date),
-                y: parseFloat(item.RSI || 0)
+                y: item.RSI ? parseFloat(item.RSI) : 50
             }));
             
             // 创建图表配置
@@ -1673,12 +1673,12 @@
             // 准备数据
             const volumeData = stockData.map(item => ({
                 x: new Date(item.date),
-                y: parseFloat(item.volume || 0)
+                y: item.volume ? parseFloat(item.volume) : 0
             }));
-            
+
             const volMaData = stockData.map(item => ({
                 x: new Date(item.date),
-                y: parseFloat(item.Volume_MA || 0)
+                y: item.Volume_MA ? parseFloat(item.Volume_MA) : 0
             }));
             
             // 创建图表配置
