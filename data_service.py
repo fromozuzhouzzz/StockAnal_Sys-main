@@ -32,6 +32,8 @@ from database import (
 )
 from database_optimizer import db_optimizer, get_optimized_session, batch_get_stock_data
 from stock_cache_manager import stock_cache_manager
+from smart_cache_manager import smart_cache_manager
+from trading_calendar import is_trading_day, get_last_trading_day
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -408,13 +410,67 @@ class DataService:
 
 
     def get_stock_price_history(self, stock_code: str, market_type: str = 'A',
-                               start_date: str = None, end_date: str = None) -> Optional[pd.DataFrame]:
-        """获取股票历史价格数据"""
+                               start_date: str = None, end_date: str = None,
+                               use_smart_cache: bool = True) -> Optional[pd.DataFrame]:
+        """
+        获取股票历史价格数据（支持智能增量更新）
+
+        Args:
+            stock_code: 股票代码
+            market_type: 市场类型
+            start_date: 开始日期
+            end_date: 结束日期
+            use_smart_cache: 是否使用智能缓存策略
+        """
         if start_date is None:
             start_date = (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
         if end_date is None:
             end_date = datetime.now().strftime('%Y-%m-%d')
 
+        # 如果启用智能缓存，使用新的增量更新策略
+        if use_smart_cache and USE_DATABASE:
+            return self._get_stock_price_history_smart(stock_code, market_type, start_date, end_date)
+
+        # 否则使用传统缓存策略
+        return self._get_stock_price_history_traditional(stock_code, market_type, start_date, end_date)
+
+    def _get_stock_price_history_smart(self, stock_code: str, market_type: str,
+                                     start_date: str, end_date: str) -> Optional[pd.DataFrame]:
+        """智能历史价格数据获取（支持增量更新）"""
+        try:
+            # 1. 检查数据完整性
+            completeness = smart_cache_manager.check_price_data_completeness(
+                stock_code, start_date, end_date, market_type
+            )
+
+            self.logger.info(f"股票 {stock_code} 数据完整性检查: "
+                           f"有数据={completeness['has_data']}, "
+                           f"需要更新={completeness['needs_update']}, "
+                           f"缺失{len(completeness['missing_dates'])}个交易日")
+
+            # 2. 如果有完整数据且不需要更新，直接返回缓存数据
+            if completeness['has_data'] and not completeness['needs_update']:
+                self.logger.info(f"股票 {stock_code} 使用完整缓存数据")
+                return completeness['cached_data']
+
+            # 3. 如果有部分数据，进行增量更新
+            if completeness['has_data'] and completeness['needs_update']:
+                return self._perform_incremental_update(
+                    stock_code, market_type, start_date, end_date, completeness
+                )
+
+            # 4. 如果没有数据，全量获取
+            self.logger.info(f"股票 {stock_code} 无缓存数据，进行全量获取")
+            return self._fetch_full_price_data(stock_code, market_type, start_date, end_date)
+
+        except Exception as e:
+            self.logger.error(f"智能获取历史价格失败: {e}")
+            # 降级到传统方法
+            return self._get_stock_price_history_traditional(stock_code, market_type, start_date, end_date)
+
+    def _get_stock_price_history_traditional(self, stock_code: str, market_type: str,
+                                           start_date: str, end_date: str) -> Optional[pd.DataFrame]:
+        """传统历史价格数据获取方法"""
         cache_key = self._get_cache_key('price_history', stock_code=stock_code,
                                        market_type=market_type, start_date=start_date, end_date=end_date)
 
@@ -445,10 +501,83 @@ class DataService:
             except Exception as e:
                 self.logger.error(f"数据库查询历史价格失败: {e}")
 
-        # 3. 从API获取新数据
-        try:
-            self.logger.info(f"从API获取股票 {stock_code} 历史价格数据")
+        # 3. 从API获取新数据（传统方法）
+        return self._fetch_full_price_data(stock_code, market_type, start_date, end_date)
 
+    def _perform_incremental_update(self, stock_code: str, market_type: str,
+                                  start_date: str, end_date: str, completeness: Dict) -> Optional[pd.DataFrame]:
+        """执行增量数据更新"""
+        try:
+            # 获取需要更新的日期范围
+            update_start, update_end = smart_cache_manager.get_incremental_update_range(
+                stock_code, start_date, end_date, market_type
+            )
+
+            if update_start is None or update_end is None:
+                self.logger.info(f"股票 {stock_code} 无需增量更新")
+                return completeness['cached_data']
+
+            self.logger.info(f"股票 {stock_code} 增量更新: {update_start} 到 {update_end}")
+
+            # 获取增量数据
+            incremental_df = self._fetch_api_price_data(stock_code, market_type, update_start, update_end)
+            if incremental_df is None or len(incremental_df) == 0:
+                self.logger.warning(f"股票 {stock_code} 增量数据获取失败，返回缓存数据")
+                return completeness['cached_data']
+
+            # 保存增量数据到数据库
+            self._save_price_data_to_db(stock_code, market_type, incremental_df)
+
+            # 合并缓存数据和增量数据
+            if completeness['cached_data'] is not None:
+                combined_df = pd.concat([completeness['cached_data'], incremental_df], ignore_index=True)
+                combined_df = combined_df.drop_duplicates(subset=['date']).sort_values('date')
+            else:
+                combined_df = incremental_df
+
+            # 过滤到请求的日期范围
+            start_dt = pd.to_datetime(start_date)
+            end_dt = pd.to_datetime(end_date)
+            combined_df = combined_df[
+                (combined_df['date'] >= start_dt) & (combined_df['date'] <= end_dt)
+            ]
+
+            self.logger.info(f"股票 {stock_code} 增量更新完成，总计 {len(combined_df)} 条记录")
+            return combined_df
+
+        except Exception as e:
+            self.logger.error(f"增量更新失败: {e}")
+            return completeness['cached_data']
+
+    def _fetch_full_price_data(self, stock_code: str, market_type: str,
+                             start_date: str, end_date: str) -> Optional[pd.DataFrame]:
+        """获取完整的历史价格数据"""
+        try:
+            self.logger.info(f"从API获取股票 {stock_code} 完整历史价格数据: {start_date} 到 {end_date}")
+
+            # 从API获取数据
+            df = self._fetch_api_price_data(stock_code, market_type, start_date, end_date)
+            if df is None:
+                return None
+
+            # 保存到数据库
+            self._save_price_data_to_db(stock_code, market_type, df, start_date, end_date)
+
+            # 保存到内存缓存
+            cache_key = self._get_cache_key('price_history', stock_code=stock_code,
+                                           market_type=market_type, start_date=start_date, end_date=end_date)
+            self._set_memory_cache(cache_key, df)
+
+            return df
+
+        except Exception as e:
+            self.logger.error(f"获取完整历史价格失败: {e}")
+            return None
+
+    def _fetch_api_price_data(self, stock_code: str, market_type: str,
+                            start_date: str, end_date: str) -> Optional[pd.DataFrame]:
+        """从API获取价格数据的核心方法"""
+        try:
             def fetch_price_data():
                 if market_type == 'A':
                     return ak.stock_zh_a_hist(
@@ -498,48 +627,67 @@ class DataService:
             df = df.dropna()
             df = df.sort_values('date')
 
-            # 4. 保存到数据库缓存（使用优化的批量保存）
-            if USE_DATABASE:
-                try:
-                    with get_optimized_session() as session:
-                        # 批量插入，先删除已存在的记录
-                        session.query(StockPriceHistory).filter(
-                            StockPriceHistory.stock_code == stock_code,
-                            StockPriceHistory.market_type == market_type,
-                            StockPriceHistory.trade_date >= start_date.replace('-', ''),
-                            StockPriceHistory.trade_date <= end_date.replace('-', '')
-                        ).delete(synchronize_session=False)
-
-                        # 批量插入新记录
-                        records = []
-                        for _, row in df.iterrows():
-                            trade_date = row['date'].strftime('%Y%m%d')
-                            record = StockPriceHistory(
-                                stock_code=stock_code,
-                                market_type=market_type,
-                                trade_date=trade_date,
-                                open_price=row['open'],
-                                close_price=row['close'],
-                                high_price=row['high'],
-                                low_price=row['low'],
-                                volume=row['volume'],
-                                amount=row.get('amount', 0),
-                                change_pct=row.get('change_pct', 0)
-                            )
-                            records.append(record)
-
-                        session.bulk_save_objects(records)
-                        self.logger.info(f"批量保存历史价格: {len(records)} 条记录")
-                except Exception as e:
-                    self.logger.error(f"保存历史价格到数据库失败: {e}")
-
-            # 5. 保存到内存缓存
-            self._set_memory_cache(cache_key, df)
             return df
 
         except Exception as e:
-            self.logger.error(f"获取股票历史价格失败: {e}")
+            self.logger.error(f"API获取价格数据失败: {e}")
             return None
+
+    def _save_price_data_to_db(self, stock_code: str, market_type: str, df: pd.DataFrame,
+                             start_date: str = None, end_date: str = None) -> bool:
+        """保存价格数据到数据库"""
+        if not USE_DATABASE:
+            return False
+
+        try:
+            with get_optimized_session() as session:
+                # 如果指定了日期范围，先删除该范围内的旧记录（避免重复）
+                if start_date and end_date:
+                    session.query(StockPriceHistory).filter(
+                        StockPriceHistory.stock_code == stock_code,
+                        StockPriceHistory.market_type == market_type,
+                        StockPriceHistory.trade_date >= start_date.replace('-', ''),
+                        StockPriceHistory.trade_date <= end_date.replace('-', '')
+                    ).delete(synchronize_session=False)
+
+                # 批量插入新记录
+                records = []
+                for _, row in df.iterrows():
+                    trade_date = row['date'].strftime('%Y%m%d')
+
+                    # 检查是否已存在该记录（增量更新时避免重复）
+                    if not start_date or not end_date:
+                        existing = session.query(StockPriceHistory).filter(
+                            StockPriceHistory.stock_code == stock_code,
+                            StockPriceHistory.market_type == market_type,
+                            StockPriceHistory.trade_date == trade_date
+                        ).first()
+                        if existing:
+                            continue
+
+                    record = StockPriceHistory(
+                        stock_code=stock_code,
+                        market_type=market_type,
+                        trade_date=trade_date,
+                        open_price=row['open'],
+                        close_price=row['close'],
+                        high_price=row['high'],
+                        low_price=row['low'],
+                        volume=row['volume'],
+                        amount=row.get('amount', 0),
+                        change_pct=row.get('change_pct', 0)
+                    )
+                    records.append(record)
+
+                if records:
+                    session.bulk_save_objects(records)
+                    self.logger.info(f"保存股票 {stock_code} 历史价格: {len(records)} 条记录")
+
+                return True
+
+        except Exception as e:
+            self.logger.error(f"保存历史价格到数据库失败: {e}")
+            return False
 
     def get_stock_realtime_data(self, stock_code: str, market_type: str = 'A') -> Optional[Dict]:
         """获取股票实时数据"""
