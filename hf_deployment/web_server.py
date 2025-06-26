@@ -35,6 +35,15 @@ from risk_monitor import RiskMonitor
 from index_industry_analyzer import IndexIndustryAnalyzer
 from news_fetcher import news_fetcher, start_news_scheduler
 
+# 尝试导入预缓存调度器
+try:
+    from stock_precache_scheduler import precache_scheduler, init_precache_scheduler
+    PRECACHE_AVAILABLE = True
+except ImportError as e:
+    print(f"预缓存调度器导入失败: {e}")
+    PRECACHE_AVAILABLE = False
+    precache_scheduler = None
+
 # 加载环境变量
 load_dotenv()
 
@@ -1670,10 +1679,85 @@ def get_latest_news():
         app.logger.error(f"获取最新新闻数据时出错: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+# ======================== 预缓存管理API ========================
+
+@app.route('/api/precache/status', methods=['GET'])
+def get_precache_status():
+    """获取预缓存状态"""
+    try:
+        if not PRECACHE_AVAILABLE or not precache_scheduler:
+            return jsonify({
+                'success': False,
+                'error': '预缓存功能不可用',
+                'available': False
+            }), 503
+
+        stats = precache_scheduler.get_stats()
+        return jsonify({
+            'success': True,
+            'stats': stats,
+            'is_running': precache_scheduler.is_running,
+            'available': True
+        })
+    except Exception as e:
+        app.logger.error(f"获取预缓存状态失败: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/precache/manual', methods=['POST'])
+def manual_precache():
+    """手动执行预缓存任务"""
+    try:
+        if not PRECACHE_AVAILABLE or not precache_scheduler:
+            return jsonify({
+                'success': False,
+                'error': '预缓存功能不可用',
+                'available': False
+            }), 503
+
+        data = request.json or {}
+        index_code = data.get('index_code', '000300')
+        max_stocks = data.get('max_stocks', 20)  # HF Spaces环境限制较少股票
+
+        # 在后台线程中执行预缓存
+        def run_precache():
+            try:
+                precache_scheduler.manual_precache(index_code, max_stocks)
+            except Exception as e:
+                app.logger.error(f"预缓存任务执行失败: {str(e)}")
+
+        thread = threading.Thread(target=run_precache)
+        thread.daemon = True
+        thread.start()
+
+        return jsonify({
+            'success': True,
+            'message': f'预缓存任务已启动，将处理 {max_stocks} 只股票',
+            'available': True
+        })
+
+    except Exception as e:
+        app.logger.error(f"手动预缓存失败: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 # 在应用启动时启动清理线程（保持原有代码不变）
 cleaner_thread = threading.Thread(target=run_task_cleaner)
 cleaner_thread.daemon = True
 cleaner_thread.start()
+
+# 初始化预缓存调度器
+if PRECACHE_AVAILABLE:
+    try:
+        if init_precache_scheduler():
+            app.logger.info("✓ 股票数据预缓存调度器初始化成功")
+        else:
+            app.logger.warning("✗ 股票数据预缓存调度器初始化失败")
+    except Exception as e:
+        app.logger.error(f"✗ 预缓存调度器初始化异常: {str(e)}")
+else:
+    app.logger.warning("✗ 预缓存功能不可用")
 
 if __name__ == '__main__':
     # 将 host 设置为 '0.0.0.0' 使其支持所有网络接口访问

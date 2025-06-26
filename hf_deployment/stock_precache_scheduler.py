@@ -265,6 +265,11 @@ precache_scheduler = StockPrecacheScheduler()
 def init_precache_scheduler():
     """初始化预缓存调度器"""
     try:
+        # 在Hugging Face Spaces环境中，可能不需要启动调度器
+        if HF_SPACES_MODE:
+            logger.info("检测到Hugging Face Spaces环境，跳过自动调度器启动")
+            return True
+        
         # 安排每天凌晨12点执行预缓存
         precache_scheduler.schedule_daily_precache("00:00", "000300")
         
