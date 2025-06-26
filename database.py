@@ -405,8 +405,9 @@ def get_session():
 def test_connection():
     """测试数据库连接"""
     try:
+        from sqlalchemy import text
         session = get_session()
-        session.execute("SELECT 1")
+        session.execute(text("SELECT 1"))
         session.close()
         logger.info("数据库连接测试成功")
         return True

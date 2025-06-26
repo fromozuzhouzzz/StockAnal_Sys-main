@@ -224,8 +224,9 @@ class PerformanceAnalyzer:
         
         try:
             # 测试数据库连接
+            from sqlalchemy import text
             session = get_session()
-            session.execute("SELECT 1")
+            session.execute(text("SELECT 1"))
             session.close()
             results['connection_test'] = True
             logger.info("数据库连接测试成功")
@@ -248,7 +249,7 @@ class PerformanceAnalyzer:
             for query_name, sql in test_queries:
                 start_time = time.time()
                 try:
-                    result = session.execute(sql).fetchone()
+                    result = session.execute(text(sql)).fetchone()
                     elapsed = time.time() - start_time
                     query_times[query_name] = {
                         'time': elapsed,

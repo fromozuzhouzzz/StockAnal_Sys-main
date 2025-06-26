@@ -72,9 +72,10 @@ def test_database_optimization():
     for i in range(10):
         start_time = time.time()
         try:
+            from sqlalchemy import text
             with db_optimizer.get_optimized_session() as session:
                 # 执行简单查询
-                result = session.execute("SELECT 1").fetchone()
+                result = session.execute(text("SELECT 1")).fetchone()
             elapsed = time.time() - start_time
             connection_times.append(elapsed)
         except Exception as e:
