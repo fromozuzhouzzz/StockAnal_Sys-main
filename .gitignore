@@ -91,3 +91,8 @@ secrets/
 # 临时文件
 *.pyc
 *.pyo
+landing-page/DEPLOYMENT_GUIDE.md
+akshare_api_usage_analysis.txt
+MySQL缓存架构详细文档.md
+landing-page/DELIVERY_CHECKLIST.md
+landing-page/images/README.md

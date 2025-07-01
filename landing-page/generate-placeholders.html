@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>占位符图片生成器</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1976d2;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .placeholder {
+            margin: 20px 0;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #fafafa;
+        }
+        .placeholder h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .placeholder p {
+            margin: 5px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .canvas-container {
+            margin: 15px 0;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-width: 100%;
+            height: auto;
+        }
+        .download-btn {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        .download-btn:hover {
+            background: #1565c0;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .instructions h2 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+        .url-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .url-list h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .url-item {
+            font-family: monospace;
+            background: white;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>股票分析系统 - 占位符图片生成器</h1>
+        
+        <div class="instructions">
+            <h2>使用说明</h2>
+            <p>这个工具可以生成临时的占位符图片，用于网站开发阶段。生成的图片包含了相应的尺寸和内容说明。</p>
+            <p><strong>注意</strong>：这些是临时占位符，正式发布前需要替换为真实的系统截图。</p>
+        </div>
+
+        <div class="url-list">
+            <h3>推荐的免费图片资源</h3>
+            <div class="url-item">Unsplash (高质量免费图片): https://unsplash.com/s/photos/stock-market</div>
+            <div class="url-item">Pexels (免费图片): https://www.pexels.com/search/financial/</div>
+            <div class="url-item">Pixabay (免费图片): https://pixabay.com/images/search/finance/</div>
+            <div class="url-item">Placeholder.com (占位符): https://via.placeholder.com/</div>
+        </div>
+
+        <!-- Dashboard Screenshot -->
+        <div class="placeholder">
+            <h3>智能仪表盘截图</h3>
+            <p>尺寸: 1200x750px | 文件名: dashboard.jpg</p>
+            <div class="canvas-container">
+                <canvas id="dashboard-canvas" width="600" height="375"></canvas>
+            </div>
+            <button class="download-btn" onclick="downloadCanvas('dashboard-canvas', 'dashboard.png')">下载图片</button>
+        </div>
+
+        <!-- Stock Detail Screenshot -->
+        <div class="placeholder">
+            <h3>股票详情页截图</h3>
+            <p>尺寸: 1200x750px | 文件名: stock-detail.jpg</p>
+            <div class="canvas-container">
+                <canvas id="stock-detail-canvas" width="600" height="375"></canvas>
+            </div>
+            <button class="download-btn" onclick="downloadCanvas('stock-detail-canvas', 'stock-detail.png')">下载图片</button>
+        </div>
+
+        <!-- Market Scan Screenshot -->
+        <div class="placeholder">
+            <h3>市场扫描截图</h3>
+            <p>尺寸: 1200x750px | 文件名: market-scan.jpg</p>
+            <div class="canvas-container">
+                <canvas id="market-scan-canvas" width="600" height="375"></canvas>
+            </div>
+            <button class="download-btn" onclick="downloadCanvas('market-scan-canvas', 'market-scan.png')">下载图片</button>
+        </div>
+
+        <!-- Hero Background -->
+        <div class="placeholder">
+            <h3>英雄区域背景图</h3>
+            <p>尺寸: 1920x1080px | 文件名: hero-bg.jpg</p>
+            <div class="canvas-container">
+                <canvas id="hero-bg-canvas" width="480" height="270"></canvas>
+            </div>
+            <button class="download-btn" onclick="downloadCanvas('hero-bg-canvas', 'hero-bg.png')">下载图片</button>
+        </div>
+
+        <div class="instructions">
+            <h2>下一步操作</h2>
+            <ol>
+                <li>下载生成的占位符图片</li>
+                <li>将图片保存到 <code>images/screenshots/</code> 目录</li>
+                <li>使用图片压缩工具优化文件大小</li>
+                <li>后续替换为真实的系统截图</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Generate placeholder images
+        function generatePlaceholder(canvasId, title, subtitle, bgColor = '#1976d2') {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Background
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Gradient overlay
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, 'rgba(255,255,255,0.1)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0.2)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Grid pattern
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+            
+            // Title
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 24px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(title, canvas.width / 2, canvas.height / 2 - 20);
+            
+            // Subtitle
+            ctx.font = '16px Arial, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText(subtitle, canvas.width / 2, canvas.height / 2 + 10);
+            
+            // Dimensions
+            ctx.font = '12px Arial, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.fillText(`${canvas.width * 2} x ${canvas.height * 2}px`, canvas.width / 2, canvas.height / 2 + 35);
+        }
+
+        // Download canvas as image
+        function downloadCanvas(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // Generate all placeholders
+        generatePlaceholder('dashboard-canvas', '智能仪表盘', '股票分析入口界面', '#1976d2');
+        generatePlaceholder('stock-detail-canvas', '股票详情分析', 'K线图表与AI分析', '#388e3c');
+        generatePlaceholder('market-scan-canvas', '市场扫描', '股票筛选与评分', '#ff5722');
+        generatePlaceholder('hero-bg-canvas', '英雄区域背景', '金融科技风格背景', '#1565c0');
+    </script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="智能股票分析系统 - 专业的多维度股票分析平台，提供技术面、基本面、资金面综合分析，AI增强投资决策">
+    <meta name="keywords" content="股票分析,投资决策,技术分析,基本面分析,AI投资,股票筛选">
+    <title>智能股票分析系统 - 专业投资决策平台</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Material Design Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="material-icons">trending_up</i>
+                <span>智能分析系统</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="#home" class="nav-link">首页</a>
+                <a href="#features" class="nav-link">功能特色</a>
+                <a href="#screenshots" class="nav-link">产品展示</a>
+                <a href="#about" class="nav-link">关于系统</a>
+            </div>
+            
+            <div class="nav-actions">
+                <button id="theme-toggle" class="theme-toggle" title="切换主题">
+                    <i class="material-icons">light_mode</i>
+                </button>
+                <button class="nav-toggle" id="nav-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-background">
+            <div class="hero-overlay"></div>
+        </div>
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">
+                    <span class="highlight">智能股票分析系统</span>
+                    <br>AI驱动的专业投资决策平台
+                </h1>
+                <p class="hero-subtitle">
+                    融合前沿AI技术与专业金融分析，提供技术面、基本面、资金面三维一体的智能分析。
+                    让数据驱动投资决策，让AI成为您的专业投资顾问。
+                </p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">10+</span>
+                        <span class="stat-label">分析维度</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">100分</span>
+                        <span class="stat-label">智能评分</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">AI</span>
+                        <span class="stat-label">增强分析</span>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <a href="https://fromozu-stock-analysis.hf.space/" target="_blank" class="btn btn-primary">
+                        <i class="material-icons">rocket_launch</i>
+                        立即体验
+                    </a>
+                    <a href="#features" class="btn btn-secondary">
+                        <i class="material-icons">info</i>
+                        了解更多
+                    </a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-card">
+                    <div class="card-header">
+                        <i class="material-icons">analytics</i>
+                        <span>实时分析</span>
+                    </div>
+                    <div class="card-content">
+                        <div class="metric">
+                            <span class="metric-label">综合评分</span>
+                            <span class="metric-value">85分</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">技术面</span>
+                            <span class="metric-value positive">强势</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">资金流向</span>
+                            <span class="metric-value positive">净流入</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">核心功能特色</h2>
+                <p class="section-subtitle">六大核心模块，全方位覆盖投资分析需求，让专业分析触手可及</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="material-icons">trending_up</i>
+                    </div>
+                    <h3 class="feature-title">技术面分析</h3>
+                    <p class="feature-description">
+                        运用先进算法进行趋势识别、支撑压力位计算，集成RSI、MACD、KDJ等20+技术指标。
+                        精准捕捉市场节奏，为您的买卖决策提供科学依据。
+                    </p>
+                    <ul class="feature-list">
+                        <li>AI智能趋势识别算法</li>
+                        <li>动态支撑压力位计算</li>
+                        <li>20+专业技术指标集成</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="material-icons">assessment</i>
+                    </div>
+                    <h3 class="feature-title">基本面分析</h3>
+                    <p class="feature-description">
+                        深度解析企业财务数据，运用DCF、PE、PB等多种估值模型，
+                        全面评估企业内在价值与成长潜力，为价值投资保驾护航。
+                    </p>
+                    <ul class="feature-list">
+                        <li>多维度估值模型（DCF/PE/PB）</li>
+                        <li>财务健康度智能评分</li>
+                        <li>成长性量化预测分析</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="material-icons">account_balance</i>
+                    </div>
+                    <h3 class="feature-title">资金面分析</h3>
+                    <p class="feature-description">
+                        实时监控主力资金流向、北向资金动态、机构持仓变化，
+                        透视市场资金博弈，让您与聪明资金同步，把握资金风向。
+                    </p>
+                    <ul class="feature-list">
+                        <li>实时主力资金流向追踪</li>
+                        <li>北向资金动态监控预警</li>
+                        <li>机构持仓变化深度分析</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="material-icons">psychology</i>
+                    </div>
+                    <h3 class="feature-title">AI增强分析</h3>
+                    <p class="feature-description">
+                        融合GPT大语言模型与专业金融知识库，提供个性化投资建议与智能问答。
+                        24小时AI投资顾问，让专业分析触手可及。
+                    </p>
+                    <ul class="feature-list">
+                        <li>GPT驱动的智能投资建议</li>
+                        <li>专业金融知识库问答</li>
+                        <li>多情景预测与风险评估</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="material-icons">search</i>
+                    </div>
+                    <h3 class="feature-title">市场扫描</h3>
+                    <p class="feature-description">
+                        一键扫描沪深300、中证500等主要指数成分股，智能筛选高潜力标的。
+                        多维度评分排序，让优质投资机会无处遁形。
+                    </p>
+                    <ul class="feature-list">
+                        <li>主要指数成分股一键扫描</li>
+                        <li>28个行业板块深度筛选</li>
+                        <li>100分制智能评分排序</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="material-icons">pie_chart</i>
+                    </div>
+                    <h3 class="feature-title">投资组合</h3>
+                    <p class="feature-description">
+                        专业的投资组合管理工具，支持多组合创建与实时监控。
+                        提供风险分散度分析、收益归因分析等专业功能。
+                    </p>
+                    <ul class="feature-list">
+                        <li>多组合创建与实时监控</li>
+                        <li>专业收益归因分析报告</li>
+                        <li>智能风险分散度优化建议</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots Section -->
+    <section id="screenshots" class="screenshots">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">产品展示</h2>
+                <p class="section-subtitle">直观的界面设计，专业的分析工具</p>
+            </div>
+            
+            <div class="screenshots-grid">
+                <div class="screenshot-item">
+                    <div class="screenshot-image">
+                        <img src="images/screenshots/dashboard.jpg" alt="智能仪表盘" loading="lazy">
+                        <div class="screenshot-overlay">
+                            <i class="material-icons">zoom_in</i>
+                        </div>
+                    </div>
+                    <div class="screenshot-info">
+                        <h3>智能仪表盘</h3>
+                        <p>一站式股票分析入口，简洁直观的操作界面</p>
+                    </div>
+                </div>
+
+                <div class="screenshot-item">
+                    <div class="screenshot-image">
+                        <img src="images/screenshots/stock-detail.jpg" alt="股票详情分析" loading="lazy">
+                        <div class="screenshot-overlay">
+                            <i class="material-icons">zoom_in</i>
+                        </div>
+                    </div>
+                    <div class="screenshot-info">
+                        <h3>股票详情分析</h3>
+                        <p>全方位的股票分析报告，技术图表与AI建议</p>
+                    </div>
+                </div>
+
+                <div class="screenshot-item">
+                    <div class="screenshot-image">
+                        <img src="images/screenshots/market-scan.jpg" alt="市场扫描" loading="lazy">
+                        <div class="screenshot-overlay">
+                            <i class="material-icons">zoom_in</i>
+                        </div>
+                    </div>
+                    <div class="screenshot-info">
+                        <h3>市场扫描</h3>
+                        <p>快速筛选高评分股票，发现投资机会</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2 class="section-title">关于系统</h2>
+                    <p class="about-description">
+                        智能股票分析系统是一款融合前沿AI技术的专业投资分析平台。
+                        基于Python生态构建，集成AKShare数据源与GPT大语言模型，
+                        运用机器学习算法进行多维度分析，为个人投资者提供机构级的专业分析能力。
+                    </p>
+                    
+                    <div class="about-features">
+                        <div class="about-feature">
+                            <i class="material-icons">speed</i>
+                            <div>
+                                <h4>高性能架构</h4>
+                                <p>分层缓存设计，毫秒级响应，支持高并发访问</p>
+                            </div>
+                        </div>
+                        <div class="about-feature">
+                            <i class="material-icons">security</i>
+                            <div>
+                                <h4>数据权威</h4>
+                                <p>对接官方数据源，实时更新，确保分析精准可靠</p>
+                            </div>
+                        </div>
+                        <div class="about-feature">
+                            <i class="material-icons">update</i>
+                            <div>
+                                <h4>智能进化</h4>
+                                <p>AI模型持续学习，分析能力不断提升优化</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="about-visual">
+                    <div class="tech-stack">
+                        <h3>技术栈</h3>
+                        <div class="tech-items">
+                            <span class="tech-item">Python</span>
+                            <span class="tech-item">Flask</span>
+                            <span class="tech-item">AKShare</span>
+                            <span class="tech-item">MySQL</span>
+                            <span class="tech-item">AI API</span>
+                            <span class="tech-item">Material Design</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title">开启AI投资新时代</h2>
+                <p class="cta-subtitle">
+                    体验机构级专业分析工具，让人工智能成为您的投资伙伴
+                </p>
+                <a href="https://fromozu-stock-analysis.hf.space/" target="_blank" class="btn btn-primary btn-large">
+                    <i class="material-icons">rocket_launch</i>
+                    立即体验系统
+                </a>
+                <p class="cta-note">
+                    <i class="material-icons">info</i>
+                    完全免费，无需注册，即刻体验专业级分析
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <i class="material-icons">trending_up</i>
+                    <span>智能分析系统</span>
+                </div>
+                <div class="footer-links">
+                    <a href="#home">首页</a>
+                    <a href="#features">功能</a>
+                    <a href="#screenshots">展示</a>
+                    <a href="#about">关于</a>
+                </div>
+                <div class="footer-info">
+                    <p>&copy; 2024 智能股票分析系统. 仅供学习研究使用.</p>
+                    <p class="disclaimer">投资有风险，决策需谨慎。本系统不构成投资建议。</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Files -->
+    <script src="js/main.js"></script>
+    <script src="js/animations.js"></script>
+    <script src="js/theme-switcher.js"></script>
+</body>
+</html>

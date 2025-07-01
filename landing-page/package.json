@@ -1,0 +1,56 @@
+{
+  "name": "stock-analysis-landing",
+  "version": "1.0.0",
+  "description": "智能股票分析系统 - 静态展示页面",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server . -p 3000 -o",
+    "build": "echo 'No build step required for static site'",
+    "preview": "npx http-server . -p 4000 -o",
+    "deploy": "wrangler pages publish .",
+    "validate": "npx html-validate index.html",
+    "optimize": "npm run optimize:images && npm run optimize:css && npm run optimize:js",
+    "optimize:images": "node optimize-images.js",
+    "optimize:css": "npx clean-css-cli css/*.css -o css/",
+    "optimize:js": "npx terser js/*.js --compress --mangle -o js/",
+    "lighthouse": "npx lighthouse http://localhost:3000 --output html --output-path ./lighthouse-report.html",
+    "performance": "node performance-test.js",
+    "test": "npm run validate && npm run performance",
+    "test:quick": "npm run validate",
+    "analyze": "npm run performance",
+    "check:files": "node -e \"require('./performance-test.js').checkFileSizes()\"",
+    "setup:images": "node optimize-images.js"
+  },
+  "keywords": [
+    "stock-analysis",
+    "investment",
+    "ai",
+    "finance",
+    "landing-page",
+    "cloudflare-pages"
+  ],
+  "author": "Stock Analysis System",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/wrangler": "^3.0.0",
+    "clean-css-cli": "^5.6.0",
+    "html-validate": "^8.0.0",
+    "http-server": "^14.1.0",
+    "lighthouse": "^11.0.0",
+    "terser": "^5.19.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/stock-analysis-landing.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/stock-analysis-landing/issues"
+  },
+  "homepage": "https://your-domain.pages.dev"
+}

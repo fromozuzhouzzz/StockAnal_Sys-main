@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浏览器兼容性测试 - 智能股票分析系统</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1976d2;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        .status {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.pass {
+            background: #4caf50;
+            color: white;
+        }
+        .status.fail {
+            background: #f44336;
+            color: white;
+        }
+        .status.unknown {
+            background: #ff9800;
+            color: white;
+        }
+        .browser-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .feature-test {
+            margin: 10px 0;
+            padding: 15px;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+        .demo-area {
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            color: white;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .responsive-test {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .responsive-item {
+            background: #f0f0f0;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .responsive-item {
+                background: #e8f5e8;
+            }
+        }
+        @media (max-width: 480px) {
+            .responsive-item {
+                background: #fff3e0;
+            }
+        }
+        .animation-test {
+            width: 50px;
+            height: 50px;
+            background: #1976d2;
+            border-radius: 50%;
+            margin: 20px auto;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        .theme-test {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: var(--bg-color, #ffffff);
+            color: var(--text-color, #333333);
+        }
+        [data-theme="dark"] .theme-test {
+            --bg-color: #333333;
+            --text-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 浏览器兼容性测试</h1>
+        
+        <div class="browser-info">
+            <h3>当前浏览器信息</h3>
+            <div id="browser-info">
+                <p><strong>用户代理:</strong> <span id="user-agent"></span></p>
+                <p><strong>视口尺寸:</strong> <span id="viewport-size"></span></p>
+                <p><strong>屏幕分辨率:</strong> <span id="screen-resolution"></span></p>
+                <p><strong>设备像素比:</strong> <span id="device-pixel-ratio"></span></p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔧 核心功能测试</h2>
+            
+            <div class="test-item">
+                <span>CSS Grid 支持</span>
+                <span class="status" id="css-grid-status">检测中...</span>
+            </div>
+            
+            <div class="test-item">
+                <span>CSS Flexbox 支持</span>
+                <span class="status" id="flexbox-status">检测中...</span>
+            </div>
+            
+            <div class="test-item">
+                <span>CSS Variables 支持</span>
+                <span class="status" id="css-variables-status">检测中...</span>
+            </div>
+            
+            <div class="test-item">
+                <span>ES6 支持</span>
+                <span class="status" id="es6-status">检测中...</span>
+            </div>
+            
+            <div class="test-item">
+                <span>Intersection Observer 支持</span>
+                <span class="status" id="intersection-observer-status">检测中...</span>
+            </div>
+            
+            <div class="test-item">
+                <span>Local Storage 支持</span>
+                <span class="status" id="local-storage-status">检测中...</span>
+            </div>
+            
+            <div class="test-item">
+                <span>WebP 图片支持</span>
+                <span class="status" id="webp-status">检测中...</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📱 响应式设计测试</h2>
+            <p>调整浏览器窗口大小查看响应式效果：</p>
+            
+            <div class="responsive-test">
+                <div class="responsive-item">
+                    <h4>桌面版</h4>
+                    <p>大于 768px</p>
+                </div>
+                <div class="responsive-item">
+                    <h4>平板版</h4>
+                    <p>768px 以下</p>
+                </div>
+                <div class="responsive-item">
+                    <h4>手机版</h4>
+                    <p>480px 以下</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎨 视觉效果测试</h2>
+            
+            <div class="demo-area">
+                <h3>渐变背景测试</h3>
+                <p>如果您看到蓝色渐变背景，说明 CSS 渐变功能正常</p>
+            </div>
+            
+            <div class="feature-test">
+                <h4>CSS 动画测试</h4>
+                <p>下面的圆圈应该上下弹跳：</p>
+                <div class="animation-test"></div>
+            </div>
+            
+            <div class="feature-test">
+                <h4>主题切换测试</h4>
+                <div class="theme-test" id="theme-test">
+                    <p>这是主题测试区域</p>
+                    <button onclick="toggleTheme()">切换主题</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>⚡ 性能测试</h2>
+            <div id="performance-results">
+                <div class="test-item">
+                    <span>页面加载时间</span>
+                    <span id="load-time">计算中...</span>
+                </div>
+                <div class="test-item">
+                    <span>DOM 内容加载时间</span>
+                    <span id="dom-load-time">计算中...</span>
+                </div>
+                <div class="test-item">
+                    <span>首次内容绘制 (FCP)</span>
+                    <span id="fcp-time">检测中...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📋 测试结果汇总</h2>
+            <div id="test-summary">
+                <p>正在运行测试...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 浏览器信息检测
+        function detectBrowserInfo() {
+            document.getElementById('user-agent').textContent = navigator.userAgent;
+            document.getElementById('viewport-size').textContent = 
+                `${window.innerWidth} x ${window.innerHeight}`;
+            document.getElementById('screen-resolution').textContent = 
+                `${screen.width} x ${screen.height}`;
+            document.getElementById('device-pixel-ratio').textContent = 
+                window.devicePixelRatio || 1;
+        }
+
+        // 功能支持检测
+        function detectFeatureSupport() {
+            const tests = {
+                'css-grid': () => CSS.supports('display', 'grid'),
+                'flexbox': () => CSS.supports('display', 'flex'),
+                'css-variables': () => CSS.supports('color', 'var(--test)'),
+                'es6': () => {
+                    try {
+                        eval('const test = () => {}');
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                },
+                'intersection-observer': () => 'IntersectionObserver' in window,
+                'local-storage': () => {
+                    try {
+                        localStorage.setItem('test', 'test');
+                        localStorage.removeItem('test');
+                        return true;
+                    } catch (e) {
+                        return false;
+                    }
+                },
+                'webp': () => {
+                    return new Promise((resolve) => {
+                        const webP = new Image();
+                        webP.onload = webP.onerror = () => {
+                            resolve(webP.height === 2);
+                        };
+                        webP.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
+                    });
+                }
+            };
+
+            Object.entries(tests).forEach(async ([testName, testFn]) => {
+                const statusElement = document.getElementById(`${testName}-status`);
+                try {
+                    const result = await testFn();
+                    statusElement.textContent = result ? '支持' : '不支持';
+                    statusElement.className = `status ${result ? 'pass' : 'fail'}`;
+                } catch (error) {
+                    statusElement.textContent = '检测失败';
+                    statusElement.className = 'status unknown';
+                }
+            });
+        }
+
+        // 性能检测
+        function detectPerformance() {
+            // 页面加载时间
+            window.addEventListener('load', () => {
+                const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                document.getElementById('load-time').textContent = `${loadTime}ms`;
+                
+                const domLoadTime = performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart;
+                document.getElementById('dom-load-time').textContent = `${domLoadTime}ms`;
+            });
+
+            // FCP 检测
+            if ('PerformanceObserver' in window) {
+                const observer = new PerformanceObserver((list) => {
+                    const entries = list.getEntries();
+                    const fcp = entries.find(entry => entry.name === 'first-contentful-paint');
+                    if (fcp) {
+                        document.getElementById('fcp-time').textContent = `${Math.round(fcp.startTime)}ms`;
+                    }
+                });
+                observer.observe({ entryTypes: ['paint'] });
+            } else {
+                document.getElementById('fcp-time').textContent = '不支持';
+            }
+        }
+
+        // 主题切换测试
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+        }
+
+        // 生成测试汇总
+        function generateTestSummary() {
+            setTimeout(() => {
+                const statusElements = document.querySelectorAll('.status');
+                let passCount = 0;
+                let totalCount = 0;
+
+                statusElements.forEach(element => {
+                    if (element.textContent !== '检测中...') {
+                        totalCount++;
+                        if (element.classList.contains('pass')) {
+                            passCount++;
+                        }
+                    }
+                });
+
+                const passRate = totalCount > 0 ? Math.round((passCount / totalCount) * 100) : 0;
+                const summaryElement = document.getElementById('test-summary');
+                
+                let summaryHTML = `
+                    <h4>兼容性评分: ${passRate}%</h4>
+                    <p>通过测试: ${passCount}/${totalCount}</p>
+                `;
+
+                if (passRate >= 90) {
+                    summaryHTML += '<p style="color: #4caf50;">✅ 浏览器兼容性优秀！</p>';
+                } else if (passRate >= 70) {
+                    summaryHTML += '<p style="color: #ff9800;">⚠️ 浏览器兼容性良好，部分功能可能受限。</p>';
+                } else {
+                    summaryHTML += '<p style="color: #f44336;">❌ 浏览器兼容性较差，建议升级浏览器。</p>';
+                }
+
+                summaryHTML += `
+                    <h4>建议的浏览器版本:</h4>
+                    <ul>
+                        <li>Chrome 80+</li>
+                        <li>Firefox 75+</li>
+                        <li>Safari 13+</li>
+                        <li>Edge 80+</li>
+                    </ul>
+                `;
+
+                summaryElement.innerHTML = summaryHTML;
+            }, 3000);
+        }
+
+        // 初始化测试
+        function initTests() {
+            detectBrowserInfo();
+            detectFeatureSupport();
+            detectPerformance();
+            generateTestSummary();
+        }
+
+        // 页面加载完成后运行测试
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initTests);
+        } else {
+            initTests();
+        }
+    </script>
+</body>
+</html>

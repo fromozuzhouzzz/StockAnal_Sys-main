@@ -1,0 +1,68 @@
+# Cloudflare Workers/Pages Configuration
+# https://developers.cloudflare.com/workers/wrangler/configuration/
+
+name = "stock-analysis-landing"
+compatibility_date = "2024-06-28"
+
+# Pages configuration
+[env.production]
+account_id = "YOUR_ACCOUNT_ID"  # Replace with your Cloudflare account ID
+zone_id = "YOUR_ZONE_ID"       # Replace with your zone ID (if using custom domain)
+
+# Build configuration
+[build]
+command = "echo 'No build step required for static site'"
+cwd = "."
+watch_dir = "."
+
+# Environment variables (if needed)
+[vars]
+ENVIRONMENT = "production"
+SITE_NAME = "智能股票分析系统"
+SITE_URL = "https://your-domain.pages.dev"
+
+# Custom headers
+[[headers]]
+for = "/*"
+[headers.values]
+X-Frame-Options = "DENY"
+X-Content-Type-Options = "nosniff"
+X-XSS-Protection = "1; mode=block"
+Referrer-Policy = "strict-origin-when-cross-origin"
+Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
+[[headers]]
+for = "/css/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+for = "/js/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+for = "/images/*"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+for = "*.html"
+[headers.values]
+Cache-Control = "public, max-age=3600"
+
+# Redirects (alternative to _redirects file)
+[[redirects]]
+from = "/home"
+to = "/index.html"
+status = 301
+
+[[redirects]]
+from = "/demo"
+to = "/index.html"
+status = 301
+
+[[redirects]]
+from = "/favicon.ico"
+to = "/images/favicon.ico"
+status = 301
