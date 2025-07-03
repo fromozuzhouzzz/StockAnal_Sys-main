@@ -50,6 +50,42 @@
         flex-wrap: wrap;
     }
 
+    /* 评分加载状态样式 */
+    .score-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        opacity: 0.7;
+    }
+
+    .score-error {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        color: var(--md-sys-color-error);
+    }
+
+    .score-error .material-icons {
+        margin-bottom: 16px;
+        opacity: 0.6;
+    }
+
+    /* 评分加载动画 */
+    @keyframes scoreLoading {
+        0% { opacity: 0.3; }
+        50% { opacity: 0.8; }
+        100% { opacity: 0.3; }
+    }
+
+    .score-loading .shimmer-skeleton {
+        animation: scoreLoading 1.5s ease-in-out infinite;
+    }
+    }
+
     .stock-metrics-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -780,8 +816,8 @@
             // 获取或计算支撑压力位
             calculateAndRenderSupportResistance(latestData);
             
-            // 计算并渲染技术评分
-            calculateAndRenderScore(latestData);
+            // 调用后端API获取统一评分
+            fetchAndRenderScore();
             
             // 隐藏加载状态
             hideSystemLoadingState();
@@ -1067,90 +1103,146 @@
         console.log(`使用备用名称: ${fallbackName}`);
     }
     
-    // 计算技术评分并渲染
-    function calculateAndRenderScore(latestData) {
-        // 示例技术评分计算 (简化版)
-        let score = 0;
-        
-        // RSI评分 (0-25)
-        const rsi = parseFloat(latestData.RSI || 50);
-        if (rsi >= 40 && rsi <= 60) score += 20;
-        else if ((rsi >= 30 && rsi < 40) || (rsi > 60 && rsi <= 70)) score += 15;
-        else if (rsi < 30) score += 10;
-        else if (rsi > 70) score += 5;
-        
-        // 均线趋势评分 (0-25)
-        const ma5 = parseFloat(latestData.MA5 || 0);
-        const ma20 = parseFloat(latestData.MA20 || 0);
-        const ma60 = parseFloat(latestData.MA60 || 0);
-        if (ma5 > ma20 && ma20 > ma60) score += 25;
-        else if (ma5 > ma20) score += 15;
-        else if (ma20 > ma60) score += 10;
-        else score += 0;
-        
-        // MACD评分 (0-25)
-        const macd = parseFloat(latestData.MACD || 0);
-        const signal = parseFloat(latestData.Signal || 0);
-        if (macd > signal && macd > 0) score += 25;
-        else if (macd > signal) score += 15;
-        else if (macd > 0) score += 10;
-        else score += 0;
-        
-        // 成交量评分 (0-25)
-        const volRatio = parseFloat(latestData.Volume_Ratio || 1);
-        if (volRatio > 1.5 && ma5 > ma20) score += 25;
-        else if (volRatio > 1) score += 15;
-        else if (volRatio > 0.8) score += 10;
-        else score += 0;
-        
-        // 渲染评分
-        const scoreClass = getScoreColorClass(score);
-        const scoreText = getScoreDescription(score);
-        
+    // 从后端API获取统一评分并渲染
+    function fetchAndRenderScore() {
+        console.log(`开始获取股票 ${stockCode} 的统一评分`);
+
+        // 显示加载状态
         $('#score-container').html(`
             <div class="score-indicator">
-                <div id="score-chart"></div>
-                <div class="score-display">
-                    <p class="score-value">${score}</p>
-                    <p class="score-label">综合评分</p>
+                <div class="score-loading">
+                    <div class="shimmer-skeleton" style="width: 160px; height: 160px; border-radius: 50%;"></div>
+                    <div class="score-display">
+                        <div class="shimmer-skeleton" style="width: 60px; height: 48px; margin: 0 auto 8px;"></div>
+                        <div class="shimmer-skeleton" style="width: 80px; height: 16px; margin: 0 auto;"></div>
+                    </div>
                 </div>
             </div>
         `);
-        
-        // 渲染环形图表
-        renderScoreChart(score);
-        
-        // 渲染建议
+
         $('#recommendation-container').html(`
-            <div class="badge badge-pill ${scoreClass} px-3 py-2">${scoreText}</div>
+            <div class="shimmer-skeleton" style="width: 120px; height: 32px; margin: 0 auto;"></div>
         `);
-        
+
+        // 调用后端统一评分API
+        $.ajax({
+            url: '/api/stock_score',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                stock_code: stockCode,
+                market_type: marketType
+            }),
+            timeout: 15000, // 15秒超时
+            success: function(response) {
+                console.log('获取评分成功:', response);
+
+                const score = response.score || 0;
+                const scoreDetails = response.score_details || {};
+                const recommendation = response.recommendation || '无建议';
+
+                // 渲染评分
+                const scoreClass = getScoreColorClass(score);
+                const scoreText = getScoreDescription(score);
+
+                $('#score-container').html(`
+                    <div class="score-indicator">
+                        <div id="score-chart"></div>
+                        <div class="score-display">
+                            <p class="score-value">${score}</p>
+                            <p class="score-label">综合评分</p>
+                        </div>
+                    </div>
+                `);
+
+                // 渲染环形图表
+                renderScoreChart(score);
+
+                // 渲染建议
+                $('#recommendation-container').html(`
+                    <div class="badge badge-pill ${scoreClass} px-3 py-2">${scoreText}</div>
+                `);
+
+                console.log(`股票 ${stockCode} 评分渲染完成: ${score}`);
+
+                // 渲染技术指标（保留原有逻辑，但从stockData获取）
+                if (stockData && stockData.length > 0) {
+                    renderTechnicalIndicators(stockData[stockData.length - 1]);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('获取评分失败:', error);
+
+                let errorMsg = '获取评分失败';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg += ': ' + xhr.responseJSON.error;
+                } else if (error) {
+                    errorMsg += ': ' + error;
+                }
+
+                // 显示错误状态
+                $('#score-container').html(`
+                    <div class="score-indicator">
+                        <div class="score-error">
+                            <i class="material-icons" style="font-size: 48px; color: #f44336;">error</i>
+                            <div class="score-display">
+                                <p class="score-value">--</p>
+                                <p class="score-label">评分获取失败</p>
+                            </div>
+                        </div>
+                    </div>
+                `);
+
+                $('#recommendation-container').html(`
+                    <div class="badge badge-pill badge-secondary px-3 py-2">评分获取失败</div>
+                `);
+
+                // 显示错误提示
+                showError(errorMsg);
+
+                // 渲染技术指标（保留原有逻辑，但从stockData获取）
+                if (stockData && stockData.length > 0) {
+                    renderTechnicalIndicators(stockData[stockData.length - 1]);
+                }
+            }
+        });
+    }
+
+    // 渲染技术指标（从原函数中分离出来）
+    function renderTechnicalIndicators(latestData) {
+        const rsi = parseFloat(latestData.RSI || 50);
+        const ma5 = parseFloat(latestData.MA5 || 0);
+        const ma20 = parseFloat(latestData.MA20 || 0);
+        const ma60 = parseFloat(latestData.MA60 || 0);
+        const macd = parseFloat(latestData.MACD || 0);
+        const signal = parseFloat(latestData.Signal || 0);
+        const volRatio = parseFloat(latestData.Volume_Ratio || 1);
+
         // 渲染关键指标
         $('#rsi-container').html(`
             <div class="stat-value">${rsi.toFixed(1)}</div>
             <div class="stat-label">RSI</div>
         `);
-        
+
         const maTrend = ma5 > ma20 ? 'trend-up' : 'trend-down';
         const maTrendIcon = ma5 > ma20 ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
-        const maTrendText = ma5 > ma20 ? '多头排列' : '空头排列';
-        
+
         $('#ma-trend-container').html(`
             <div class="stat-value ${maTrend}">${maTrendIcon}</div>
             <div class="stat-label">均线趋势</div>
         `);
-        
+
         const macdTrend = macd > signal ? 'trend-up' : 'trend-down';
         const macdTrendIcon = macd > signal ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
-        
+
         $('#macd-container').html(`
             <div class="stat-value ${macdTrend}">${macdTrendIcon}</div>
             <div class="stat-label">MACD</div>
         `);
-        
+
         const volumeStatus = volRatio > 1 ? 'trend-up' : 'trend-down';
         const volumeIcon = volRatio > 1 ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
-        
+
         $('#volume-container').html(`
             <div class="stat-value ${volumeStatus}">${volRatio.toFixed(1)}</div>
             <div class="stat-label">量比</div>

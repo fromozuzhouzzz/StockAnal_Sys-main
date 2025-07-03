@@ -1650,6 +1650,65 @@ def api_qa():
         return jsonify({'error': str(e)}), 500
 
 
+# 统一评分API端点
+@app.route('/api/stock_score', methods=['POST'])
+def api_stock_score():
+    """统一的股票评分API，确保所有页面使用相同的评分算法"""
+    try:
+        data = request.json
+        stock_code = data.get('stock_code')
+        market_type = data.get('market_type', 'A')
+
+        if not stock_code:
+            return jsonify({'error': '请提供股票代码'}), 400
+
+        app.logger.info(f"获取股票 {stock_code} 的统一评分，市场类型: {market_type}")
+
+        # 使用线程本地缓存的分析器实例
+        current_analyzer = get_analyzer()
+
+        # 获取股票数据和计算指标
+        df = current_analyzer.get_stock_data(stock_code, market_type)
+        df = current_analyzer.calculate_indicators(df)
+
+        # 计算评分（使用与投资组合页面相同的算法）
+        score = current_analyzer.calculate_score(df, market_type)
+        score_details = getattr(current_analyzer, 'score_details', {'total': score})
+
+        # 获取最新数据用于显示
+        latest = df.iloc[-1]
+        prev = df.iloc[-2] if len(df) > 1 else latest
+
+        # 获取基本信息
+        try:
+            stock_info = current_analyzer.get_stock_info(stock_code)
+            stock_name = stock_info.get('股票名称', '未知')
+            industry = stock_info.get('行业', '未知')
+        except:
+            stock_name = '未知'
+            industry = '未知'
+
+        # 构建返回数据
+        result = {
+            'stock_code': stock_code,
+            'stock_name': stock_name,
+            'industry': industry,
+            'score': score,
+            'score_details': score_details,
+            'price': float(latest['close']),
+            'price_change': float((latest['close'] - prev['close']) / prev['close'] * 100),
+            'recommendation': current_analyzer.get_recommendation(score),
+            'analysis_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+
+        app.logger.info(f"股票 {stock_code} 评分计算完成: {score}")
+        return custom_jsonify(result)
+
+    except Exception as e:
+        app.logger.error(f"获取股票评分出错: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 500
+
+
 # 风险分析路由
 @app.route('/api/risk_analysis', methods=['POST'])
 def api_risk_analysis():
