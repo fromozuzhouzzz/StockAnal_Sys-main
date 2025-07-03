@@ -49,6 +49,15 @@ from news_fetcher import news_fetcher, start_news_scheduler
 from data_service import DataService
 from stock_precache_scheduler import precache_scheduler, init_precache_scheduler
 
+# API功能导入
+try:
+    from api_integration import integrate_api_with_existing_app
+    API_INTEGRATION_AVAILABLE = True
+    print("API集成模块导入成功")
+except ImportError as e:
+    print(f"API集成模块导入失败: {e}")
+    API_INTEGRATION_AVAILABLE = False
+
 # 加载环境变量
 load_dotenv()
 
@@ -2111,6 +2120,21 @@ if REALTIME_AVAILABLE:
         socketio = None
 else:
     socketio = None
+
+# 集成API功能
+if API_INTEGRATION_AVAILABLE:
+    try:
+        if integrate_api_with_existing_app(app):
+            app.logger.info("✅ API功能集成成功")
+            print("✅ API功能集成成功")
+        else:
+            app.logger.error("❌ API功能集成失败")
+            print("❌ API功能集成失败")
+    except Exception as e:
+        app.logger.error(f"API功能集成出错: {e}")
+        print(f"❌ API功能集成出错: {e}")
+else:
+    print("⚠️  API集成模块不可用，跳过API功能集成")
 
 if __name__ == '__main__':
     # 将 host 设置为 '0.0.0.0' 使其支持所有网络接口访问

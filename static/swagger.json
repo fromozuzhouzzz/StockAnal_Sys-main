@@ -2,13 +2,192 @@
   "swagger": "2.0",
   "info": {
     "title": "股票智能分析系统 API",
-    "description": "股票智能分析系统的REST API文档",
-    "version": "2.1.0"
+    "description": "股票智能分析系统的REST API文档，提供投资组合分析、个股分析、批量评分等功能",
+    "version": "3.0.0",
+    "contact": {
+      "name": "API支持",
+      "email": "support@example.com"
+    }
   },
   "host": "localhost:8888",
   "basePath": "/",
   "schemes": ["http", "https"],
+  "securityDefinitions": {
+    "ApiKeyAuth": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "X-API-Key",
+      "description": "API密钥认证"
+    },
+    "HmacAuth": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "X-HMAC-Signature",
+      "description": "HMAC签名认证"
+    }
+  },
   "paths": {
+    "/api/v1/portfolio/analyze": {
+      "post": {
+        "summary": "投资组合分析",
+        "description": "分析投资组合的整体表现和风险",
+        "security": [{"ApiKeyAuth": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["stocks"],
+              "properties": {
+                "stocks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "stock_code": {"type": "string", "example": "000001.SZ"},
+                      "weight": {"type": "number", "example": 0.3},
+                      "market_type": {"type": "string", "example": "A"}
+                    }
+                  }
+                },
+                "analysis_params": {
+                  "type": "object",
+                  "properties": {
+                    "risk_preference": {"type": "string", "example": "moderate"},
+                    "time_horizon": {"type": "string", "example": "medium"}
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "投资组合分析成功",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {"type": "boolean"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "portfolio_score": {"type": "number"},
+                    "risk_level": {"type": "string"},
+                    "risk_analysis": {"type": "object"},
+                    "recommendations": {"type": "array", "items": {"type": "string"}},
+                    "individual_stocks": {"type": "array"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "请求参数错误"},
+          "401": {"description": "认证失败"},
+          "403": {"description": "权限不足"},
+          "500": {"description": "服务器内部错误"}
+        }
+      }
+    },
+    "/api/v1/stock/analyze": {
+      "post": {
+        "summary": "个股分析",
+        "description": "分析单只股票的详细信息",
+        "security": [{"ApiKeyAuth": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["stock_code"],
+              "properties": {
+                "stock_code": {"type": "string", "example": "000001.SZ"},
+                "market_type": {"type": "string", "example": "A"},
+                "analysis_depth": {"type": "string", "example": "full"},
+                "include_ai_analysis": {"type": "boolean", "example": true},
+                "time_range": {"type": "integer", "example": 60}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "个股分析成功",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {"type": "boolean"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "stock_info": {"type": "object"},
+                    "analysis_result": {"type": "object"},
+                    "technical_analysis": {"type": "object"},
+                    "fundamental_analysis": {"type": "object"},
+                    "risk_assessment": {"type": "object"},
+                    "ai_analysis": {"type": "object"}
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "请求参数错误"},
+          "401": {"description": "认证失败"},
+          "500": {"description": "服务器内部错误"}
+        }
+      }
+    },
+    "/api/v1/stocks/batch-score": {
+      "post": {
+        "summary": "批量股票评分",
+        "description": "批量分析多只股票的评分",
+        "security": [{"ApiKeyAuth": []}],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["stock_codes"],
+              "properties": {
+                "stock_codes": {
+                  "type": "array",
+                  "items": {"type": "string"},
+                  "example": ["000001.SZ", "600000.SH"]
+                },
+                "market_type": {"type": "string", "example": "A"},
+                "min_score": {"type": "number", "example": 60},
+                "sort_by": {"type": "string", "example": "score"},
+                "sort_order": {"type": "string", "example": "desc"}
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "批量评分成功",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "success": {"type": "boolean"},
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "total_analyzed": {"type": "integer"},
+                    "qualified_count": {"type": "integer"},
+                    "results": {"type": "array"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/analyze": {
       "post": {
         "summary": "分析股票",
