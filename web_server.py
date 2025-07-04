@@ -9,6 +9,9 @@
 import numpy as np
 import pandas as pd
 from flask import Flask, render_template, request, jsonify, send_from_directory
+from werkzeug.utils import secure_filename
+import csv
+import io
 from stock_analyzer import StockAnalyzer
 from us_stock_service import USStockService
 import threading
@@ -1736,6 +1739,126 @@ def api_risk_analysis():
     except Exception as e:
         app.logger.error(f"风险分析出错: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
+
+
+# 投资组合CSV批量导入路由
+@app.route('/api/portfolio/import_csv', methods=['POST'])
+def api_portfolio_import_csv():
+    """处理CSV文件批量导入股票到投资组合"""
+    try:
+        # 检查是否有文件上传
+        if 'file' not in request.files:
+            return jsonify({'error': '请选择CSV文件'}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': '请选择CSV文件'}), 400
+
+        # 检查文件类型
+        if not file.filename.lower().endswith('.csv'):
+            return jsonify({'error': '请上传CSV格式文件'}), 400
+
+        # 读取CSV文件内容
+        try:
+            # 使用pandas读取CSV，更好地处理编码问题
+            content = file.read()
+
+            # 尝试不同的编码方式
+            encodings = ['utf-8', 'gbk', 'gb2312', 'utf-8-sig']
+            df = None
+
+            for encoding in encodings:
+                try:
+                    content_str = content.decode(encoding)
+                    df = pd.read_csv(io.StringIO(content_str))
+                    break
+                except (UnicodeDecodeError, pd.errors.EmptyDataError):
+                    continue
+
+            if df is None:
+                return jsonify({'error': 'CSV文件编码不支持，请使用UTF-8或GBK编码'}), 400
+
+        except Exception as e:
+            return jsonify({'error': f'CSV文件读取失败: {str(e)}'}), 400
+
+        # 检查是否有secID列
+        if 'secID' not in df.columns:
+            return jsonify({'error': 'CSV文件必须包含secID列'}), 400
+
+        # 提取有效的股票代码
+        stock_codes = df[df['secID'].notna() & (df['secID'] != '')]['secID'].tolist()
+
+        if not stock_codes:
+            return jsonify({'error': 'CSV文件中未找到有效的股票代码'}), 400
+
+        # 转换股票代码格式
+        converted_stocks = []
+        failed_stocks = []
+
+        for original_code in stock_codes:
+            try:
+                converted_code = convert_stock_code_for_portfolio(str(original_code).strip())
+                if converted_code:
+                    converted_stocks.append({
+                        'original_code': original_code,
+                        'converted_code': converted_code
+                    })
+                else:
+                    failed_stocks.append({
+                        'code': original_code,
+                        'reason': '代码格式无法识别'
+                    })
+            except Exception as e:
+                failed_stocks.append({
+                    'code': original_code,
+                    'reason': f'转换失败: {str(e)}'
+                })
+
+        return custom_jsonify({
+            'success': True,
+            'total_count': len(stock_codes),
+            'converted_count': len(converted_stocks),
+            'failed_count': len(failed_stocks),
+            'converted_stocks': converted_stocks,
+            'failed_stocks': failed_stocks
+        })
+
+    except Exception as e:
+        app.logger.error(f"CSV批量导入出错: {traceback.format_exc()}")
+        return jsonify({'error': f'处理失败: {str(e)}'}), 500
+
+
+def convert_stock_code_for_portfolio(code):
+    """
+    转换股票代码格式，参考robust_batch_analyzer.py的逻辑
+    输入: 603316.XSHG, 601218.XSHG 等格式
+    输出: 603316, 601218 等简化格式（适合投资组合页面）
+    """
+    try:
+        code = str(code).strip().upper()
+
+        # 如果已经是简单格式（6位数字），直接返回
+        if code.isdigit() and len(code) == 6:
+            return code
+
+        # 处理带交易所后缀的格式
+        if '.' in code:
+            stock_part = code.split('.')[0]
+            if stock_part.isdigit() and len(stock_part) == 6:
+                return stock_part
+
+        # 处理其他可能的格式
+        # 提取6位数字
+        import re
+        match = re.search(r'\d{6}', code)
+        if match:
+            return match.group()
+
+        return None
+
+    except Exception as e:
+        app.logger.error(f"股票代码转换失败 {code}: {e}")
+        return None
 
 
 # 投资组合风险分析路由

@@ -21,6 +21,12 @@
         border-bottom: 1px solid var(--md-sys-color-outline-variant);
     }
 
+    .md3-button-group {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
     .md3-portfolio-title {
         font-family: var(--md-sys-typescale-headline-large-font);
         font-size: var(--md-sys-typescale-headline-large-size);
@@ -78,9 +84,14 @@
             <i class="material-icons">account_balance_wallet</i>
             我的投资组合
         </h1>
-        <button class="md3-button md3-button-filled" data-bs-toggle="modal" data-bs-target="#addStockModal">
-            <i class="material-icons">add</i> 添加股票
-        </button>
+        <div class="md3-button-group">
+            <button class="md3-button md3-button-filled" data-bs-toggle="modal" data-bs-target="#addStockModal">
+                <i class="material-icons">add</i> 添加股票
+            </button>
+            <button class="md3-button md3-button-outlined" data-bs-toggle="modal" data-bs-target="#importCsvModal">
+                <i class="material-icons">upload_file</i> 批量导入
+            </button>
+        </div>
     </div>
 
     <!-- Enhanced Empty State -->
@@ -263,6 +274,84 @@
         </div>
     </div>
 </div>
+
+<!-- CSV批量导入模态框 -->
+<div class="modal fade" id="importCsvModal" tabindex="-1" aria-labelledby="importCsvModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: var(--md-sys-shape-corner-large); border: none; box-shadow: var(--md-sys-elevation-level3);">
+            <div class="modal-header" style="background-color: var(--md-sys-color-surface-container-high); border-bottom: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large) 0 0; padding: 24px;">
+                <h5 class="modal-title" id="importCsvModalLabel" style="font-family: var(--md-sys-typescale-title-large-font); font-size: var(--md-sys-typescale-title-large-size); font-weight: var(--md-sys-typescale-title-large-weight); color: var(--md-sys-color-on-surface); margin: 0; display: flex; align-items: center;">
+                    <i class="material-icons" style="margin-right: 12px; color: var(--md-sys-color-primary);">upload_file</i>
+                    CSV批量导入股票
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="background: none; border: none; font-size: 24px; color: var(--md-sys-color-on-surface-variant); cursor: pointer;">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 32px; background-color: var(--md-sys-color-surface-container);">
+                <!-- 文件上传区域 -->
+                <div class="csv-upload-area" style="border: 2px dashed var(--md-sys-color-outline); border-radius: var(--md-sys-shape-corner-medium); padding: 32px; text-align: center; margin-bottom: 24px; background-color: var(--md-sys-color-surface-container-low); transition: all 0.3s ease;">
+                    <i class="material-icons" style="font-size: 48px; color: var(--md-sys-color-primary); margin-bottom: 16px;">cloud_upload</i>
+                    <h3 style="font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); color: var(--md-sys-color-on-surface); margin-bottom: 8px;">选择CSV文件</h3>
+                    <p style="color: var(--md-sys-color-on-surface-variant); margin-bottom: 16px;">拖拽文件到此处或点击选择文件</p>
+                    <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+                    <button type="button" class="md3-button md3-button-outlined" onclick="document.getElementById('csv-file-input').click();">
+                        <i class="material-icons">folder_open</i> 选择文件
+                    </button>
+                </div>
+
+                <!-- 文件信息显示 -->
+                <div id="csv-file-info" style="display: none; margin-bottom: 24px;">
+                    <div class="md3-card" style="padding: 16px; background-color: var(--md-sys-color-surface-container-highest);">
+                        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                            <i class="material-icons" style="color: var(--md-sys-color-primary); margin-right: 8px;">description</i>
+                            <span id="csv-file-name" style="font-weight: 500; color: var(--md-sys-color-on-surface);"></span>
+                        </div>
+                        <div style="font-size: 14px; color: var(--md-sys-color-on-surface-variant);">
+                            <span>文件大小: </span><span id="csv-file-size"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 格式说明 -->
+                <div class="md3-card" style="padding: 20px; background-color: var(--md-sys-color-surface-container-highest); margin-bottom: 24px;">
+                    <h4 style="font-family: var(--md-sys-typescale-title-small-font); color: var(--md-sys-color-on-surface); margin-bottom: 12px; display: flex; align-items: center;">
+                        <i class="material-icons" style="margin-right: 8px; color: var(--md-sys-color-primary);">info</i>
+                        CSV文件格式要求
+                    </h4>
+                    <ul style="color: var(--md-sys-color-on-surface-variant); margin: 0; padding-left: 20px;">
+                        <li>文件必须包含 <code style="background-color: var(--md-sys-color-surface-variant); padding: 2px 6px; border-radius: 4px;">secID</code> 列</li>
+                        <li>支持格式：603316.XSHG、601218.XSHG 等</li>
+                        <li>支持编码：UTF-8、GBK、GB2312</li>
+                        <li>系统会自动转换为6位股票代码格式</li>
+                    </ul>
+                </div>
+
+                <!-- 进度显示 -->
+                <div id="csv-upload-progress" style="display: none; margin-bottom: 24px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <i class="material-icons" style="color: var(--md-sys-color-primary); margin-right: 8px;">hourglass_empty</i>
+                        <span style="color: var(--md-sys-color-on-surface);">正在处理CSV文件...</span>
+                    </div>
+                    <div class="progress" style="height: 8px; background-color: var(--md-sys-color-surface-variant); border-radius: 4px;">
+                        <div class="progress-bar" style="background-color: var(--md-sys-color-primary); border-radius: 4px; transition: width 0.3s ease;" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- 结果显示 -->
+                <div id="csv-import-result" style="display: none;">
+                    <!-- 结果内容将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 16px 32px 32px 32px; background-color: var(--md-sys-color-surface-container); border-radius: 0 0 var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large); border-top: none; display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" class="md3-button md3-button-text" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="md3-button md3-button-filled" id="csv-import-btn" disabled>
+                    <i class="material-icons">upload</i> 开始导入
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -278,6 +367,42 @@
         // 添加股票按钮点击事件
         $('#add-stock-btn').click(function() {
             addStockToPortfolio();
+        });
+
+        // CSV文件选择事件
+        $('#csv-file-input').change(function() {
+            handleCsvFileSelect(this.files[0]);
+        });
+
+        // CSV导入按钮点击事件
+        $('#csv-import-btn').click(function() {
+            importCsvFile();
+        });
+
+        // 拖拽上传功能
+        const uploadArea = $('.csv-upload-area');
+
+        uploadArea.on('dragover', function(e) {
+            e.preventDefault();
+            $(this).css('border-color', 'var(--md-sys-color-primary)');
+            $(this).css('background-color', 'var(--md-sys-color-primary-container)');
+        });
+
+        uploadArea.on('dragleave', function(e) {
+            e.preventDefault();
+            $(this).css('border-color', 'var(--md-sys-color-outline)');
+            $(this).css('background-color', 'var(--md-sys-color-surface-container-low)');
+        });
+
+        uploadArea.on('drop', function(e) {
+            e.preventDefault();
+            $(this).css('border-color', 'var(--md-sys-color-outline)');
+            $(this).css('background-color', 'var(--md-sys-color-surface-container-low)');
+
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length > 0) {
+                handleCsvFileSelect(files[0]);
+            }
         });
     });
 
@@ -829,6 +954,218 @@
             });
         }, 5000);
     }
+
+    // CSV文件选择处理
+    function handleCsvFileSelect(file) {
+        if (!file) {
+            return;
+        }
+
+        // 检查文件类型
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            showError('请选择CSV格式文件');
+            return;
+        }
+
+        // 显示文件信息
+        $('#csv-file-name').text(file.name);
+        $('#csv-file-size').text(formatFileSize(file.size));
+        $('#csv-file-info').show();
+        $('#csv-import-btn').prop('disabled', false);
+
+        // 存储文件对象
+        window.selectedCsvFile = file;
+    }
+
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // CSV文件导入处理
+    function importCsvFile() {
+        if (!window.selectedCsvFile) {
+            showError('请先选择CSV文件');
+            return;
+        }
+
+        // 显示进度
+        $('#csv-upload-progress').show();
+        $('#csv-import-result').hide();
+        $('#csv-import-btn').prop('disabled', true);
+
+        // 创建FormData对象
+        const formData = new FormData();
+        formData.append('file', window.selectedCsvFile);
+
+        // 发送请求
+        $.ajax({
+            url: '/api/portfolio/import_csv',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            xhr: function() {
+                const xhr = new window.XMLHttpRequest();
+                xhr.upload.addEventListener("progress", function(evt) {
+                    if (evt.lengthComputable) {
+                        const percentComplete = (evt.loaded / evt.total) * 100;
+                        $('.progress-bar').css('width', percentComplete + '%');
+                    }
+                }, false);
+                return xhr;
+            },
+            success: function(response) {
+                $('#csv-upload-progress').hide();
+                displayCsvImportResult(response);
+
+                if (response.success && response.converted_stocks.length > 0) {
+                    // 批量添加股票到投资组合
+                    addStocksToPortfolio(response.converted_stocks);
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#csv-upload-progress').hide();
+                $('#csv-import-btn').prop('disabled', false);
+
+                let errorMessage = '导入失败';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMessage = xhr.responseJSON.error;
+                }
+                showError(errorMessage);
+            }
+        });
+    }
+
+    // 显示CSV导入结果
+    function displayCsvImportResult(result) {
+        const resultHtml = `
+            <div class="md3-card" style="padding: 20px; background-color: var(--md-sys-color-surface-container-highest);">
+                <h4 style="font-family: var(--md-sys-typescale-title-small-font); color: var(--md-sys-color-on-surface); margin-bottom: 16px; display: flex; align-items: center;">
+                    <i class="material-icons" style="margin-right: 8px; color: var(--md-sys-color-primary);">assessment</i>
+                    导入结果统计
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                    <div style="text-align: center; padding: 12px; background-color: var(--md-sys-color-primary-container); border-radius: var(--md-sys-shape-corner-medium);">
+                        <div style="font-size: 24px; font-weight: bold; color: var(--md-sys-color-on-primary-container);">${result.total_count}</div>
+                        <div style="font-size: 12px; color: var(--md-sys-color-on-primary-container);">总数</div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background-color: var(--md-sys-color-success-container); border-radius: var(--md-sys-shape-corner-medium);">
+                        <div style="font-size: 24px; font-weight: bold; color: var(--md-sys-color-on-success-container);">${result.converted_count}</div>
+                        <div style="font-size: 12px; color: var(--md-sys-color-on-success-container);">成功</div>
+                    </div>
+                    <div style="text-align: center; padding: 12px; background-color: var(--md-sys-color-error-container); border-radius: var(--md-sys-shape-corner-medium);">
+                        <div style="font-size: 24px; font-weight: bold; color: var(--md-sys-color-on-error-container);">${result.failed_count}</div>
+                        <div style="font-size: 12px; color: var(--md-sys-color-on-error-container);">失败</div>
+                    </div>
+                </div>
+
+                ${result.failed_count > 0 ? `
+                <div style="margin-top: 16px;">
+                    <h5 style="color: var(--md-sys-color-error); margin-bottom: 8px;">失败的股票代码:</h5>
+                    <div style="max-height: 120px; overflow-y: auto; background-color: var(--md-sys-color-surface-variant); padding: 12px; border-radius: var(--md-sys-shape-corner-small);">
+                        ${result.failed_stocks.map(stock => `
+                            <div style="font-size: 14px; color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">
+                                ${stock.code}: ${stock.reason}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+
+        $('#csv-import-result').html(resultHtml).show();
+        $('#csv-import-btn').prop('disabled', false);
+    }
+
+    // 批量添加股票到投资组合
+    function addStocksToPortfolio(convertedStocks) {
+        let addedCount = 0;
+        let skippedCount = 0;
+        const skippedStocks = [];
+
+        convertedStocks.forEach(stockInfo => {
+            const stockCode = stockInfo.converted_code;
+
+            // 检查是否已存在
+            const existingIndex = portfolio.findIndex(s => s.stock_code === stockCode);
+            if (existingIndex >= 0) {
+                skippedCount++;
+                skippedStocks.push(stockCode);
+                return;
+            }
+
+            // 添加到投资组合
+            portfolio.push({
+                stock_code: stockCode,
+                weight: 10, // 默认权重10%
+                stock_name: '加载中...',
+                industry: '-',
+                price: null,
+                price_change: null,
+                score: null,
+                recommendation: null,
+                loading: true,
+                isNew: true  // 标记为新添加的股票
+            });
+
+            addedCount++;
+        });
+
+        // 保存投资组合
+        savePortfolio();
+
+        // 为新添加的股票获取数据
+        const newStocks = portfolio.filter(stock => stock.isNew);
+        newStocks.forEach((stock, index) => {
+            // 延迟请求避免并发过多
+            setTimeout(() => {
+                fetchStockData(stock.stock_code);
+            }, index * 500); // 每500ms请求一个
+        });
+
+        // 显示添加结果
+        let message = `成功添加 ${addedCount} 只股票到投资组合`;
+        if (skippedCount > 0) {
+            message += `，跳过 ${skippedCount} 只已存在的股票`;
+        }
+        showSuccess(message);
+
+        if (skippedStocks.length > 0 && skippedStocks.length <= 5) {
+            showInfo(`跳过的股票: ${skippedStocks.join(', ')}`);
+        }
+
+        // 关闭模态框
+        setTimeout(() => {
+            $('#importCsvModal').modal('hide');
+            resetCsvImportModal();
+        }, 2000);
+    }
+
+    // 重置CSV导入模态框
+    function resetCsvImportModal() {
+        $('#csv-file-input').val('');
+        $('#csv-file-info').hide();
+        $('#csv-upload-progress').hide();
+        $('#csv-import-result').hide();
+        $('#csv-import-btn').prop('disabled', true);
+        $('.progress-bar').css('width', '0%');
+        window.selectedCsvFile = null;
+
+        // 重置拖拽区域样式
+        $('.csv-upload-area').css('border-color', 'var(--md-sys-color-outline)');
+        $('.csv-upload-area').css('background-color', 'var(--md-sys-color-surface-container-low)');
+    }
+
+    // 模态框关闭时重置状态
+    $('#importCsvModal').on('hidden.bs.modal', function() {
+        resetCsvImportModal();
+    });
 </script>
 
 <style>
@@ -939,6 +1276,15 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 16px;
+        }
+
+        .md3-button-group {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .md3-button-group .md3-button {
+            width: 100%;
         }
 
         .md3-portfolio-title {
