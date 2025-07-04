@@ -1439,21 +1439,35 @@ class StockAnalyzer:
         start_time = time.time()
         processed = 0
 
-        # 批量处理，减少日志输出
-        batch_size = 10
+        # 批量处理，增加并发处理和缓存优化
+        batch_size = 20  # 增加批次大小
+        max_workers = min(4, len(stock_list))  # 限制并发数
+
+        # 导入并发处理模块
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
         for i in range(0, total_stocks, batch_size):
             batch = stock_list[i:i + batch_size]
             batch_results = []
 
-            for stock_code in batch:
-                try:
-                    # 使用简化版分析以加快速度
-                    report = self.quick_analyze_stock(stock_code, market_type)
-                    if report['score'] >= min_score:
-                        batch_results.append(report)
-                except Exception as e:
-                    self.logger.error(f"分析股票 {stock_code} 时出错: {str(e)}")
-                    continue
+            # 使用线程池并发处理
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # 提交任务
+                future_to_stock = {
+                    executor.submit(self._safe_quick_analyze, stock_code, market_type, min_score): stock_code
+                    for stock_code in batch
+                }
+
+                # 收集结果
+                for future in as_completed(future_to_stock, timeout=300):  # 5分钟超时
+                    stock_code = future_to_stock[future]
+                    try:
+                        result = future.result()
+                        if result:
+                            batch_results.append(result)
+                    except Exception as e:
+                        self.logger.error(f"并发分析股票 {stock_code} 时出错: {str(e)}")
+                        continue
 
             # 添加批处理结果
             recommendations.extend(batch_results)
@@ -1521,13 +1535,22 @@ class StockAnalyzer:
     #         self.logger.error(f"快速分析股票 {stock_code} 时出错: {str(e)}")
     #         raise
 
-    def quick_analyze_stock(self, stock_code, market_type='A', timeout=20):
-        """快速分析股票，用于市场扫描，增加超时控制"""
+    def quick_analyze_stock(self, stock_code, market_type='A', timeout=60):
+        """快速分析股票，用于市场扫描，增加超时控制和错误处理"""
         start_time = time.time()
         try:
             self.logger.info(f"开始快速分析股票: {stock_code}")
 
-            # 获取股票数据（设置较短的超时时间）
+            # 优先从缓存获取数据
+            cache_key = f"{stock_code}_{market_type}_quick_analysis"
+            if cache_key in self.data_cache:
+                cached_result = self.data_cache[cache_key]
+                # 检查缓存是否过期（5分钟）
+                if time.time() - cached_result.get('timestamp', 0) < 300:
+                    self.logger.info(f"使用缓存的快速分析结果: {stock_code}")
+                    return cached_result['data']
+
+            # 获取股票数据（增加超时时间）
             df = self.get_stock_data(stock_code, market_type, timeout=timeout)
             data_time = time.time()
             self.logger.debug(f"股票 {stock_code} 数据获取耗时: {data_time - start_time:.2f}秒")
@@ -1576,13 +1599,47 @@ class StockAnalyzer:
                 'rsi': float(latest['RSI']),
                 'macd_signal': 'BUY' if latest['MACD'] > latest['Signal'] else 'SELL',
                 'volume_status': 'HIGH' if latest['Volume_Ratio'] > 1.5 else 'NORMAL',
-                'recommendation': self.get_recommendation(score)
+                'recommendation': self.get_recommendation(score),
+                'analysis_time': time.time() - start_time  # 添加分析耗时
+            }
+
+            # 缓存结果
+            self.data_cache[cache_key] = {
+                'data': report,
+                'timestamp': time.time()
             }
 
             return report
         except Exception as e:
             self.logger.error(f"快速分析股票 {stock_code} 时出错: {str(e)}")
-            raise
+            # 返回错误报告而不是抛出异常
+            return {
+                'stock_code': stock_code,
+                'stock_name': '未知',
+                'industry': '未知',
+                'analysis_date': datetime.now().strftime('%Y-%m-%d'),
+                'score': 0,
+                'price': 0,
+                'price_change': 0,
+                'ma_trend': 'UNKNOWN',
+                'rsi': 50,
+                'macd_signal': 'HOLD',
+                'volume_status': 'NORMAL',
+                'recommendation': '数据获取失败',
+                'analysis_time': time.time() - start_time,
+                'error': str(e)
+            }
+
+    def _safe_quick_analyze(self, stock_code, market_type, min_score):
+        """安全的快速分析方法，用于并发处理"""
+        try:
+            report = self.quick_analyze_stock(stock_code, market_type)
+            if report.get('score', 0) >= min_score and 'error' not in report:
+                return report
+            return None
+        except Exception as e:
+            self.logger.error(f"安全快速分析股票 {stock_code} 时出错: {str(e)}")
+            return None
 
     # ======================== 新增功能 ========================#
 

@@ -56,10 +56,10 @@ CACHE_CONFIG = {
 # ==================== API配置 ====================
 
 API_CONFIG = {
-    # AKShare API配置
-    'AKSHARE_TIMEOUT': int(os.getenv('AKSHARE_TIMEOUT', '30')),          # 30秒
-    'AKSHARE_MAX_RETRIES': int(os.getenv('AKSHARE_MAX_RETRIES', '3')),   # 最大重试次数
-    'AKSHARE_RETRY_DELAY': int(os.getenv('AKSHARE_RETRY_DELAY', '1')),   # 重试延迟（秒）
+    # AKShare API配置 - 针对HF Spaces环境优化
+    'AKSHARE_TIMEOUT': int(os.getenv('AKSHARE_TIMEOUT', '60')),          # 延长到60秒
+    'AKSHARE_MAX_RETRIES': int(os.getenv('AKSHARE_MAX_RETRIES', '5')),   # 增加重试次数
+    'AKSHARE_RETRY_DELAY': int(os.getenv('AKSHARE_RETRY_DELAY', '2')),   # 增加重试延迟
     
     # OpenAI API配置
     'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY'),
@@ -101,9 +101,9 @@ APP_CONFIG = {
     'LOG_MAX_BYTES': int(os.getenv('LOG_MAX_BYTES', '10000000')),  # 10MB
     'LOG_BACKUP_COUNT': int(os.getenv('LOG_BACKUP_COUNT', '5')),
     
-    # 性能配置
+    # 性能配置 - 针对HF Spaces环境优化
     'MAX_WORKERS': int(os.getenv('MAX_WORKERS', '4')),
-    'REQUEST_TIMEOUT': int(os.getenv('REQUEST_TIMEOUT', '60')),    # 60秒
+    'REQUEST_TIMEOUT': int(os.getenv('REQUEST_TIMEOUT', '180')),    # 延长到180秒
 }
 
 # ==================== 数据库连接字符串示例 ====================

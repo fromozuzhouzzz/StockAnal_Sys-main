@@ -13,6 +13,17 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# 应用HF Spaces性能优化配置
+try:
+    from hf_spaces_performance_config import init_hf_spaces_performance
+    performance_config = init_hf_spaces_performance()
+    if performance_config:
+        logger.info("✅ HF Spaces性能优化配置已应用")
+    else:
+        logger.warning("⚠️ HF Spaces性能优化配置应用失败")
+except Exception as e:
+    logger.error(f"❌ 性能优化配置导入失败: {e}")
+
 # 设置环境变量，适配 Hugging Face Spaces 环境
 os.environ.setdefault('USE_DATABASE', 'False')
 os.environ.setdefault('USE_REDIS_CACHE', 'False')

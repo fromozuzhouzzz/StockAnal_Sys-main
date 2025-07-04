@@ -44,19 +44,19 @@ class HFSpacesOptimizer:
         """获取优化配置"""
         if self.is_hf_spaces:
             return {
-                # 超时配置 - HF Spaces有严格的超时限制
-                'api_timeout': 30,  # API请求超时（秒）
-                'analysis_timeout': 45,  # 分析超时（秒）
-                'data_fetch_timeout': 20,  # 数据获取超时（秒）
+                # 超时配置 - 延长超时时间以适应复杂分析
+                'api_timeout': 180,  # API请求超时（秒）- 延长到3分钟
+                'analysis_timeout': 180,  # 分析超时（秒）- 延长到3分钟
+                'data_fetch_timeout': 60,  # 数据获取超时（秒）- 延长到1分钟
                 
-                # 资源限制
-                'max_concurrent_requests': 2,  # 最大并发请求数
-                'max_stocks_per_batch': 5,  # 批量分析最大股票数
-                'memory_limit_mb': 512,  # 内存限制（MB）
+                # 资源限制 - 优化并发和批处理
+                'max_concurrent_requests': 4,  # 最大并发请求数 - 增加并发
+                'max_stocks_per_batch': 20,  # 批量分析最大股票数 - 增加批次大小
+                'memory_limit_mb': 1024,  # 内存限制（MB）- 增加内存限制
                 
-                # 缓存配置
-                'cache_size': 1000,  # 缓存大小
-                'cache_ttl': 1800,  # 缓存TTL（秒）
+                # 缓存配置 - 优化缓存策略
+                'cache_size': 5000,  # 缓存大小 - 增加缓存容量
+                'cache_ttl': 3600,  # 缓存TTL（秒）- 延长缓存时间
                 
                 # 重试配置
                 'max_retries': 2,  # 最大重试次数

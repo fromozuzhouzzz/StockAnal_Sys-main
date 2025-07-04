@@ -406,10 +406,78 @@ class AdvancedCacheManager:
     
     def _get_from_l3(self, key: str, ttl: int, data_type: str, **kwargs) -> Optional[Any]:
         """从L3缓存（数据库）获取数据"""
-        # 这里需要根据具体的数据类型调用相应的数据库查询
-        # 暂时返回None，由具体实现类重写
-        self.l3_stats.misses += 1
-        return None
+        try:
+            # 确保在Flask应用上下文中执行
+            try:
+                from flask import has_app_context
+                if not has_app_context():
+                    # 如果没有应用上下文，尝试创建一个
+                    try:
+                        from web_server import app
+                        with app.app_context():
+                            return self._get_from_l3_internal(key, ttl, data_type, **kwargs)
+                    except Exception as e:
+                        logger.warning(f"无法创建应用上下文，跳过L3缓存: {e}")
+                        self.l3_stats.misses += 1
+                        return None
+                else:
+                    return self._get_from_l3_internal(key, ttl, data_type, **kwargs)
+            except ImportError:
+                # Flask不可用，直接调用内部方法
+                return self._get_from_l3_internal(key, ttl, data_type, **kwargs)
+
+        except Exception as e:
+            logger.error(f"L3缓存获取失败: {e}")
+            self.l3_stats.misses += 1
+            return None
+
+    def _get_from_l3_internal(self, key: str, ttl: int, data_type: str, **kwargs) -> Optional[Any]:
+        """L3缓存内部获取逻辑"""
+        try:
+            from database import get_session, StockBasicInfo, StockRealtimeData, FinancialData, CapitalFlowData
+            from datetime import datetime
+
+            session = get_session()
+            result = None
+
+            # 根据数据类型查询相应的表
+            if data_type == 'basic_info':
+                stock_code = kwargs.get('stock_code')
+                if stock_code:
+                    record = session.query(StockBasicInfo).filter_by(
+                        stock_code=stock_code
+                    ).filter(
+                        StockBasicInfo.expires_at > datetime.now()
+                    ).first()
+                    if record:
+                        result = record.to_dict()
+                        self.l3_stats.hits += 1
+                    else:
+                        self.l3_stats.misses += 1
+
+            elif data_type == 'realtime':
+                stock_code = kwargs.get('stock_code')
+                if stock_code:
+                    record = session.query(StockRealtimeData).filter_by(
+                        stock_code=stock_code
+                    ).filter(
+                        StockRealtimeData.expires_at > datetime.now()
+                    ).first()
+                    if record:
+                        result = record.to_dict()
+                        self.l3_stats.hits += 1
+                    else:
+                        self.l3_stats.misses += 1
+
+            session.close()
+            return result
+
+        except Exception as e:
+            logger.error(f"L3缓存内部获取失败: {e}")
+            if 'session' in locals():
+                session.close()
+            self.l3_stats.misses += 1
+            return None
     
     def _set_to_l3(self, key: str, data: Any, ttl: int, data_type: str, **kwargs) -> bool:
         """设置L3缓存（数据库）"""

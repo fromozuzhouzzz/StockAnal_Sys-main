@@ -50,10 +50,11 @@ def init_pymysql_compatibility():
 if 'mysql' in DATABASE_URL.lower():
     init_pymysql_compatibility()
 
-# 数据库连接池配置
-DATABASE_POOL_SIZE = int(os.getenv('DATABASE_POOL_SIZE', '10'))
-DATABASE_POOL_RECYCLE = int(os.getenv('DATABASE_POOL_RECYCLE', '3600'))
-DATABASE_POOL_TIMEOUT = int(os.getenv('DATABASE_POOL_TIMEOUT', '30'))
+# 数据库连接池配置 - 针对HF Spaces环境优化
+DATABASE_POOL_SIZE = int(os.getenv('DATABASE_POOL_SIZE', '15'))  # 增加连接池大小
+DATABASE_POOL_RECYCLE = int(os.getenv('DATABASE_POOL_RECYCLE', '1800'))  # 减少回收时间
+DATABASE_POOL_TIMEOUT = int(os.getenv('DATABASE_POOL_TIMEOUT', '60'))  # 增加超时时间
+DATABASE_POOL_MAX_OVERFLOW = int(os.getenv('DATABASE_POOL_MAX_OVERFLOW', '20'))  # 添加溢出连接
 
 # 缓存配置
 CACHE_DEFAULT_TTL = int(os.getenv('CACHE_DEFAULT_TTL', '900'))  # 15分钟
@@ -68,8 +69,17 @@ if 'mysql' in DATABASE_URL.lower():
         pool_size=DATABASE_POOL_SIZE,
         pool_recycle=DATABASE_POOL_RECYCLE,
         pool_timeout=DATABASE_POOL_TIMEOUT,
+        max_overflow=DATABASE_POOL_MAX_OVERFLOW,  # 添加溢出连接配置
         pool_pre_ping=True,  # 验证连接有效性
-        echo=False  # 生产环境关闭SQL日志
+        echo=False,  # 生产环境关闭SQL日志
+        # 添加查询优化配置
+        connect_args={
+            "charset": "utf8mb4",
+            "autocommit": True,
+            "connect_timeout": 60,
+            "read_timeout": 60,
+            "write_timeout": 60
+        }
     )
 else:
     # SQLite配置
@@ -84,10 +94,10 @@ class StockInfo(Base):
 
     id = Column(Integer, primary_key=True)
     stock_code = Column(String(10), nullable=False, index=True)
-    stock_name = Column(String(50))
-    market_type = Column(String(5))
-    industry = Column(String(50))
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    stock_name = Column(String(50), index=True)  # 添加索引优化查询
+    market_type = Column(String(5), index=True)  # 添加索引优化查询
+    industry = Column(String(50), index=True)  # 添加索引优化查询
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, index=True)  # 添加索引优化时间查询
 
     def to_dict(self):
         return {
@@ -468,6 +478,117 @@ def cleanup_expired_cache():
 
     except Exception as e:
         logger.error(f"清理过期缓存失败: {e}")
+
+
+def batch_get_stock_info(stock_codes):
+    """批量获取股票基本信息，优化查询性能"""
+    if not USE_DATABASE or not stock_codes:
+        return {}
+
+    try:
+        session = get_session()
+        # 使用IN查询批量获取
+        results = session.query(StockBasicInfo).filter(
+            StockBasicInfo.stock_code.in_(stock_codes),
+            StockBasicInfo.expires_at > datetime.now()
+        ).all()
+        session.close()
+
+        # 转换为字典格式
+        stock_info_dict = {}
+        for result in results:
+            stock_info_dict[result.stock_code] = result.to_dict()
+
+        logger.info(f"批量获取股票信息: 请求{len(stock_codes)}只，命中{len(stock_info_dict)}只")
+        return stock_info_dict
+
+    except Exception as e:
+        logger.error(f"批量获取股票信息失败: {e}")
+        return {}
+
+
+def batch_get_realtime_data(stock_codes):
+    """批量获取股票实时数据，优化查询性能"""
+    if not USE_DATABASE or not stock_codes:
+        return {}
+
+    try:
+        session = get_session()
+        # 使用IN查询批量获取
+        results = session.query(StockRealtimeData).filter(
+            StockRealtimeData.stock_code.in_(stock_codes),
+            StockRealtimeData.expires_at > datetime.now()
+        ).all()
+        session.close()
+
+        # 转换为字典格式
+        realtime_dict = {}
+        for result in results:
+            realtime_dict[result.stock_code] = result.to_dict()
+
+        logger.info(f"批量获取实时数据: 请求{len(stock_codes)}只，命中{len(realtime_dict)}只")
+        return realtime_dict
+
+    except Exception as e:
+        logger.error(f"批量获取实时数据失败: {e}")
+        return {}
+
+
+def batch_save_stock_data(data_list, data_type):
+    """批量保存股票数据，优化保存性能"""
+    if not USE_DATABASE or not data_list:
+        return False
+
+    try:
+        session = get_session()
+
+        if data_type == 'basic_info':
+            # 批量保存基本信息
+            for data in data_list:
+                existing = session.query(StockBasicInfo).filter_by(
+                    stock_code=data['stock_code']
+                ).first()
+
+                if existing:
+                    # 更新现有记录
+                    for key, value in data.items():
+                        if hasattr(existing, key):
+                            setattr(existing, key, value)
+                else:
+                    # 创建新记录
+                    new_record = StockBasicInfo(**data)
+                    session.add(new_record)
+
+        elif data_type == 'realtime':
+            # 批量保存实时数据
+            for data in data_list:
+                existing = session.query(StockRealtimeData).filter_by(
+                    stock_code=data['stock_code']
+                ).first()
+
+                if existing:
+                    # 更新现有记录
+                    for key, value in data.items():
+                        if hasattr(existing, key):
+                            setattr(existing, key, value)
+                else:
+                    # 创建新记录
+                    new_record = StockRealtimeData(**data)
+                    session.add(new_record)
+
+        # 批量提交
+        session.commit()
+        session.close()
+
+        logger.info(f"批量保存{data_type}数据成功: {len(data_list)}条记录")
+        return True
+
+    except Exception as e:
+        logger.error(f"批量保存{data_type}数据失败: {e}")
+        if 'session' in locals():
+            session.rollback()
+            session.close()
+        return False
 
 
 def get_cache_stats():

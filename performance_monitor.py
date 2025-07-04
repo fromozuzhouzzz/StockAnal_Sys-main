@@ -34,7 +34,11 @@ class PerformanceMonitor:
             'api_calls': 0,
             'db_queries': 0,
             'errors': 0,
-            'total_requests': 0
+            'total_requests': 0,
+            'slow_queries': 0,  # 慢查询计数
+            'timeout_errors': 0,  # 超时错误计数
+            'analysis_count': 0,  # 分析次数
+            'concurrent_requests': 0  # 并发请求数
         }
         
         # 时间序列数据
@@ -230,6 +234,37 @@ class PerformanceMonitor:
             logger.error(f"导出性能指标失败: {e}")
             return None
     
+    def record_analysis(self, stock_code: str, analysis_type: str, duration: float, success: bool = True):
+        """记录分析性能"""
+        with self.lock:
+            self.metrics['analysis_count'] += 1
+            if not success:
+                self.metrics['errors'] += 1
+                self.error_stats[f"analysis_{analysis_type}"] += 1
+
+            # 记录分析时间
+            self.time_series['analysis_times'] = getattr(self.time_series, 'analysis_times', deque(maxlen=self.max_history_size))
+            self.time_series['analysis_times'].append({
+                'timestamp': time.time(),
+                'stock_code': stock_code,
+                'analysis_type': analysis_type,
+                'duration': duration,
+                'success': success
+            })
+
+    def record_slow_query(self, query_type: str, duration: float):
+        """记录慢查询"""
+        with self.lock:
+            self.metrics['slow_queries'] += 1
+            logger.warning(f"慢查询检测: {query_type} 耗时 {duration:.2f}秒")
+
+    def record_timeout_error(self, operation: str, timeout_duration: float):
+        """记录超时错误"""
+        with self.lock:
+            self.metrics['timeout_errors'] += 1
+            self.error_stats[f"timeout_{operation}"] += 1
+            logger.error(f"超时错误: {operation} 超时 {timeout_duration:.2f}秒")
+
     def reset_metrics(self):
         """重置性能指标"""
         with self.lock:
@@ -239,9 +274,13 @@ class PerformanceMonitor:
                 'api_calls': 0,
                 'db_queries': 0,
                 'errors': 0,
-                'total_requests': 0
+                'total_requests': 0,
+                'slow_queries': 0,
+                'timeout_errors': 0,
+                'analysis_count': 0,
+                'concurrent_requests': 0
             }
-            
+
             for key in self.time_series:
                 self.time_series[key].clear()
             
@@ -310,36 +349,83 @@ def monitor_db_query(func):
     return wrapper
 
 
+def record_analysis_performance(stock_code: str, analysis_type: str, duration: float, success: bool = True):
+    """记录分析性能"""
+    performance_monitor.record_analysis(stock_code, analysis_type, duration, success)
+
+
+def record_slow_query(query_type: str, duration: float):
+    """记录慢查询"""
+    performance_monitor.record_slow_query(query_type, duration)
+
+
+def record_timeout_error(operation: str, timeout_duration: float):
+    """记录超时错误"""
+    performance_monitor.record_timeout_error(operation, timeout_duration)
+
+
+def get_hf_spaces_performance_report():
+    """获取HF Spaces环境的性能报告"""
+    summary = performance_monitor.get_performance_summary()
+
+    # 添加HF Spaces特定的性能指标
+    hf_report = {
+        **summary,
+        'hf_spaces_optimizations': {
+            'timeout_errors': performance_monitor.metrics['timeout_errors'],
+            'slow_queries': performance_monitor.metrics['slow_queries'],
+            'analysis_count': performance_monitor.metrics['analysis_count'],
+            'concurrent_requests': performance_monitor.metrics['concurrent_requests'],
+        },
+        'recommendations': []
+    }
+
+    # 生成优化建议
+    if summary['cache_hit_rate'] < 70:
+        hf_report['recommendations'].append("建议增加缓存大小或延长缓存TTL")
+
+    if summary['avg_api_time'] > 30:
+        hf_report['recommendations'].append("API调用时间过长，建议优化网络配置或增加重试机制")
+
+    if performance_monitor.metrics['timeout_errors'] > 0:
+        hf_report['recommendations'].append("检测到超时错误，建议延长超时时间配置")
+
+    if performance_monitor.metrics['slow_queries'] > 0:
+        hf_report['recommendations'].append("检测到慢查询，建议优化数据库索引或查询语句")
+
+    return hf_report
+
+
 if __name__ == "__main__":
     # 测试性能监控器
     monitor = PerformanceMonitor()
-    
+
     # 模拟一些性能数据
     import random
-    
+
     for i in range(100):
         # 模拟缓存命中/未命中
         if random.random() < 0.8:
             monitor.record_cache_hit(random.uniform(0.001, 0.01))
         else:
             monitor.record_cache_miss()
-        
+
         # 模拟API调用
         monitor.record_api_call(
             random.uniform(0.5, 3.0),
             success=random.random() < 0.95,
             error="网络超时" if random.random() < 0.05 else None
         )
-        
+
         # 模拟数据库查询
         monitor.record_db_query(
             random.uniform(0.01, 0.5),
             success=random.random() < 0.98
         )
-    
+
     # 打印性能摘要
-    summary = monitor.get_performance_summary()
-    print("性能摘要:")
+    summary = get_hf_spaces_performance_report()
+    print("HF Spaces性能报告:")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     
     # 导出指标
