@@ -210,7 +210,17 @@ class DataService:
                     time.sleep(wait_time)
 
         # 所有重试都失败了，抛出最后一个异常
-        self.logger.error(f"API调用最终失败，已重试 {self.max_retries} 次")
+        self.logger.error(f"API调用最终失败，已重试 {self.max_retries} 次，最后错误: {last_exception}")
+
+        # 提供更详细的诊断信息
+        if hasattr(last_exception, 'args') and last_exception.args:
+            error_msg = str(last_exception.args[0])
+            if "股票代码" in error_msg:
+                self.logger.error("可能的解决方案：")
+                self.logger.error("1. 检查股票代码格式是否正确")
+                self.logger.error("2. 确认股票是否正常交易（未停牌、未退市）")
+                self.logger.error("3. 检查网络连接和AKShare服务状态")
+
         raise last_exception
     
     def get_stock_basic_info(self, stock_code: str, market_type: str = 'A', use_advanced_cache: bool = True) -> Optional[Dict]:
@@ -250,23 +260,31 @@ class DataService:
             self.logger.info(f"从API获取股票 {stock_code} 基本信息")
 
             if market_type == 'A':
+                # 转换股票代码为AKShare API所需格式
+                original_code = stock_code
+                akshare_code = self._convert_stock_code_for_akshare(stock_code)
+                self.logger.info(f"基本信息获取 - 股票代码转换: {original_code} -> {akshare_code}")
+
                 # 获取A股基本信息
-                stock_info = self._retry_api_call(ak.stock_individual_info_em, symbol=stock_code)
+                stock_info = self._retry_api_call(ak.stock_individual_info_em, symbol=akshare_code)
 
                 # 检查API返回数据的有效性
                 if stock_info is None or len(stock_info) == 0:
-                    self.logger.warning(f"股票 {stock_code} 基本信息API返回空数据")
-                    raise Exception(f"股票 {stock_code} 基本信息获取失败：API返回空数据")
+                    self.logger.warning(f"股票 {original_code} (转换为 {akshare_code}) 基本信息API返回空数据")
+                    raise Exception(f"股票 {original_code} 基本信息获取失败：API返回空数据")
 
                 # 处理数据
                 info_dict = {}
                 try:
-                    for _, row in stock_info.iterrows():
-                        if len(row) >= 2:
-                            key = str(row.iloc[0]) if row.iloc[0] is not None else ''
-                            value = str(row.iloc[1]) if row.iloc[1] is not None else ''
-                            if key:  # 只添加非空键
-                                info_dict[key] = value
+                    if isinstance(stock_info, pd.DataFrame) and not stock_info.empty:
+                        for _, row in stock_info.iterrows():
+                            if len(row) >= 2:
+                                key = str(row.iloc[0]) if row.iloc[0] is not None else ''
+                                value = str(row.iloc[1]) if row.iloc[1] is not None else ''
+                                if key:  # 只添加非空键
+                                    info_dict[key] = value
+                    else:
+                        self.logger.warning(f"股票基本信息数据格式异常: {type(stock_info)}")
                 except Exception as e:
                     self.logger.error(f"处理股票基本信息数据时出错: {e}")
                     # 如果数据处理失败，至少返回基本结构
@@ -277,11 +295,12 @@ class DataService:
                 try:
                     stock_name_df = self._retry_api_call(ak.stock_info_a_code_name)
                     if stock_name_df is not None and len(stock_name_df) > 0:
-                        matching_stocks = stock_name_df[stock_name_df['code'] == stock_code]
+                        # 尝试使用转换后的代码匹配
+                        matching_stocks = stock_name_df[stock_name_df['code'] == akshare_code]
                         if len(matching_stocks) > 0:
                             stock_name = str(matching_stocks['name'].iloc[0])
                         else:
-                            self.logger.warning(f"在股票代码表中未找到 {stock_code}")
+                            self.logger.warning(f"在股票代码表中未找到 {akshare_code} (原始代码: {original_code})")
                 except Exception as e:
                     self.logger.warning(f"获取股票名称失败: {e}")
 
@@ -290,8 +309,9 @@ class DataService:
                     stock_name = info_dict.get('股票简称', info_dict.get('证券简称', ''))
 
                 # 构建返回数据，使用安全的默认值
+                # 确保使用原始股票代码（保持.SZ/.SH格式）
                 data = {
-                    'stock_code': stock_code,
+                    'stock_code': original_code,  # 使用原始代码格式
                     'stock_name': stock_name,
                     'market_type': market_type,
                     'industry': info_dict.get('行业', info_dict.get('所属行业', '')),
@@ -303,6 +323,8 @@ class DataService:
                     'pe_ratio': self._safe_float(info_dict.get('市盈率', info_dict.get('市盈率(动态)', 0))),
                     'pb_ratio': self._safe_float(info_dict.get('市净率', 0))
                 }
+
+                self.logger.info(f"成功构建股票 {original_code} 基本信息，股票名称: {stock_name}")
             else:
                 # 其他市场的处理逻辑
                 data = {
@@ -363,6 +385,36 @@ class DataService:
             return float(value) if value else 0.0
         except:
             return 0.0
+
+    def _convert_stock_code_for_akshare(self, stock_code: str) -> str:
+        """
+        将股票代码转换为AKShare API所需的格式
+
+        Args:
+            stock_code: 原始股票代码 (如: 000001.SZ, 603316.SH)
+
+        Returns:
+            转换后的股票代码 (如: 000001, 603316)
+        """
+        if not stock_code:
+            return stock_code
+
+        # 移除后缀，只保留数字部分
+        if '.' in stock_code:
+            code_part = stock_code.split('.')[0]
+            # 验证是否为6位数字
+            if code_part.isdigit() and len(code_part) == 6:
+                return code_part
+            else:
+                self.logger.warning(f"股票代码格式异常: {stock_code}")
+                return stock_code
+
+        # 如果已经是纯数字格式，直接返回
+        if stock_code.isdigit() and len(stock_code) == 6:
+            return stock_code
+
+        self.logger.warning(f"无法识别的股票代码格式: {stock_code}")
+        return stock_code
     
     def get_cache_statistics(self) -> Dict:
         """获取缓存统计信息"""
@@ -630,20 +682,28 @@ class DataService:
                             start_date: str, end_date: str) -> Optional[pd.DataFrame]:
         """从API获取价格数据的核心方法"""
         try:
+            # 转换股票代码为AKShare API所需格式
+            original_code = stock_code
+            if market_type == 'A':
+                akshare_code = self._convert_stock_code_for_akshare(stock_code)
+                self.logger.info(f"股票代码转换: {original_code} -> {akshare_code}")
+            else:
+                akshare_code = stock_code
+
             def fetch_price_data():
                 try:
                     if market_type == 'A':
                         result = ak.stock_zh_a_hist(
-                            symbol=stock_code,
+                            symbol=akshare_code,
                             start_date=start_date.replace('-', ''),
                             end_date=end_date.replace('-', ''),
                             adjust="qfq"
                         )
                     elif market_type == 'HK':
-                        result = ak.stock_hk_daily(symbol=stock_code, adjust="qfq")
+                        result = ak.stock_hk_daily(symbol=akshare_code, adjust="qfq")
                     elif market_type == 'US':
                         result = ak.stock_us_hist(
-                            symbol=stock_code,
+                            symbol=akshare_code,
                             start_date=start_date.replace('-', ''),
                             end_date=end_date.replace('-', ''),
                             adjust="qfq"
@@ -653,24 +713,25 @@ class DataService:
 
                     # 验证返回数据
                     if result is None:
-                        raise Exception(f"AKShare API返回None，股票代码: {stock_code}")
+                        raise Exception(f"AKShare API返回None，原始代码: {original_code}, AKShare代码: {akshare_code}")
 
                     if not isinstance(result, pd.DataFrame):
-                        raise Exception(f"AKShare API返回数据类型错误，期望DataFrame，实际: {type(result)}")
+                        raise Exception(f"AKShare API返回数据类型错误，期望DataFrame，实际: {type(result)}, 原始代码: {original_code}, AKShare代码: {akshare_code}")
 
                     if len(result) == 0:
-                        raise Exception(f"AKShare API返回空DataFrame，股票代码: {stock_code}")
+                        raise Exception(f"AKShare API返回空DataFrame，原始代码: {original_code}, AKShare代码: {akshare_code}, 日期范围: {start_date} 到 {end_date}")
 
+                    self.logger.info(f"成功获取股票 {original_code} 的 {len(result)} 条价格数据")
                     return result
 
                 except Exception as api_error:
-                    self.logger.error(f"AKShare API调用失败: {api_error}")
+                    self.logger.error(f"AKShare API调用失败 - 原始代码: {original_code}, AKShare代码: {akshare_code}, 错误: {api_error}")
                     raise
 
             df = self._retry_api_call(fetch_price_data)
 
             if df is None or len(df) == 0:
-                raise Exception(f"获取股票 {stock_code} 价格数据失败：API返回空数据")
+                raise Exception(f"获取股票 {original_code} 价格数据失败：API返回空数据，转换后代码: {akshare_code}")
 
             # 重命名列名
             df = df.rename(columns={
@@ -802,15 +863,20 @@ class DataService:
             def fetch_realtime_data():
                 """获取实时股票数据"""
                 if market_type == 'A':
+                    # 转换股票代码为AKShare API所需格式
+                    original_code = stock_code
+                    akshare_code = self._convert_stock_code_for_akshare(stock_code)
+                    self.logger.info(f"实时数据获取 - 股票代码转换: {original_code} -> {akshare_code}")
+
                     # A股实时数据
                     df = ak.stock_zh_a_spot_em()
                     if df is not None and not df.empty:
-                        # 查找指定股票
-                        stock_data = df[df['代码'] == stock_code]
+                        # 查找指定股票（使用转换后的代码）
+                        stock_data = df[df['代码'] == akshare_code]
                         if not stock_data.empty:
                             row = stock_data.iloc[0]
                             return {
-                                'stock_code': stock_code,
+                                'stock_code': original_code,  # 返回原始代码格式
                                 'market_type': market_type,
                                 'current_price': safe_float_convert(row.get('最新价')),
                                 'change_amount': safe_float_convert(row.get('涨跌额')),
@@ -822,6 +888,10 @@ class DataService:
                                 'pb_ratio': safe_float_convert(row.get('市净率')),
                                 'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                             }
+                        else:
+                            self.logger.warning(f"在实时数据中未找到股票 {original_code} (转换为 {akshare_code})")
+                    else:
+                        self.logger.warning("获取A股实时数据失败：API返回空数据")
                 elif market_type == 'HK':
                     # 港股实时数据
                     df = ak.stock_hk_spot_em()
