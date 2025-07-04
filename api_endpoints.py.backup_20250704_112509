@@ -363,18 +363,10 @@ def analyze_stock():
 
         except Exception as e:
             logger.error(f"分析股票 {normalized_code} 时出错: {str(e)}")
-            logger.error(f"错误类型: {type(e).__name__}")
-            import traceback
-            logger.error(f"错误堆栈: {traceback.format_exc()}")
-            
             return APIResponse.error(
                 code=ErrorCodes.ANALYSIS_FAILED,
                 message=f'股票 {normalized_code} 分析失败',
-                details={
-                    'error_message': str(e),
-                    'error_type': type(e).__name__,
-                    'stock_code': normalized_code
-                },
+                details={'error_message': str(e)},
                 status_code=500
             )
 

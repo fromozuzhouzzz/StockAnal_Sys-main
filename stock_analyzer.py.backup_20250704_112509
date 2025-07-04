@@ -1593,22 +1593,17 @@ class StockAnalyzer:
             info = data_service.get_stock_basic_info(stock_code, market_type)
 
             if info:
-                # 检查info是否为字典类型，防止'str' object has no attribute 'get'错误
-                if not isinstance(info, dict):
-                    self.logger.error(f"获取到的股票信息不是字典格式: {type(info)}, 内容: {info}")
-                    raise Exception(f"股票信息格式错误: 期望字典，实际为{type(info)}")
-                
                 # 转换为原有格式以保持兼容性
                 result = {
-                    '股票名称': info.get('stock_name', '未知'),
-                    '行业': info.get('industry', '未知'),
+                    '股票名称': info['stock_name'],
+                    '行业': info['industry'],
                     '地区': info.get('sector', '未知'),
-                    '总市值': info.get('market_cap', 0),
-                    '市盈率': info.get('pe_ratio', 0),
-                    '市净率': info.get('pb_ratio', 0),
-                    '总股本': info.get('total_share', 0),
-                    '流通股': info.get('float_share', 0),
-                    '上市时间': info.get('list_date', '')
+                    '总市值': info['market_cap'],
+                    '市盈率': info['pe_ratio'],
+                    '市净率': info['pb_ratio'],
+                    '总股本': info['total_share'],
+                    '流通股': info['float_share'],
+                    '上市时间': info['list_date']
                 }
 
                 # 缓存结果

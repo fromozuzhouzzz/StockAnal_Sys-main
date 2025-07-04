@@ -241,19 +241,7 @@ class DataService:
                         if db_record and not db_record.is_expired():
                             data = db_record.to_dict()
                             self._set_memory_cache(cache_key, data)
-                            # 验证返回数据的完整性
-            if not isinstance(data, dict):
-                self.logger.error(f"数据格式错误: 期望字典，实际为{type(data)}")
-                return None
-            
-            # 确保必要字段存在
-            required_fields = ['stock_code', 'stock_name', 'market_type']
-            for field in required_fields:
-                if field not in data:
-                    self.logger.warning(f"缺少必要字段: {field}")
-                    data[field] = '' if field != 'stock_code' else stock_code
-            
-            return data
+                            return data
                 except Exception as e:
                     self.logger.error(f"数据库查询失败: {e}")
         
@@ -275,9 +263,8 @@ class DataService:
                 try:
                     stock_name_df = ak.stock_info_a_code_name()
                     stock_name = stock_name_df[stock_name_df['code'] == stock_code]['name'].iloc[0]
-                except Exception as e:
-                    self.logger.warning(f"获取股票名称失败: {e}")
-                    stock_name = info_dict.get('股票简称', '未知')
+                except:
+                    stock_name = info_dict.get('股票简称', '')
                 
                 data = {
                     'stock_code': stock_code,
@@ -325,18 +312,6 @@ class DataService:
                 cache_key = self._get_cache_key('basic_info', stock_code=stock_code, market_type=market_type)
                 self._set_memory_cache(cache_key, data)
 
-            # 验证返回数据的完整性
-            if not isinstance(data, dict):
-                self.logger.error(f"数据格式错误: 期望字典，实际为{type(data)}")
-                return None
-            
-            # 确保必要字段存在
-            required_fields = ['stock_code', 'stock_name', 'market_type']
-            for field in required_fields:
-                if field not in data:
-                    self.logger.warning(f"缺少必要字段: {field}")
-                    data[field] = '' if field != 'stock_code' else stock_code
-            
             return data
             
         except Exception as e:
@@ -736,19 +711,7 @@ class DataService:
                     data = db_record.to_dict()
                     session.close()
                     self._set_memory_cache(cache_key, data)
-                    # 验证返回数据的完整性
-            if not isinstance(data, dict):
-                self.logger.error(f"数据格式错误: 期望字典，实际为{type(data)}")
-                return None
-            
-            # 确保必要字段存在
-            required_fields = ['stock_code', 'stock_name', 'market_type']
-            for field in required_fields:
-                if field not in data:
-                    self.logger.warning(f"缺少必要字段: {field}")
-                    data[field] = '' if field != 'stock_code' else stock_code
-            
-            return data
+                    return data
 
                 session.close()
             except Exception as e:
@@ -861,19 +824,7 @@ class DataService:
                         data = db_record.to_dict()
                         session.close()
                         self._set_memory_cache(cache_key, data)
-                        # 验证返回数据的完整性
-            if not isinstance(data, dict):
-                self.logger.error(f"数据格式错误: 期望字典，实际为{type(data)}")
-                return None
-            
-            # 确保必要字段存在
-            required_fields = ['stock_code', 'stock_name', 'market_type']
-            for field in required_fields:
-                if field not in data:
-                    self.logger.warning(f"缺少必要字段: {field}")
-                    data[field] = '' if field != 'stock_code' else stock_code
-            
-            return data
+                        return data
 
                     session.close()
                 except Exception as db_error:
@@ -929,18 +880,6 @@ class DataService:
 
             # 5. 保存到内存缓存
             self._set_memory_cache(cache_key, data)
-            # 验证返回数据的完整性
-            if not isinstance(data, dict):
-                self.logger.error(f"数据格式错误: 期望字典，实际为{type(data)}")
-                return None
-            
-            # 确保必要字段存在
-            required_fields = ['stock_code', 'stock_name', 'market_type']
-            for field in required_fields:
-                if field not in data:
-                    self.logger.warning(f"缺少必要字段: {field}")
-                    data[field] = '' if field != 'stock_code' else stock_code
-            
             return data
 
         except Exception as e:
