@@ -248,35 +248,59 @@ class DataService:
         # 3. 从API获取新数据
         try:
             self.logger.info(f"从API获取股票 {stock_code} 基本信息")
-            
+
             if market_type == 'A':
                 # 获取A股基本信息
                 stock_info = self._retry_api_call(ak.stock_individual_info_em, symbol=stock_code)
-                
+
+                # 检查API返回数据的有效性
+                if stock_info is None or len(stock_info) == 0:
+                    self.logger.warning(f"股票 {stock_code} 基本信息API返回空数据")
+                    raise Exception(f"股票 {stock_code} 基本信息获取失败：API返回空数据")
+
                 # 处理数据
                 info_dict = {}
-                for _, row in stock_info.iterrows():
-                    if len(row) >= 2:
-                        info_dict[row.iloc[0]] = row.iloc[1]
-                
-                # 获取股票名称
                 try:
-                    stock_name_df = ak.stock_info_a_code_name()
-                    stock_name = stock_name_df[stock_name_df['code'] == stock_code]['name'].iloc[0]
-                except:
-                    stock_name = info_dict.get('股票简称', '')
-                
+                    for _, row in stock_info.iterrows():
+                        if len(row) >= 2:
+                            key = str(row.iloc[0]) if row.iloc[0] is not None else ''
+                            value = str(row.iloc[1]) if row.iloc[1] is not None else ''
+                            if key:  # 只添加非空键
+                                info_dict[key] = value
+                except Exception as e:
+                    self.logger.error(f"处理股票基本信息数据时出错: {e}")
+                    # 如果数据处理失败，至少返回基本结构
+                    info_dict = {}
+
+                # 获取股票名称
+                stock_name = ''
+                try:
+                    stock_name_df = self._retry_api_call(ak.stock_info_a_code_name)
+                    if stock_name_df is not None and len(stock_name_df) > 0:
+                        matching_stocks = stock_name_df[stock_name_df['code'] == stock_code]
+                        if len(matching_stocks) > 0:
+                            stock_name = str(matching_stocks['name'].iloc[0])
+                        else:
+                            self.logger.warning(f"在股票代码表中未找到 {stock_code}")
+                except Exception as e:
+                    self.logger.warning(f"获取股票名称失败: {e}")
+
+                # 如果没有获取到股票名称，尝试从基本信息中获取
+                if not stock_name:
+                    stock_name = info_dict.get('股票简称', info_dict.get('证券简称', ''))
+
+                # 构建返回数据，使用安全的默认值
                 data = {
                     'stock_code': stock_code,
                     'stock_name': stock_name,
                     'market_type': market_type,
-                    'industry': info_dict.get('行业', ''),
-                    'sector': info_dict.get('板块', ''),
-                    'list_date': info_dict.get('上市时间', ''),
-                    'total_share': self._safe_float(info_dict.get('总股本', 0)),
-                    'float_share': self._safe_float(info_dict.get('流通股', 0)),
-                    'market_cap': self._safe_float(info_dict.get('总市值', 0)),
-                    'pe_ratio': self._safe_float(info_dict.get('市盈率', 0)),
+                    'industry': info_dict.get('行业', info_dict.get('所属行业', '')),
+                    'sector': info_dict.get('板块', info_dict.get('所属板块', '')),
+                    'list_date': info_dict.get('上市时间', info_dict.get('上市日期', '')),
+                    'total_share': self._safe_float(info_dict.get('总股本', info_dict.get('总股本(万股)', 0))),
+                    'float_share': self._safe_float(info_dict.get('流通股', info_dict.get('流通股本(万股)', 0))),
+                    'market_cap': self._safe_float(info_dict.get('总市值', info_dict.get('总市值(万元)', 0))),
+                    'pe_ratio': self._safe_float(info_dict.get('市盈率', info_dict.get('市盈率(动态)', 0))),
                     'pb_ratio': self._safe_float(info_dict.get('市净率', 0))
                 }
             else:
@@ -505,11 +529,27 @@ class DataService:
                     if db_records:
                         # 转换为DataFrame
                         data_list = [record.to_dict() for record in db_records]
-                        df = pd.DataFrame(data_list)
-                        df['date'] = pd.to_datetime(df['trade_date'])
-                        df = df.drop('trade_date', axis=1)
-                        self._set_memory_cache(cache_key, df)
-                        return df
+
+                        # 检查数据列表是否为空
+                        if not data_list:
+                            self.logger.warning(f"数据库记录转换后为空列表: {stock_code}")
+                            return None
+
+                        # 安全创建DataFrame
+                        try:
+                            df = pd.DataFrame(data_list)
+                            if len(df) == 0:
+                                self.logger.warning(f"创建的DataFrame为空: {stock_code}")
+                                return None
+
+                            df['date'] = pd.to_datetime(df['trade_date'])
+                            df = df.drop('trade_date', axis=1)
+                            self._set_memory_cache(cache_key, df)
+                            return df
+                        except Exception as df_error:
+                            self.logger.error(f"创建DataFrame失败: {df_error}")
+                            self.logger.error(f"数据样本: {data_list[:3] if len(data_list) > 0 else '空列表'}")
+                            return None
             except Exception as e:
                 self.logger.error(f"数据库查询历史价格失败: {e}")
 
@@ -591,29 +631,46 @@ class DataService:
         """从API获取价格数据的核心方法"""
         try:
             def fetch_price_data():
-                if market_type == 'A':
-                    return ak.stock_zh_a_hist(
-                        symbol=stock_code,
-                        start_date=start_date.replace('-', ''),
-                        end_date=end_date.replace('-', ''),
-                        adjust="qfq"
-                    )
-                elif market_type == 'HK':
-                    return ak.stock_hk_daily(symbol=stock_code, adjust="qfq")
-                elif market_type == 'US':
-                    return ak.stock_us_hist(
-                        symbol=stock_code,
-                        start_date=start_date.replace('-', ''),
-                        end_date=end_date.replace('-', ''),
-                        adjust="qfq"
-                    )
-                else:
-                    raise ValueError(f"不支持的市场类型: {market_type}")
+                try:
+                    if market_type == 'A':
+                        result = ak.stock_zh_a_hist(
+                            symbol=stock_code,
+                            start_date=start_date.replace('-', ''),
+                            end_date=end_date.replace('-', ''),
+                            adjust="qfq"
+                        )
+                    elif market_type == 'HK':
+                        result = ak.stock_hk_daily(symbol=stock_code, adjust="qfq")
+                    elif market_type == 'US':
+                        result = ak.stock_us_hist(
+                            symbol=stock_code,
+                            start_date=start_date.replace('-', ''),
+                            end_date=end_date.replace('-', ''),
+                            adjust="qfq"
+                        )
+                    else:
+                        raise ValueError(f"不支持的市场类型: {market_type}")
+
+                    # 验证返回数据
+                    if result is None:
+                        raise Exception(f"AKShare API返回None，股票代码: {stock_code}")
+
+                    if not isinstance(result, pd.DataFrame):
+                        raise Exception(f"AKShare API返回数据类型错误，期望DataFrame，实际: {type(result)}")
+
+                    if len(result) == 0:
+                        raise Exception(f"AKShare API返回空DataFrame，股票代码: {stock_code}")
+
+                    return result
+
+                except Exception as api_error:
+                    self.logger.error(f"AKShare API调用失败: {api_error}")
+                    raise
 
             df = self._retry_api_call(fetch_price_data)
 
             if df is None or len(df) == 0:
-                raise Exception("获取到的数据为空")
+                raise Exception(f"获取股票 {stock_code} 价格数据失败：API返回空数据")
 
             # 重命名列名
             df = df.rename(columns={

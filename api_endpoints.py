@@ -545,6 +545,12 @@ def analyze_stock():
         start_time = time.time()
         analysis_timeout = get_hf_timeout('analysis')
 
+        # 初始化变量以避免UnboundLocalError
+        analysis_result = None
+        risk_assessment = None
+        fundamental_result = None
+        response_data = None
+
         try:
             # 使用降级分析策略
             if FALLBACK_STRATEGY_AVAILABLE:
@@ -601,7 +607,8 @@ def analyze_stock():
                 logger.info("尝试使用降级策略的基础响应")
                 try:
                     response_data = fallback_strategy._basic_response(normalized_code, market_type)
-                except:
+                except Exception as fallback_error:
+                    logger.error(f"降级策略基础响应也失败: {fallback_error}")
                     # 如果连基础响应都失败，返回错误
                     return APIResponse.error(
                         code=ErrorCodes.ANALYSIS_FAILED,
@@ -610,7 +617,8 @@ def analyze_stock():
                             'error_message': str(e),
                             'error_type': type(e).__name__,
                             'stock_code': normalized_code,
-                            'fallback_failed': True
+                            'fallback_failed': True,
+                            'fallback_error': str(fallback_error)
                         },
                         status_code=500
                     )
@@ -626,6 +634,18 @@ def analyze_stock():
                     status_code=500
                 )
 
+        # 确保response_data存在
+        if response_data is None:
+            return APIResponse.error(
+                code=ErrorCodes.ANALYSIS_FAILED,
+                message='个股分析失败',
+                details={
+                    'error_message': '分析过程中未生成有效数据',
+                    'stock_code': normalized_code
+                },
+                status_code=500
+            )
+
         # 计算处理时间
         processing_time = int((time.time() - start_time) * 1000)
 
@@ -634,8 +654,8 @@ def analyze_stock():
             response_data['fallback_info'] = {}
         response_data['fallback_info']['processing_time_ms'] = processing_time
 
-        # 添加AI分析（如果请求）
-        if include_ai_analysis and analysis_result.get('ai_analysis'):
+        # 添加AI分析（如果请求且analysis_result存在）
+        if include_ai_analysis and analysis_result and analysis_result.get('ai_analysis'):
             response_data['ai_analysis'] = {
                 'summary': analysis_result['ai_analysis'].get('summary', ''),
                 'recommendation': analysis_result['ai_analysis'].get('recommendation', ''),
@@ -647,7 +667,7 @@ def analyze_stock():
             'data_freshness': '实时',
             'processing_time_ms': processing_time,
             'analysis_depth': analysis_depth,
-            'cache_hit': getattr(analysis_result, 'cache_hit', False)
+            'cache_hit': getattr(analysis_result, 'cache_hit', False) if analysis_result else False
         }
 
         return APIResponse.success(data=response_data, meta=meta)
@@ -1018,3 +1038,105 @@ def estimate_task_completion_time(task_type: str, params: Dict) -> int:
         base_time += stocks_count * 1  # 每只股票增加1秒
 
     return min(base_time, 1800)  # 最大30分钟
+
+
+def get_risk_level(risk_score):
+    """根据风险评分获取风险等级"""
+    if risk_score >= 80:
+        return '高风险'
+    elif risk_score >= 60:
+        return '中高风险'
+    elif risk_score >= 40:
+        return '中等风险'
+    elif risk_score >= 20:
+        return '中低风险'
+    else:
+        return '低风险'
+
+
+def _format_traditional_result(stock_code: str, analysis_result: Dict,
+                             risk_assessment: Dict, fundamental_result: Dict, market_type: str) -> Dict:
+    """格式化传统分析结果"""
+    try:
+        # 安全获取数据，提供默认值
+        stock_name = analysis_result.get('stock_name', '未知') if analysis_result else '未知'
+        overall_score = analysis_result.get('score', 0) if analysis_result else 0
+        technical_score = analysis_result.get('technical_score', 0) if analysis_result else 0
+        fundamental_score = fundamental_result.get('total_score', 0) if fundamental_result else 0
+        risk_score = risk_assessment.get('total_risk_score', 50) if risk_assessment else 50
+
+        # 构建响应数据
+        response_data = {
+            'stock_info': {
+                'stock_code': stock_code,
+                'stock_name': stock_name,
+                'industry': analysis_result.get('industry', '未知') if analysis_result else '未知',
+                'market_type': market_type
+            },
+            'analysis_result': {
+                'overall_score': overall_score,
+                'technical_score': technical_score,
+                'fundamental_score': fundamental_score,
+                'risk_score': risk_score
+            },
+            'scores': {
+                'overall_score': overall_score,
+                'technical_score': technical_score,
+                'fundamental_score': fundamental_score,
+                'risk_score': risk_score
+            },
+            'risk_assessment': {
+                'total_risk_score': risk_score,
+                'risk_level': get_risk_level(risk_score)
+            },
+            'recommendation': analysis_result.get('recommendation', '持有') if analysis_result else '持有',
+            'fallback_info': {
+                'analysis_type': 'traditional',
+                'data_source': 'direct_api'
+            }
+        }
+
+        # 添加基本信息（如果存在）
+        if analysis_result:
+            basic_info = {
+                'name': stock_name,
+                'current_price': analysis_result.get('price', 0),
+                'change_percent': analysis_result.get('price_change', 0),
+                'volume': analysis_result.get('volume', 0)
+            }
+            response_data['basic_info'] = basic_info
+
+        return response_data
+
+    except Exception as e:
+        logger.error(f"格式化传统分析结果失败: {e}")
+        # 返回基础结构
+        return {
+            'stock_info': {
+                'stock_code': stock_code,
+                'stock_name': '未知',
+                'industry': '未知',
+                'market_type': market_type
+            },
+            'analysis_result': {
+                'overall_score': 0,
+                'technical_score': 0,
+                'fundamental_score': 0,
+                'risk_score': 50
+            },
+            'scores': {
+                'overall_score': 0,
+                'technical_score': 0,
+                'fundamental_score': 0,
+                'risk_score': 50
+            },
+            'risk_assessment': {
+                'total_risk_score': 50,
+                'risk_level': '中等风险'
+            },
+            'recommendation': '持有',
+            'fallback_info': {
+                'analysis_type': 'error_fallback',
+                'error_message': str(e)
+            }
+        }
