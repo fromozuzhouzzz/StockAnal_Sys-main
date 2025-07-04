@@ -30,6 +30,14 @@ except ImportError:
     def is_hf_feature_enabled(feature): return True
     def get_hf_config(key, default=None): return default
 
+# 导入降级分析策略
+try:
+    from fallback_analysis_strategy import fallback_strategy
+    FALLBACK_STRATEGY_AVAILABLE = True
+except ImportError:
+    FALLBACK_STRATEGY_AVAILABLE = False
+    fallback_strategy = None
+
 logger = logging.getLogger(__name__)
 
 # 创建API蓝图
@@ -85,6 +93,10 @@ def api_health():
                 'risk_monitor': risk_monitor is not None,
                 'fundamental_analyzer': fundamental_analyzer is not None
             },
+            'features': {
+                'hf_optimization': HF_OPTIMIZATION_AVAILABLE,
+                'fallback_strategy': FALLBACK_STRATEGY_AVAILABLE
+            },
             'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ')
         }
 
@@ -100,6 +112,74 @@ def api_health():
         return APIResponse.error(
             code=ErrorCodes.INTERNAL_SERVER_ERROR,
             message='健康检查失败',
+            details={'error': str(e)},
+            status_code=500
+        )
+
+
+@api_v1.route('/status', methods=['GET'])
+def api_status():
+    """API详细状态端点"""
+    try:
+        # 基本状态信息
+        status_info = {
+            'api_version': '1.0.0',
+            'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'uptime': time.time() - start_time if 'start_time' in globals() else 0
+        }
+
+        # 分析器状态
+        analyzer_status = {
+            'stock_analyzer': {
+                'initialized': analyzer is not None,
+                'type': type(analyzer).__name__ if analyzer else None
+            },
+            'risk_monitor': {
+                'initialized': risk_monitor is not None,
+                'type': type(risk_monitor).__name__ if risk_monitor else None
+            },
+            'fundamental_analyzer': {
+                'initialized': fundamental_analyzer is not None,
+                'type': type(fundamental_analyzer).__name__ if fundamental_analyzer else None
+            }
+        }
+
+        # 功能状态
+        feature_status = {
+            'hf_optimization': {
+                'available': HF_OPTIMIZATION_AVAILABLE,
+                'enabled': HF_OPTIMIZATION_AVAILABLE and get_hf_config('enable_optimization', True)
+            },
+            'fallback_strategy': {
+                'available': FALLBACK_STRATEGY_AVAILABLE,
+                'current_level': fallback_strategy.get_strategy_status() if FALLBACK_STRATEGY_AVAILABLE else None
+            }
+        }
+
+        # 环境信息
+        import os
+        environment_info = {
+            'is_hf_spaces': any(os.getenv(var) for var in ['SPACE_ID', 'GRADIO_SERVER_NAME']),
+            'python_version': os.sys.version.split()[0],
+            'environment_vars': {
+                'USE_DATABASE': os.getenv('USE_DATABASE'),
+                'USE_REDIS_CACHE': os.getenv('USE_REDIS_CACHE'),
+                'SPACE_ID': os.getenv('SPACE_ID')
+            }
+        }
+
+        return APIResponse.success(data={
+            'status': status_info,
+            'analyzers': analyzer_status,
+            'features': feature_status,
+            'environment': environment_info
+        })
+
+    except Exception as e:
+        logger.error(f"状态检查失败: {e}")
+        return APIResponse.error(
+            code=ErrorCodes.INTERNAL_SERVER_ERROR,
+            message='状态检查失败',
             details={'error': str(e)},
             status_code=500
         )
@@ -461,28 +541,54 @@ def analyze_stock():
                 include_ai_analysis = False
                 logger.info("HF Spaces环境：禁用AI分析")
 
-        # 执行股票分析
+        # 执行股票分析 - 使用降级策略
         start_time = time.time()
         analysis_timeout = get_hf_timeout('analysis')
 
         try:
-            if analysis_depth == 'full':
-                # 完整分析
-                analysis_result = analyzer.perform_enhanced_analysis(normalized_code, market_type)
-            else:
-                # 快速分析
-                analysis_result = analyzer.quick_analyze_stock(normalized_code, market_type)
+            # 使用降级分析策略
+            if FALLBACK_STRATEGY_AVAILABLE:
+                logger.info(f"使用降级分析策略分析股票: {normalized_code}")
+                analysis_data = fallback_strategy.analyze_stock_with_fallback(
+                    normalized_code, market_type, analyzer, risk_monitor, fundamental_analyzer
+                )
 
-            # 获取风险评估
-            risk_assessment = risk_monitor.analyze_stock_risk(normalized_code, market_type)
+                # 检查是否是错误响应
+                if analysis_data.get('error'):
+                    return APIResponse.error(
+                        code=ErrorCodes.ANALYSIS_FAILED,
+                        message='个股分析失败',
+                        details={
+                            'error_message': analysis_data.get('message', '降级策略失败'),
+                            'fallback_info': analysis_data.get('fallback_info', {}),
+                            'stock_code': normalized_code
+                        },
+                        status_code=500
+                    )
 
-            # 获取基本面分析 - 在HF环境下可能跳过
-            if HF_OPTIMIZATION_AVAILABLE and not is_hf_feature_enabled('complex_indicators'):
-                # 使用简化的基本面分析
-                fundamental_result = {'total_score': 50, 'details': '简化分析'}
-                logger.info("HF Spaces环境：使用简化基本面分析")
+                # 使用降级策略的结果
+                response_data = analysis_data
+
             else:
-                fundamental_result = fundamental_analyzer.calculate_fundamental_score(normalized_code)
+                # 传统分析方式（备用）
+                logger.warning("降级策略不可用，使用传统分析方式")
+
+                if analysis_depth == 'full':
+                    analysis_result = analyzer.perform_enhanced_analysis(normalized_code, market_type)
+                else:
+                    analysis_result = analyzer.quick_analyze_stock(normalized_code, market_type)
+
+                risk_assessment = risk_monitor.analyze_stock_risk(normalized_code, market_type)
+
+                if HF_OPTIMIZATION_AVAILABLE and not is_hf_feature_enabled('complex_indicators'):
+                    fundamental_result = {'total_score': 50, 'details': '简化分析'}
+                else:
+                    fundamental_result = fundamental_analyzer.calculate_fundamental_score(normalized_code)
+
+                # 格式化传统分析结果
+                response_data = _format_traditional_result(
+                    normalized_code, analysis_result, risk_assessment, fundamental_result, market_type
+                )
 
         except Exception as e:
             logger.error(f"分析股票 {normalized_code} 时出错: {str(e)}")
@@ -490,61 +596,43 @@ def analyze_stock():
             import traceback
             logger.error(f"错误堆栈: {traceback.format_exc()}")
 
-            return APIResponse.error(
-                code=ErrorCodes.ANALYSIS_FAILED,
-                message=f'个股分析失败',
-                details={
-                    'error_message': str(e),
-                    'error_type': type(e).__name__,
-                    'stock_code': normalized_code
-                },
-                status_code=500
-            )
+            # 如果有降级策略，尝试使用基础响应
+            if FALLBACK_STRATEGY_AVAILABLE:
+                logger.info("尝试使用降级策略的基础响应")
+                try:
+                    response_data = fallback_strategy._basic_response(normalized_code, market_type)
+                except:
+                    # 如果连基础响应都失败，返回错误
+                    return APIResponse.error(
+                        code=ErrorCodes.ANALYSIS_FAILED,
+                        message='个股分析失败',
+                        details={
+                            'error_message': str(e),
+                            'error_type': type(e).__name__,
+                            'stock_code': normalized_code,
+                            'fallback_failed': True
+                        },
+                        status_code=500
+                    )
+            else:
+                return APIResponse.error(
+                    code=ErrorCodes.ANALYSIS_FAILED,
+                    message='个股分析失败',
+                    details={
+                        'error_message': str(e),
+                        'error_type': type(e).__name__,
+                        'stock_code': normalized_code
+                    },
+                    status_code=500
+                )
 
-        # 构建响应数据
+        # 计算处理时间
         processing_time = int((time.time() - start_time) * 1000)
 
-        response_data = {
-            'stock_info': {
-                'stock_code': normalized_code,
-                'stock_name': analysis_result.get('stock_name', '未知'),
-                'industry': analysis_result.get('industry', '未知'),
-                'market_type': market_type
-            },
-            'analysis_result': {
-                'overall_score': analysis_result.get('score', 0),
-                'technical_score': analysis_result.get('technical_score', 0),
-                'fundamental_score': fundamental_result.get('total_score', 0),
-                'capital_flow_score': analysis_result.get('capital_flow_score', 0)
-            },
-            'technical_analysis': {
-                'trend': analysis_result.get('ma_trend', '未知'),
-                'support_levels': analysis_result.get('support_levels', []),
-                'resistance_levels': analysis_result.get('resistance_levels', []),
-                'indicators': {
-                    'rsi': analysis_result.get('rsi', 0),
-                    'macd_signal': analysis_result.get('macd_signal', '未知'),
-                    'ma_trend': analysis_result.get('ma_trend', '未知'),
-                    'volume_status': analysis_result.get('volume_status', '未知')
-                }
-            },
-            'fundamental_analysis': {
-                'pe_ratio': fundamental_result.get('pe_ttm', 0),
-                'pb_ratio': fundamental_result.get('pb', 0),
-                'roe': fundamental_result.get('roe', 0),
-                'debt_ratio': fundamental_result.get('debt_ratio', 0),
-                'growth_score': fundamental_result.get('growth_score', 0),
-                'profitability_score': fundamental_result.get('profitability_score', 0)
-            },
-            'risk_assessment': {
-                'risk_level': get_risk_level(risk_assessment.get('total_risk_score', 50)),
-                'volatility': risk_assessment.get('volatility_risk', {}).get('score', 0),
-                'trend_risk': risk_assessment.get('trend_risk', {}).get('score', 0),
-                'volume_risk': risk_assessment.get('volume_risk', {}).get('score', 0),
-                'total_risk_score': risk_assessment.get('total_risk_score', 50)
-            },
-            'recommendation': analysis_result.get('recommendation', '持有')
-        }
+        # 添加处理时间到响应数据
+        if 'fallback_info' not in response_data:
+            response_data['fallback_info'] = {}
+        response_data['fallback_info']['processing_time_ms'] = processing_time
 
         # 添加AI分析（如果请求）
         if include_ai_analysis and analysis_result.get('ai_analysis'):

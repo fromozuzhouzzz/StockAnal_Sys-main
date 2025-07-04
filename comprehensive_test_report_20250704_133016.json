@@ -1,0 +1,210 @@
+{
+  "health_endpoints": {
+    "/api/v1/health": {
+      "status": "success",
+      "data": {
+        "data": {
+          "analyzers": {
+            "fundamental_analyzer": true,
+            "risk_monitor": true,
+            "stock_analyzer": true
+          },
+          "status": "healthy",
+          "timestamp": "2025-07-04T07:29:39Z",
+          "version": "1.0.0"
+        },
+        "meta": {
+          "processing_time_ms": null,
+          "request_id": "da26b22e-f3d1-4f08-a279-e483fe607283",
+          "timestamp": "2025-07-04T07:29:39.932913Z"
+        },
+        "success": true
+      }
+    },
+    "/api/v1/status": {
+      "status": "failed",
+      "status_code": 404
+    }
+  },
+  "stock_analysis": {
+    "603316.SH": {
+      "status": "failed",
+      "status_code": 500,
+      "error": {
+        "error": {
+          "code": "ANALYSIS_FAILED",
+          "details": {
+            "error_message": "获取股票数据失败: 获取股票 603316.SH 数据为空",
+            "error_type": "Exception",
+            "stock_code": "603316.SH"
+          },
+          "message": "个股分析失败"
+        },
+        "meta": {
+          "endpoint": "api_v1.analyze_stock",
+          "method": "POST",
+          "request_id": "21c1e8f3-3301-48a9-a07b-8d92c18df4df",
+          "timestamp": "2025-07-04T07:29:44.086987Z"
+        },
+        "success": false
+      }
+    },
+    "601218.SH": {
+      "status": "failed",
+      "status_code": 500,
+      "error": {
+        "error": {
+          "code": "ANALYSIS_FAILED",
+          "details": {
+            "error_message": "获取股票数据失败: 获取股票 601218.SH 数据为空",
+            "error_type": "Exception",
+            "stock_code": "601218.SH"
+          },
+          "message": "个股分析失败"
+        },
+        "meta": {
+          "endpoint": "api_v1.analyze_stock",
+          "method": "POST",
+          "request_id": "2cb52feb-272b-4d27-8d52-73e7a403abad",
+          "timestamp": "2025-07-04T07:29:48.929727Z"
+        },
+        "success": false
+      }
+    },
+    "000001.SZ": {
+      "status": "failed",
+      "status_code": 500,
+      "error": {
+        "error": {
+          "code": "ANALYSIS_FAILED",
+          "details": {
+            "error_message": "获取股票数据失败: 获取股票 000001.SZ 数据为空",
+            "error_type": "Exception",
+            "stock_code": "000001.SZ"
+          },
+          "message": "个股分析失败"
+        },
+        "meta": {
+          "endpoint": "api_v1.analyze_stock",
+          "method": "POST",
+          "request_id": "453f9781-e333-4aa6-8856-a47f027ad252",
+          "timestamp": "2025-07-04T07:29:53.749203Z"
+        },
+        "success": false
+      }
+    },
+    "600000.SH": {
+      "status": "failed",
+      "status_code": 500,
+      "error": {
+        "error": {
+          "code": "ANALYSIS_FAILED",
+          "details": {
+            "error_message": "获取股票数据失败: 获取股票 600000.SH 数据为空",
+            "error_type": "Exception",
+            "stock_code": "600000.SH"
+          },
+          "message": "个股分析失败"
+        },
+        "meta": {
+          "endpoint": "api_v1.analyze_stock",
+          "method": "POST",
+          "request_id": "c703cc04-3fa0-45ed-9024-9f325fd0ba31",
+          "timestamp": "2025-07-04T07:29:58.200060Z"
+        },
+        "success": false
+      }
+    },
+    "invalid.XX": {
+      "status": "failed",
+      "status_code": 400,
+      "error": {
+        "error": {
+          "code": "INVALID_STOCK_CODE",
+          "details": {
+            "stock_code": "invalid.XX"
+          },
+          "message": "无效的股票代码"
+        },
+        "meta": {
+          "endpoint": "api_v1.analyze_stock",
+          "method": "POST",
+          "request_id": "7383d1ae-bda9-4749-aea5-55d80488d222",
+          "timestamp": "2025-07-04T07:30:01.097536Z"
+        },
+        "success": false
+      }
+    }
+  },
+  "error_handling": {
+    "无API密钥": {
+      "status": "success",
+      "response": {
+        "error": {
+          "code": "MISSING_API_KEY",
+          "details": "请在请求头中提供X-API-Key",
+          "message": "缺少API密钥"
+        },
+        "success": false
+      }
+    },
+    "错误API密钥": {
+      "status": "success",
+      "response": {
+        "error": {
+          "code": "INVALID_API_KEY",
+          "details": "API密钥不存在、已过期或已被撤销",
+          "message": "无效的API密钥"
+        },
+        "success": false
+      }
+    },
+    "无效请求格式": {
+      "status": "success",
+      "response": {
+        "error": {
+          "code": "INVALID_REQUEST_FORMAT",
+          "details": {
+            "message": "缺少必需字段",
+            "missing_fields": [
+              "stock_code"
+            ]
+          },
+          "message": "请求参数验证失败"
+        },
+        "meta": {
+          "endpoint": "api_v1.analyze_stock",
+          "method": "POST",
+          "request_id": "368edd02-5894-4f0d-8346-f00543d7d86a",
+          "timestamp": "2025-07-04T07:30:06.987323Z"
+        },
+        "success": false
+      }
+    },
+    "无效股票代码": {
+      "status": "success",
+      "response": {
+        "error": {
+          "code": "INVALID_STOCK_CODE",
+          "details": {
+            "stock_code": "INVALID"
+          },
+          "message": "无效的股票代码"
+        },
+        "meta": {
+          "endpoint": "api_v1.analyze_stock",
+          "method": "POST",
+          "request_id": "ec07a562-3415-4833-baf0-680d8fa8b6b9",
+          "timestamp": "2025-07-04T07:30:08.491934Z"
+        },
+        "success": false
+      }
+    }
+  },
+  "performance": {
+    "average": 2.528005599975586,
+    "min": 2.506145715713501,
+    "max": 2.550607919692993,
+    "samples": 3
+  }
+}
