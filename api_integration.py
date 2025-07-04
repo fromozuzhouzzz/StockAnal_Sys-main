@@ -24,25 +24,49 @@ def register_api_endpoints(app: Flask):
         # 注册API蓝图
         app.register_blueprint(api_v1)
         logger.info("API v1端点已注册")
-        
-        # 初始化分析器
+
+        # 初始化分析器 - 尝试从多个来源获取分析器实例
         from stock_analyzer import StockAnalyzer
         from risk_monitor import RiskMonitor
         from fundamental_analyzer import FundamentalAnalyzer
-        
-        # 获取全局分析器实例
-        analyzer = getattr(app, 'analyzer', None) or StockAnalyzer()
-        risk_monitor = getattr(app, 'risk_monitor', None) or RiskMonitor(analyzer)
-        fundamental_analyzer = getattr(app, 'fundamental_analyzer', None) or FundamentalAnalyzer()
-        
+
+        # 尝试从app对象获取分析器实例
+        analyzer = getattr(app, 'analyzer', None)
+        risk_monitor_instance = getattr(app, 'risk_monitor', None)
+        fundamental_analyzer_instance = getattr(app, 'fundamental_analyzer', None)
+
+        # 如果app对象中没有，尝试从全局变量获取
+        if analyzer is None:
+            try:
+                import web_server
+                analyzer = getattr(web_server, 'analyzer', None)
+                risk_monitor_instance = getattr(web_server, 'risk_monitor', None)
+                fundamental_analyzer_instance = getattr(web_server, 'fundamental_analyzer', None)
+                logger.info("从web_server模块获取分析器实例")
+            except Exception as e:
+                logger.warning(f"无法从web_server模块获取分析器: {e}")
+
+        # 如果仍然没有，创建新的实例
+        if analyzer is None:
+            analyzer = StockAnalyzer()
+            logger.info("创建新的StockAnalyzer实例")
+        if risk_monitor_instance is None:
+            risk_monitor_instance = RiskMonitor(analyzer)
+            logger.info("创建新的RiskMonitor实例")
+        if fundamental_analyzer_instance is None:
+            fundamental_analyzer_instance = FundamentalAnalyzer()
+            logger.info("创建新的FundamentalAnalyzer实例")
+
         # 初始化API端点的分析器
-        init_analyzers(analyzer, risk_monitor, fundamental_analyzer)
+        init_analyzers(analyzer, risk_monitor_instance, fundamental_analyzer_instance)
         logger.info("API分析器已初始化")
-        
+
         return True
-        
+
     except Exception as e:
         logger.error(f"注册API端点失败: {e}")
+        import traceback
+        logger.error(f"错误堆栈: {traceback.format_exc()}")
         return False
 
 

@@ -1,0 +1,17 @@
+{
+  "health_check": true,
+  "single_stock": false,
+  "multi_stock_results": [
+    {
+      "stock_code": "603316.SH",
+      "success": false,
+      "timestamp": "2025-07-04 12:31:28"
+    },
+    {
+      "stock_code": "601218.SH",
+      "success": false,
+      "timestamp": "2025-07-04 12:31:46"
+    }
+  ],
+  "overall_success": false
+}

@@ -20,10 +20,44 @@ from stock_analyzer import StockAnalyzer
 from risk_monitor import RiskMonitor
 from fundamental_analyzer import FundamentalAnalyzer
 
+# 导入HF Spaces优化
+try:
+    from hf_spaces_optimization import get_hf_timeout, is_hf_feature_enabled, get_hf_config
+    HF_OPTIMIZATION_AVAILABLE = True
+except ImportError:
+    HF_OPTIMIZATION_AVAILABLE = False
+    def get_hf_timeout(timeout_type): return 60
+    def is_hf_feature_enabled(feature): return True
+    def get_hf_config(key, default=None): return default
+
 logger = logging.getLogger(__name__)
 
 # 创建API蓝图
 api_v1 = Blueprint('api_v1', __name__, url_prefix='/api/v1')
+
+
+def api_error_handler(f):
+    """API错误处理装饰器，确保所有错误都返回标准JSON格式"""
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"API端点 {f.__name__} 出错: {str(e)}")
+            import traceback
+            logger.error(f"错误堆栈: {traceback.format_exc()}")
+
+            return APIResponse.error(
+                code=ErrorCodes.INTERNAL_SERVER_ERROR,
+                message='服务器内部错误',
+                details={
+                    'error_message': str(e),
+                    'error_type': type(e).__name__,
+                    'endpoint': f.__name__
+                },
+                status_code=500
+            )
+    decorated_function.__name__ = f.__name__
+    return decorated_function
 
 # 初始化分析器（这些应该从主应用中获取）
 analyzer = None
@@ -36,6 +70,39 @@ def init_analyzers(app_analyzer, app_risk_monitor, app_fundamental_analyzer):
     analyzer = app_analyzer
     risk_monitor = app_risk_monitor
     fundamental_analyzer = app_fundamental_analyzer
+    logger.info(f"分析器初始化完成: analyzer={analyzer is not None}, risk_monitor={risk_monitor is not None}, fundamental_analyzer={fundamental_analyzer is not None}")
+
+
+@api_v1.route('/health', methods=['GET'])
+def api_health():
+    """API健康检查端点"""
+    try:
+        status = {
+            'status': 'healthy',
+            'version': '1.0.0',
+            'analyzers': {
+                'stock_analyzer': analyzer is not None,
+                'risk_monitor': risk_monitor is not None,
+                'fundamental_analyzer': fundamental_analyzer is not None
+            },
+            'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        }
+
+        # 如果分析器未初始化，状态为不健康
+        if not all(status['analyzers'].values()):
+            status['status'] = 'unhealthy'
+            status['message'] = '部分分析器未初始化'
+
+        return APIResponse.success(data=status)
+
+    except Exception as e:
+        logger.error(f"健康检查失败: {e}")
+        return APIResponse.error(
+            code=ErrorCodes.INTERNAL_SERVER_ERROR,
+            message='健康检查失败',
+            details={'error': str(e)},
+            status_code=500
+        )
 
 
 @api_v1.route('/portfolio/analyze', methods=['POST'])
@@ -298,6 +365,7 @@ def get_risk_level(risk_score: float) -> str:
 
 
 @api_v1.route('/stock/analyze', methods=['POST'])
+@api_error_handler
 @api_access_logger
 @require_rate_limit('/api/v1/stock/analyze')
 @require_api_key('stock_analysis')
@@ -315,6 +383,42 @@ def analyze_stock():
     }
     """
     try:
+        # 声明全局变量
+        global analyzer, risk_monitor, fundamental_analyzer
+
+        # 检查分析器是否已初始化
+        if analyzer is None or risk_monitor is None or fundamental_analyzer is None:
+            logger.error("分析器未初始化")
+            logger.error(f"analyzer: {analyzer}, risk_monitor: {risk_monitor}, fundamental_analyzer: {fundamental_analyzer}")
+
+            # 尝试重新初始化分析器
+            try:
+                from stock_analyzer import StockAnalyzer
+                from risk_monitor import RiskMonitor as RiskMonitorClass
+                from fundamental_analyzer import FundamentalAnalyzer as FundamentalAnalyzerClass
+
+                if analyzer is None:
+                    analyzer = StockAnalyzer()
+                    logger.info("重新初始化 StockAnalyzer")
+                if risk_monitor is None:
+                    risk_monitor = RiskMonitorClass(analyzer)
+                    logger.info("重新初始化 RiskMonitor")
+                if fundamental_analyzer is None:
+                    fundamental_analyzer = FundamentalAnalyzerClass()
+                    logger.info("重新初始化 FundamentalAnalyzer")
+
+            except Exception as init_error:
+                logger.error(f"重新初始化分析器失败: {init_error}")
+                return APIResponse.error(
+                    code=ErrorCodes.INTERNAL_SERVER_ERROR,
+                    message='分析器初始化失败',
+                    details={
+                        'error_message': str(init_error),
+                        'error_type': type(init_error).__name__
+                    },
+                    status_code=500
+                )
+
         # 验证请求数据
         data = request.get_json()
         validation_error = validate_request_data(data, ['stock_code'])
@@ -343,9 +447,23 @@ def analyze_stock():
 
         # 标准化股票代码
         normalized_code = normalize_stock_code(stock_code)
+        logger.info(f"开始分析股票: {normalized_code}, 分析深度: {analysis_depth}")
+
+        # 应用HF Spaces优化
+        if HF_OPTIMIZATION_AVAILABLE:
+            # 在HF环境下强制使用快速分析
+            if not is_hf_feature_enabled('complex_indicators'):
+                analysis_depth = 'quick'
+                logger.info("HF Spaces环境：使用快速分析模式")
+
+            # 禁用AI分析以节省资源
+            if not is_hf_feature_enabled('ai_analysis'):
+                include_ai_analysis = False
+                logger.info("HF Spaces环境：禁用AI分析")
 
         # 执行股票分析
         start_time = time.time()
+        analysis_timeout = get_hf_timeout('analysis')
 
         try:
             if analysis_depth == 'full':
@@ -358,18 +476,23 @@ def analyze_stock():
             # 获取风险评估
             risk_assessment = risk_monitor.analyze_stock_risk(normalized_code, market_type)
 
-            # 获取基本面分析
-            fundamental_result = fundamental_analyzer.calculate_fundamental_score(normalized_code)
+            # 获取基本面分析 - 在HF环境下可能跳过
+            if HF_OPTIMIZATION_AVAILABLE and not is_hf_feature_enabled('complex_indicators'):
+                # 使用简化的基本面分析
+                fundamental_result = {'total_score': 50, 'details': '简化分析'}
+                logger.info("HF Spaces环境：使用简化基本面分析")
+            else:
+                fundamental_result = fundamental_analyzer.calculate_fundamental_score(normalized_code)
 
         except Exception as e:
             logger.error(f"分析股票 {normalized_code} 时出错: {str(e)}")
             logger.error(f"错误类型: {type(e).__name__}")
             import traceback
             logger.error(f"错误堆栈: {traceback.format_exc()}")
-            
+
             return APIResponse.error(
                 code=ErrorCodes.ANALYSIS_FAILED,
-                message=f'股票 {normalized_code} 分析失败',
+                message=f'个股分析失败',
                 details={
                     'error_message': str(e),
                     'error_type': type(e).__name__,
