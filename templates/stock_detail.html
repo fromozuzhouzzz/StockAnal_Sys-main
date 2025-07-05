@@ -97,6 +97,62 @@
         .stock-metrics-grid {
             grid-template-columns: repeat(2, 1fr);
         }
+
+        /* 移动设备上的评分明细样式优化 */
+        .score-details-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .score-progress-container {
+            width: 100%;
+            min-width: unset;
+        }
+
+        .score-dimension-name {
+            font-size: 14px;
+        }
+
+        .score-dimension-desc {
+            font-size: 12px;
+            line-height: 1.3;
+        }
+
+        .score-weight-display {
+            display: block;
+            margin-left: 0;
+            margin-top: 4px;
+        }
+
+        .score-details-summary {
+            padding: 12px;
+        }
+
+        .score-details-summary h4 {
+            font-size: 16px;
+        }
+
+        .score-details-summary p {
+            font-size: 12px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        /* 超小屏幕设备优化 */
+        .score-progress-container {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .score-progress-bar {
+            width: 100%;
+        }
+
+        .score-value-display {
+            text-align: center;
+            min-width: unset;
+        }
     }
 
     .metric-card {
@@ -231,6 +287,103 @@
     .support-resistance-table {
         width: 100%;
         border-collapse: collapse;
+    }
+
+    /* 评分明细样式 */
+    .score-details-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .score-details-item:last-child {
+        border-bottom: none;
+    }
+
+    .score-dimension {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    .score-dimension-name {
+        font-family: var(--md-sys-typescale-body-medium-font);
+        font-size: var(--md-sys-typescale-body-medium-size);
+        font-weight: var(--md-sys-typescale-body-medium-weight);
+        color: var(--md-sys-color-on-surface);
+        margin-bottom: 4px;
+    }
+
+    .score-dimension-desc {
+        font-family: var(--md-sys-typescale-body-small-font);
+        font-size: var(--md-sys-typescale-body-small-size);
+        color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .score-progress-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 200px;
+    }
+
+    .score-progress-bar {
+        flex: 1;
+        height: 8px;
+        background-color: var(--md-sys-color-surface-variant);
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .score-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--md-sys-color-primary), var(--md-sys-color-secondary));
+        border-radius: 4px;
+        transition: width 0.6s ease;
+    }
+
+    .score-value-display {
+        font-family: var(--md-sys-typescale-label-medium-font);
+        font-size: var(--md-sys-typescale-label-medium-size);
+        font-weight: var(--md-sys-typescale-label-medium-weight);
+        color: var(--md-sys-color-primary);
+        min-width: 40px;
+        text-align: right;
+    }
+
+    .score-weight-display {
+        font-family: var(--md-sys-typescale-body-small-font);
+        font-size: var(--md-sys-typescale-body-small-size);
+        color: var(--md-sys-color-on-surface-variant);
+        margin-left: 8px;
+    }
+
+    .score-details-summary {
+        background-color: var(--md-sys-color-surface-container-high);
+        border-radius: var(--md-sys-shape-corner-medium);
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .score-details-summary h4 {
+        font-family: var(--md-sys-typescale-title-small-font);
+        font-size: var(--md-sys-typescale-title-small-size);
+        color: var(--md-sys-color-on-surface);
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .score-details-summary p {
+        font-family: var(--md-sys-typescale-body-small-font);
+        font-size: var(--md-sys-typescale-body-small-size);
+        color: var(--md-sys-color-on-surface-variant);
+        margin: 0;
+        line-height: 1.4;
     }
 
     .support-resistance-table th,
@@ -428,6 +581,19 @@
                     </div>
                     <div id="recommendation-container" style="margin-top: 24px;">
                         <div class="shimmer-skeleton" style="width: 120px; height: 32px; margin: 0 auto;"></div>
+                    </div>
+
+                    <!-- 评分明细展开/收起按钮 -->
+                    <div id="score-details-toggle" style="margin-top: 24px; display: none;">
+                        <button class="md3-button md3-button-text" onclick="toggleScoreDetails()">
+                            <i class="material-icons" id="score-details-icon">expand_more</i>
+                            <span id="score-details-text">查看评分明细</span>
+                        </button>
+                    </div>
+
+                    <!-- 评分明细区域 -->
+                    <div id="score-details-container" style="display: none; margin-top: 24px; text-align: left;">
+                        <!-- 评分明细内容将通过JavaScript动态生成 -->
                     </div>
                 </div>
             </div>
@@ -1162,6 +1328,12 @@
                 $('#recommendation-container').html(`
                     <div class="badge badge-pill ${scoreClass} px-3 py-2">${scoreText}</div>
                 `);
+
+                // 显示评分明细按钮
+                $('#score-details-toggle').show();
+
+                // 渲染评分明细
+                renderScoreDetails(scoreDetails, score);
 
                 console.log(`股票 ${stockCode} 评分渲染完成: ${score}`);
 
@@ -2379,6 +2551,132 @@
             </div>
         `;
         $('#alerts-container').html(alertHtml);
+    }
+
+    // 评分明细展开/收起功能
+    let scoreDetailsExpanded = false;
+
+    function toggleScoreDetails() {
+        const container = $('#score-details-container');
+        const icon = $('#score-details-icon');
+        const text = $('#score-details-text');
+
+        if (scoreDetailsExpanded) {
+            // 收起
+            container.slideUp(300);
+            icon.text('expand_more');
+            text.text('查看评分明细');
+            scoreDetailsExpanded = false;
+        } else {
+            // 展开
+            container.slideDown(300);
+            icon.text('expand_less');
+            text.text('收起评分明细');
+            scoreDetailsExpanded = true;
+        }
+    }
+
+    // 渲染评分明细
+    function renderScoreDetails(scoreDetails, totalScore) {
+        if (!scoreDetails || Object.keys(scoreDetails).length === 0) {
+            return;
+        }
+
+        // 评分维度配置
+        const dimensionConfig = {
+            trend: {
+                name: '趋势分析',
+                description: '基于移动平均线和价格趋势的技术分析',
+                weight: 30,
+                maxScore: 30,
+                icon: 'trending_up'
+            },
+            technical: {
+                name: '技术指标',
+                description: '包括RSI、MACD、布林带等技术指标综合评估',
+                weight: 25,
+                maxScore: 25,
+                icon: 'show_chart'
+            },
+            volume: {
+                name: '成交量分析',
+                description: '基于成交量变化和资金流向的分析',
+                weight: 20,
+                maxScore: 20,
+                icon: 'bar_chart'
+            },
+            volatility: {
+                name: '波动率评估',
+                description: '股价波动率和风险评估指标',
+                weight: 15,
+                maxScore: 15,
+                icon: 'timeline'
+            },
+            momentum: {
+                name: '动量指标',
+                description: '价格动量和变化率分析',
+                weight: 10,
+                maxScore: 10,
+                icon: 'speed'
+            }
+        };
+
+        let detailsHtml = `
+            <div class="score-details-summary">
+                <h4>
+                    <i class="material-icons">info</i>
+                    评分计算说明
+                </h4>
+                <p>综合评分基于五个核心维度的加权计算，总分100分。各维度权重和评分标准如下：</p>
+            </div>
+        `;
+
+        // 渲染各个维度
+        Object.keys(dimensionConfig).forEach(key => {
+            const config = dimensionConfig[key];
+            const score = scoreDetails[key] || 0;
+            const percentage = (score / config.maxScore) * 100;
+
+            detailsHtml += `
+                <div class="score-details-item">
+                    <div class="score-dimension">
+                        <div class="score-dimension-name">
+                            <i class="material-icons" style="font-size: 18px; margin-right: 8px; color: var(--md-sys-color-primary);">${config.icon}</i>
+                            ${config.name}
+                            <span class="score-weight-display">(权重: ${config.weight}%)</span>
+                        </div>
+                        <div class="score-dimension-desc">${config.description}</div>
+                    </div>
+                    <div class="score-progress-container">
+                        <div class="score-progress-bar">
+                            <div class="score-progress-fill" style="width: ${percentage}%;"></div>
+                        </div>
+                        <div class="score-value-display">${score}/${config.maxScore}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // 添加总分说明
+        detailsHtml += `
+            <div class="score-details-item" style="border-top: 2px solid var(--md-sys-color-primary); margin-top: 16px; padding-top: 16px;">
+                <div class="score-dimension">
+                    <div class="score-dimension-name">
+                        <i class="material-icons" style="font-size: 18px; margin-right: 8px; color: var(--md-sys-color-primary);">analytics</i>
+                        综合评分
+                    </div>
+                    <div class="score-dimension-desc">基于各维度加权计算的最终投资评分</div>
+                </div>
+                <div class="score-progress-container">
+                    <div class="score-progress-bar">
+                        <div class="score-progress-fill" style="width: ${totalScore}%; background: linear-gradient(90deg, var(--md-sys-color-primary), var(--md-sys-color-tertiary));"></div>
+                    </div>
+                    <div class="score-value-display" style="font-size: 18px; font-weight: bold;">${totalScore}/100</div>
+                </div>
+            </div>
+        `;
+
+        $('#score-details-container').html(detailsHtml);
     }
     
     // 显示信息提示

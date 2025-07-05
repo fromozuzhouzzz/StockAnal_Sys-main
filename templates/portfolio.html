@@ -27,6 +27,49 @@
         align-items: center;
     }
 
+    /* 表格排序功能样式 */
+    .sortable-header {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .sortable-header:hover {
+        background-color: var(--md-sys-color-surface-container-highest);
+        color: var(--md-sys-color-primary);
+    }
+
+    .sort-indicator {
+        font-size: 18px;
+        color: var(--md-sys-color-on-surface-variant);
+        transition: all 0.3s ease;
+        opacity: 0.6;
+    }
+
+    .sortable-header:hover .sort-indicator {
+        opacity: 1;
+        color: var(--md-sys-color-primary);
+    }
+
+    .sortable-header[data-sort="asc"] .sort-indicator {
+        color: var(--md-sys-color-primary);
+        opacity: 1;
+    }
+
+    .sortable-header[data-sort="desc"] .sort-indicator {
+        color: var(--md-sys-color-primary);
+        opacity: 1;
+    }
+
+    .sortable-header[data-sort="none"] .sort-indicator {
+        opacity: 0.6;
+    }
+
     .md3-portfolio-title {
         font-family: var(--md-sys-typescale-headline-large-font);
         font-size: var(--md-sys-typescale-headline-large-size);
@@ -123,8 +166,14 @@
                                 <th>所属行业</th>
                                 <th>持仓比例</th>
                                 <th>当前价格</th>
-                                <th>今日涨跌</th>
-                                <th>综合评分</th>
+                                <th class="sortable-header" onclick="sortTable('price_change')" data-sort="none">
+                                    今日涨跌
+                                    <i class="material-icons sort-indicator" id="sort-price_change">unfold_more</i>
+                                </th>
+                                <th class="sortable-header" onclick="sortTable('score')" data-sort="none">
+                                    综合评分
+                                    <i class="material-icons sort-indicator" id="sort-score">unfold_more</i>
+                                </th>
                                 <th>投资建议</th>
                                 <th>操作</th>
                             </tr>
@@ -953,6 +1002,158 @@
                 $(this).remove();
             });
         }, 5000);
+    }
+
+    // 表格排序功能
+    let currentSort = {
+        column: null,
+        direction: 'none' // 'none', 'asc', 'desc'
+    };
+
+    function sortTable(column) {
+        // 获取当前排序状态
+        const currentDirection = currentSort.column === column ? currentSort.direction : 'none';
+
+        // 循环切换排序方向：none -> asc -> desc -> none
+        let newDirection;
+        switch (currentDirection) {
+            case 'none':
+                newDirection = 'asc';
+                break;
+            case 'asc':
+                newDirection = 'desc';
+                break;
+            case 'desc':
+                newDirection = 'none';
+                break;
+            default:
+                newDirection = 'asc';
+        }
+
+        // 重置所有排序指示器
+        resetSortIndicators();
+
+        // 更新当前排序状态
+        currentSort.column = column;
+        currentSort.direction = newDirection;
+
+        // 更新排序指示器
+        updateSortIndicator(column, newDirection);
+
+        // 执行排序
+        if (newDirection === 'none') {
+            // 恢复原始顺序（按添加顺序）
+            renderPortfolio();
+        } else {
+            // 执行排序
+            const sortedPortfolio = [...portfolio].sort((a, b) => {
+                return compareValues(a, b, column, newDirection);
+            });
+            renderSortedPortfolio(sortedPortfolio);
+        }
+    }
+
+    function compareValues(a, b, column, direction) {
+        let valueA, valueB;
+
+        switch (column) {
+            case 'price_change':
+                valueA = parseFloat(a.price_change) || 0;
+                valueB = parseFloat(b.price_change) || 0;
+                break;
+            case 'score':
+                valueA = parseInt(a.score) || 0;
+                valueB = parseInt(b.score) || 0;
+                break;
+            default:
+                return 0;
+        }
+
+        if (direction === 'asc') {
+            return valueA - valueB;
+        } else {
+            return valueB - valueA;
+        }
+    }
+
+    function resetSortIndicators() {
+        // 重置所有排序指示器
+        $('.sortable-header').attr('data-sort', 'none');
+        $('.sort-indicator').text('unfold_more');
+    }
+
+    function updateSortIndicator(column, direction) {
+        const header = $(`.sortable-header[onclick="sortTable('${column}')"]`);
+        const indicator = $(`#sort-${column}`);
+
+        header.attr('data-sort', direction);
+
+        switch (direction) {
+            case 'asc':
+                indicator.text('keyboard_arrow_up');
+                break;
+            case 'desc':
+                indicator.text('keyboard_arrow_down');
+                break;
+            case 'none':
+                indicator.text('unfold_more');
+                break;
+        }
+    }
+
+    function renderSortedPortfolio(sortedPortfolio) {
+        if (sortedPortfolio.length === 0) {
+            $('#portfolio-empty').show();
+            $('#portfolio-content').hide();
+            $('#portfolio-analysis').hide();
+            $('#portfolio-recommendations').hide();
+            return;
+        }
+
+        $('#portfolio-empty').hide();
+        $('#portfolio-content').show();
+
+        let html = '';
+        sortedPortfolio.forEach((stock, index) => {
+            const scoreClass = getMD3ScoreColorClass(stock.score || 0);
+            const priceChangeClass = (stock.price_change || 0) >= 0 ? 'trend-up' : 'trend-down';
+            const priceChangeIcon = (stock.price_change || 0) >= 0 ? '<i class="material-icons">trending_up</i>' : '<i class="material-icons">trending_down</i>';
+
+            // 显示加载状态或实际数据
+            const stockName = stock.loading ?
+                '<span style="color: var(--md-sys-color-on-surface-variant);"><i class="material-icons" style="font-size: 16px; animation: spin 1s linear infinite;">refresh</i> 加载中...</span>' :
+                `<span class="stock-name">${stock.stock_name || '未知'}</span>`;
+
+            const industryDisplay = stock.industry || '-';
+
+            // 找到原始索引用于删除操作
+            const originalIndex = portfolio.findIndex(s => s.stock_code === stock.stock_code);
+
+            html += `
+                <tr>
+                    <td><span class="stock-code">${stock.stock_code}</span></td>
+                    <td>${stockName}</td>
+                    <td>${industryDisplay}</td>
+                    <td class="financial-data">${stock.weight}%</td>
+                    <td class="financial-data">${stock.price ? formatNumber(stock.price, 2) : '-'}</td>
+                    <td class="${priceChangeClass} financial-data">${stock.price_change ? (priceChangeIcon + ' ' + formatPercent(stock.price_change, 2)) : '-'}</td>
+                    <td><span class="md3-badge ${scoreClass}">${stock.score || '-'}</span></td>
+                    <td>${stock.recommendation || '-'}</td>
+                    <td>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="/stock_detail/${stock.stock_code}" class="md3-icon-button" title="查看详情">
+                                <i class="material-icons">analytics</i>
+                            </a>
+                            <button type="button" class="md3-icon-button" onclick="removeStock(${originalIndex})" title="移除股票" style="color: var(--md-sys-color-error);">
+                                <i class="material-icons">delete</i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        $('#portfolio-table').html(html);
     }
 
     // CSV文件选择处理
