@@ -1705,6 +1705,9 @@ def api_stock_score():
             stock_name = '未知'
             industry = '未知'
 
+        # 获取详细的评分分解信息
+        score_breakdown = getattr(current_analyzer, 'score_breakdown', {})
+
         # 构建返回数据
         result = {
             'stock_code': stock_code,
@@ -1712,6 +1715,7 @@ def api_stock_score():
             'industry': industry,
             'score': score,
             'score_details': score_details,
+            'score_breakdown': score_breakdown,  # 新增详细评分分解
             'price': float(latest['close']),
             'price_change': float((latest['close'] - prev['close']) / prev['close'] * 100),
             'recommendation': current_analyzer.get_recommendation(score),

@@ -114,6 +114,24 @@
             font-size: 14px;
         }
 
+        /* 移动端详情面板优化 */
+        .indicators-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .score-detail-toggle {
+            width: 36px;
+            height: 36px;
+        }
+
+        .score-detail-content {
+            padding: 12px;
+        }
+
+        .score-detail-title {
+            font-size: 16px;
+        }
+
         /* 移动设备上的评分明细容器调整 */
         #score-details-container.expanded {
             max-height: 1000px; /* 移动设备需要更多空间 */
@@ -313,12 +331,20 @@
         flex: 1;
     }
 
+    .score-dimension-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+
     .score-dimension-name {
         font-family: var(--md-sys-typescale-body-medium-font);
         font-size: var(--md-sys-typescale-body-medium-size);
         font-weight: var(--md-sys-typescale-body-medium-weight);
         color: var(--md-sys-color-on-surface);
-        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
     }
 
     .score-dimension-desc {
@@ -364,6 +390,119 @@
         font-size: var(--md-sys-typescale-body-small-size);
         color: var(--md-sys-color-on-surface-variant);
         margin-left: 8px;
+    }
+
+    /* 评分详情按钮样式 */
+    .score-detail-toggle {
+        width: 40px;
+        height: 40px;
+        border-radius: 20px;
+        border: none;
+        background: var(--md-sys-color-surface-variant);
+        color: var(--md-sys-color-on-surface-variant);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .score-detail-toggle:hover {
+        background: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+    }
+
+    .score-detail-toggle:active {
+        transform: scale(0.95);
+    }
+
+    /* 评分详情面板样式 */
+    .score-detail-panel {
+        margin-top: 16px;
+        background: var(--md-sys-color-surface-container-low);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .score-detail-content {
+        padding: 16px;
+    }
+
+    .score-detail-title {
+        font-family: var(--md-sys-typescale-title-small-font);
+        font-size: var(--md-sys-typescale-title-small-size);
+        font-weight: var(--md-sys-typescale-title-small-weight);
+        color: var(--md-sys-color-on-surface);
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .score-indicators-section,
+    .score-logic-section {
+        margin-bottom: 16px;
+    }
+
+    .score-indicators-section:last-child,
+    .score-logic-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .score-indicators-section h6,
+    .score-logic-section h6 {
+        font-family: var(--md-sys-typescale-label-large-font);
+        font-size: var(--md-sys-typescale-label-large-size);
+        font-weight: var(--md-sys-typescale-label-large-weight);
+        color: var(--md-sys-color-primary);
+        margin: 0 0 8px 0;
+    }
+
+    .indicators-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 8px;
+    }
+
+    .indicator-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: var(--md-sys-color-surface-container);
+        border-radius: 8px;
+        border: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .indicator-name {
+        font-family: var(--md-sys-typescale-body-small-font);
+        font-size: var(--md-sys-typescale-body-small-size);
+        color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .indicator-value {
+        font-family: var(--md-sys-typescale-body-small-font);
+        font-size: var(--md-sys-typescale-body-small-size);
+        font-weight: 500;
+        color: var(--md-sys-color-on-surface);
+    }
+
+    .logic-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .logic-item {
+        padding: 8px 12px;
+        background: var(--md-sys-color-surface-container);
+        border-radius: 8px;
+        border-left: 3px solid var(--md-sys-color-primary);
+        font-family: var(--md-sys-typescale-body-small-font);
+        font-size: var(--md-sys-typescale-body-small-size);
+        color: var(--md-sys-color-on-surface);
+        line-height: 1.4;
     }
 
     .score-details-summary {
@@ -1371,7 +1510,8 @@
                 $('#score-details-toggle').show();
 
                 // 渲染评分明细
-                renderScoreDetails(scoreDetails, score);
+                const scoreBreakdown = response.score_breakdown || {};
+                renderScoreDetails(scoreDetails, score, scoreBreakdown);
 
                 console.log(`股票 ${stockCode} 评分渲染完成: ${score}`);
 
@@ -2615,7 +2755,7 @@
     }
 
     // 渲染评分明细
-    function renderScoreDetails(scoreDetails, totalScore) {
+    function renderScoreDetails(scoreDetails, totalScore, scoreBreakdown = {}) {
         if (!scoreDetails || Object.keys(scoreDetails).length === 0) {
             return;
         }
@@ -2674,14 +2814,25 @@
             const config = dimensionConfig[key];
             const score = scoreDetails[key] || 0;
             const percentage = (score / config.maxScore) * 100;
+            const breakdown = scoreBreakdown[key] || {};
+            const hasDetailedInfo = breakdown.indicators && breakdown.logic;
 
             detailsHtml += `
                 <div class="score-details-item">
                     <div class="score-dimension">
-                        <div class="score-dimension-name">
-                            <i class="material-icons" style="font-size: 18px; margin-right: 8px; color: var(--md-sys-color-primary);">${config.icon}</i>
-                            ${config.name}
-                            <span class="score-weight-display">(权重: ${config.weight}%)</span>
+                        <div class="score-dimension-header">
+                            <div class="score-dimension-name">
+                                <i class="material-icons" style="font-size: 18px; margin-right: 8px; color: var(--md-sys-color-primary);">${config.icon}</i>
+                                ${config.name}
+                                <span class="score-weight-display">(权重: ${config.weight}%)</span>
+                            </div>
+                            ${hasDetailedInfo ? `
+                                <button class="score-detail-toggle md3-icon-button"
+                                        onclick="toggleScoreDetail('${key}')"
+                                        aria-label="查看${config.name}详情">
+                                    <i class="material-icons">info</i>
+                                </button>
+                            ` : ''}
                         </div>
                         <div class="score-dimension-desc">${config.description}</div>
                     </div>
@@ -2691,6 +2842,37 @@
                         </div>
                         <div class="score-value-display">${score}/${config.maxScore}</div>
                     </div>
+                    ${hasDetailedInfo ? `
+                        <div class="score-detail-panel" id="detail-${key}" style="display: none;">
+                            <div class="score-detail-content">
+                                <h5 class="score-detail-title">
+                                    <i class="material-icons">analytics</i>
+                                    评分依据详情
+                                </h5>
+
+                                <div class="score-indicators-section">
+                                    <h6>关键指标数值</h6>
+                                    <div class="indicators-grid">
+                                        ${Object.entries(breakdown.indicators || {}).map(([indicator, value]) => `
+                                            <div class="indicator-item">
+                                                <span class="indicator-name">${indicator}:</span>
+                                                <span class="indicator-value">${typeof value === 'number' ? value.toFixed(2) : value}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+
+                                <div class="score-logic-section">
+                                    <h6>评分逻辑</h6>
+                                    <div class="logic-list">
+                                        ${(breakdown.logic || []).map(logic => `
+                                            <div class="logic-item">${logic}</div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             `;
         });
@@ -2716,7 +2898,26 @@
 
         $('#score-details-container').html(detailsHtml);
     }
-    
+
+    // 切换评分详情面板显示
+    function toggleScoreDetail(dimensionKey) {
+        const panel = $(`#detail-${dimensionKey}`);
+        const button = panel.siblings('.score-dimension').find('.score-detail-toggle i');
+
+        if (panel.is(':visible')) {
+            panel.slideUp(300);
+            button.text('info');
+        } else {
+            // 先关闭其他已打开的面板
+            $('.score-detail-panel:visible').slideUp(300);
+            $('.score-detail-toggle i').text('info');
+
+            // 打开当前面板
+            panel.slideDown(300);
+            button.text('info_outline');
+        }
+    }
+
     // 显示信息提示
     function showInfo(message) {
         const alertHtml = `

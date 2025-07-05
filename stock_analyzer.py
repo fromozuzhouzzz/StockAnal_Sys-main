@@ -449,7 +449,7 @@ class StockAnalyzer:
             # Ensure score remains within 0-100 range
             final_score = max(0, min(100, round(final_score)))
 
-            # Store sub-scores for display
+            # Store sub-scores for display with detailed breakdown
             self.score_details = {
                 'trend': trend_score,
                 'volatility': volatility_score,
@@ -459,12 +459,196 @@ class StockAnalyzer:
                 'total': final_score
             }
 
+            # Store detailed scoring breakdown for UI display
+            self.score_breakdown = {
+                'trend': {
+                    'score': trend_score,
+                    'max_score': 30,
+                    'weight': weights['trend'] * 100,
+                    'indicators': {
+                        'MA5': latest['MA5'],
+                        'MA20': latest['MA20'],
+                        'MA60': latest['MA60'],
+                        'current_price': latest['close']
+                    },
+                    'logic': self._get_trend_scoring_logic(latest),
+                    'description': '基于移动平均线排列和价格位置的趋势强度评估'
+                },
+                'technical': {
+                    'score': technical_score,
+                    'max_score': 25,
+                    'weight': weights['technical'] * 100,
+                    'indicators': {
+                        'RSI': latest['RSI'],
+                        'MACD': latest['MACD'],
+                        'Signal': latest['Signal'],
+                        'MACD_hist': latest['MACD_hist'],
+                        'BB_upper': latest['BB_upper'],
+                        'BB_lower': latest['BB_lower'],
+                        'BB_position': (latest['close'] - latest['BB_lower']) / (latest['BB_upper'] - latest['BB_lower'])
+                    },
+                    'logic': self._get_technical_scoring_logic(latest, df),
+                    'description': '综合RSI、MACD、布林带等技术指标的强弱分析'
+                },
+                'volume': {
+                    'score': volume_score,
+                    'max_score': 20,
+                    'weight': weights['volume'] * 100,
+                    'indicators': {
+                        'current_volume_ratio': latest['Volume_Ratio'],
+                        'avg_volume_ratio': avg_vol_ratio,
+                        'price_change': latest['close'] - df.iloc[-2]['close'] if len(df) > 1 else 0
+                    },
+                    'logic': self._get_volume_scoring_logic(avg_vol_ratio, latest, df),
+                    'description': '基于成交量变化和量价配合关系的资金流向分析'
+                },
+                'volatility': {
+                    'score': volatility_score,
+                    'max_score': 15,
+                    'weight': weights['volatility'] * 100,
+                    'indicators': {
+                        'volatility': latest['Volatility']
+                    },
+                    'logic': self._get_volatility_scoring_logic(latest['Volatility']),
+                    'description': '股价波动率风险评估，适度波动最佳'
+                },
+                'momentum': {
+                    'score': momentum_score,
+                    'max_score': 10,
+                    'weight': weights['momentum'] * 100,
+                    'indicators': {
+                        'ROC': latest['ROC']
+                    },
+                    'logic': self._get_momentum_scoring_logic(latest['ROC']),
+                    'description': '基于ROC指标的价格动量强度分析'
+                }
+            }
+
             return final_score
 
         except Exception as e:
             self.logger.error(f"Error calculating score: {str(e)}")
             # Return neutral score on error
             return 50
+
+    def _get_trend_scoring_logic(self, latest):
+        """生成趋势评分的详细逻辑说明"""
+        logic = []
+
+        # 均线排列分析
+        if latest['MA5'] > latest['MA20'] and latest['MA20'] > latest['MA60']:
+            logic.append("✓ 完美多头排列(MA5>MA20>MA60): +15分")
+        elif latest['MA5'] > latest['MA20']:
+            logic.append("✓ 短期上升趋势(MA5>MA20): +10分")
+        elif latest['MA20'] > latest['MA60']:
+            logic.append("✓ 中期上升趋势(MA20>MA60): +5分")
+        else:
+            logic.append("✗ 均线排列不佳: +0分")
+
+        # 价格位置分析
+        if latest['close'] > latest['MA5']:
+            logic.append("✓ 价格高于5日均线: +5分")
+        else:
+            logic.append("✗ 价格低于5日均线: +0分")
+
+        if latest['close'] > latest['MA20']:
+            logic.append("✓ 价格高于20日均线: +5分")
+        else:
+            logic.append("✗ 价格低于20日均线: +0分")
+
+        if latest['close'] > latest['MA60']:
+            logic.append("✓ 价格高于60日均线: +5分")
+        else:
+            logic.append("✗ 价格低于60日均线: +0分")
+
+        return logic
+
+    def _get_technical_scoring_logic(self, latest, df):
+        """生成技术指标评分的详细逻辑说明"""
+        logic = []
+
+        # RSI分析
+        rsi = latest['RSI']
+        if 40 <= rsi <= 60:
+            logic.append(f"✓ RSI中性区域({rsi:.1f}): +7分")
+        elif 30 <= rsi < 40 or 60 < rsi <= 70:
+            logic.append(f"✓ RSI阈值区域({rsi:.1f}): +10分")
+        elif rsi < 30:
+            logic.append(f"✓ RSI超卖区域({rsi:.1f}): +8分")
+        elif rsi > 70:
+            logic.append(f"⚠ RSI超买区域({rsi:.1f}): +2分")
+
+        # MACD分析
+        if latest['MACD'] > latest['Signal'] and latest['MACD_hist'] > 0:
+            logic.append("✓ MACD金叉且柱状图为正: +10分")
+        elif latest['MACD'] > latest['Signal']:
+            logic.append("✓ MACD金叉: +8分")
+        elif latest['MACD'] < latest['Signal'] and latest['MACD_hist'] < 0:
+            logic.append("✗ MACD死叉且柱状图为负: +0分")
+        elif len(df) > 1 and latest['MACD_hist'] > df.iloc[-2]['MACD_hist']:
+            logic.append("✓ MACD柱状图增长: +5分")
+
+        # 布林带分析
+        bb_position = (latest['close'] - latest['BB_lower']) / (latest['BB_upper'] - latest['BB_lower'])
+        if 0.3 <= bb_position <= 0.7:
+            logic.append(f"✓ 布林带中间区域({bb_position:.2f}): +3分")
+        elif bb_position < 0.2:
+            logic.append(f"✓ 接近布林带下轨({bb_position:.2f}): +5分")
+        elif bb_position > 0.8:
+            logic.append(f"⚠ 接近布林带上轨({bb_position:.2f}): +1分")
+
+        return logic
+
+    def _get_volume_scoring_logic(self, avg_vol_ratio, latest, df):
+        """生成成交量评分的详细逻辑说明"""
+        logic = []
+
+        price_change = latest['close'] - df.iloc[-2]['close'] if len(df) > 1 else 0
+
+        if avg_vol_ratio > 1.5 and price_change > 0:
+            logic.append(f"✓ 成交量大幅放大({avg_vol_ratio:.2f})且价格上涨: +20分")
+        elif avg_vol_ratio > 1.2 and price_change > 0:
+            logic.append(f"✓ 成交量放大({avg_vol_ratio:.2f})且价格上涨: +15分")
+        elif avg_vol_ratio < 0.8 and price_change < 0:
+            logic.append(f"✓ 成交量缩减({avg_vol_ratio:.2f})且价格下跌: +10分")
+        elif avg_vol_ratio > 1.2 and price_change < 0:
+            logic.append(f"✗ 成交量放大({avg_vol_ratio:.2f})但价格下跌: +0分")
+        else:
+            logic.append(f"○ 量价关系一般({avg_vol_ratio:.2f}): +8分")
+
+        return logic
+
+    def _get_volatility_scoring_logic(self, volatility):
+        """生成波动率评分的详细逻辑说明"""
+        logic = []
+
+        if 1.0 <= volatility <= 2.5:
+            logic.append(f"✓ 最佳波动率范围({volatility:.2f}%): +15分")
+        elif 2.5 < volatility <= 4.0:
+            logic.append(f"○ 较高波动率({volatility:.2f}%): +10分")
+        elif volatility < 1.0:
+            logic.append(f"⚠ 波动率过低({volatility:.2f}%): +5分")
+        else:
+            logic.append(f"✗ 波动率过高({volatility:.2f}%): +0分")
+
+        return logic
+
+    def _get_momentum_scoring_logic(self, roc):
+        """生成动量评分的详细逻辑说明"""
+        logic = []
+
+        if roc > 5:
+            logic.append(f"✓ 强劲上升动量(ROC: {roc:.2f}%): +10分")
+        elif 2 <= roc <= 5:
+            logic.append(f"✓ 适度上升动量(ROC: {roc:.2f}%): +8分")
+        elif 0 <= roc < 2:
+            logic.append(f"○ 微弱上升动量(ROC: {roc:.2f}%): +5分")
+        elif -2 <= roc < 0:
+            logic.append(f"⚠ 微弱下降动量(ROC: {roc:.2f}%): +3分")
+        else:
+            logic.append(f"✗ 强劲下降动量(ROC: {roc:.2f}%): +0分")
+
+        return logic
 
     def calculate_position_size(self, stock_code, risk_percent=2.0, stop_loss_percent=5.0):
         """

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评分依据说明功能测试</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        :root {
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+            --md-sys-color-surface: #FFFBFE;
+            --md-sys-color-on-surface: #1C1B1F;
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface-variant: #49454F;
+            --md-sys-color-surface-container: #F3EDF7;
+            --md-sys-color-surface-container-low: #F7F2FA;
+            --md-sys-color-surface-container-high: #ECE6F0;
+            --md-sys-color-outline: #79747E;
+            --md-sys-color-outline-variant: #CAC4D0;
+            --md-sys-color-tertiary: #7D5260;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--md-sys-color-surface-container);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        h1 {
+            color: var(--md-sys-color-primary);
+            margin-bottom: 24px;
+        }
+
+        /* 评分明细样式 */
+        .score-details-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        }
+
+        .score-details-item:last-child {
+            border-bottom: none;
+        }
+
+        .score-dimension {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .score-dimension-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .score-dimension-name {
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .score-dimension-desc {
+            font-size: 14px;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-top: 4px;
+        }
+
+        .score-weight-display {
+            font-size: 12px;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-left: 8px;
+        }
+
+        .score-progress-container {
+            display: flex;
+            align-items: center;
+            margin-left: 16px;
+        }
+
+        .score-progress-bar {
+            width: 120px;
+            height: 8px;
+            background: var(--md-sys-color-outline-variant);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .score-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--md-sys-color-primary), var(--md-sys-color-tertiary));
+            transition: width 0.3s ease;
+        }
+
+        .score-value-display {
+            font-weight: 500;
+            color: var(--md-sys-color-primary);
+            min-width: 40px;
+            text-align: right;
+            margin-left: 12px;
+        }
+
+        /* 评分详情按钮样式 */
+        .score-detail-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            border: none;
+            background: var(--md-sys-color-surface-variant);
+            color: var(--md-sys-color-on-surface-variant);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .score-detail-toggle:hover {
+            background: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+
+        .score-detail-toggle:active {
+            transform: scale(0.95);
+        }
+
+        /* 评分详情面板样式 */
+        .score-detail-panel {
+            margin-top: 16px;
+            background: var(--md-sys-color-surface-container-low);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--md-sys-color-outline-variant);
+        }
+
+        .score-detail-content {
+            padding: 16px;
+        }
+
+        .score-detail-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--md-sys-color-on-surface);
+            margin: 0 0 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-indicators-section,
+        .score-logic-section {
+            margin-bottom: 16px;
+        }
+
+        .score-indicators-section:last-child,
+        .score-logic-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .score-indicators-section h6,
+        .score-logic-section h6 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--md-sys-color-primary);
+            margin: 0 0 8px 0;
+        }
+
+        .indicators-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px;
+        }
+
+        .indicator-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--md-sys-color-surface-container);
+            border-radius: 8px;
+            border: 1px solid var(--md-sys-color-outline-variant);
+        }
+
+        .indicator-name {
+            font-size: 12px;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        .indicator-value {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .logic-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .logic-item {
+            padding: 8px 12px;
+            background: var(--md-sys-color-surface-container);
+            border-radius: 8px;
+            border-left: 3px solid var(--md-sys-color-primary);
+            font-size: 13px;
+            color: var(--md-sys-color-on-surface);
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .indicators-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .score-detail-toggle {
+                width: 36px;
+                height: 36px;
+            }
+
+            .score-detail-content {
+                padding: 12px;
+            }
+
+            .score-detail-title {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 评分依据说明功能测试</h1>
+        
+        <div id="score-details-container">
+            <!-- 趋势分析 -->
+            <div class="score-details-item">
+                <div class="score-dimension">
+                    <div class="score-dimension-header">
+                        <div class="score-dimension-name">
+                            <i class="material-icons" style="font-size: 18px; margin-right: 8px; color: var(--md-sys-color-primary);">trending_up</i>
+                            趋势分析
+                            <span class="score-weight-display">(权重: 30%)</span>
+                        </div>
+                        <button class="score-detail-toggle" onclick="toggleScoreDetail('trend')" aria-label="查看趋势分析详情">
+                            <i class="material-icons">info</i>
+                        </button>
+                    </div>
+                    <div class="score-dimension-desc">基于移动平均线排列和价格位置的趋势强度评估</div>
+                </div>
+                <div class="score-progress-container">
+                    <div class="score-progress-bar">
+                        <div class="score-progress-fill" style="width: 75%;"></div>
+                    </div>
+                    <div class="score-value-display">22/30</div>
+                </div>
+                <div class="score-detail-panel" id="detail-trend" style="display: none;">
+                    <div class="score-detail-content">
+                        <h5 class="score-detail-title">
+                            <i class="material-icons">analytics</i>
+                            评分依据详情
+                        </h5>
+                        
+                        <div class="score-indicators-section">
+                            <h6>关键指标数值</h6>
+                            <div class="indicators-grid">
+                                <div class="indicator-item">
+                                    <span class="indicator-name">MA5:</span>
+                                    <span class="indicator-value">12.45</span>
+                                </div>
+                                <div class="indicator-item">
+                                    <span class="indicator-name">MA20:</span>
+                                    <span class="indicator-value">12.20</span>
+                                </div>
+                                <div class="indicator-item">
+                                    <span class="indicator-name">MA60:</span>
+                                    <span class="indicator-value">11.80</span>
+                                </div>
+                                <div class="indicator-item">
+                                    <span class="indicator-name">当前价格:</span>
+                                    <span class="indicator-value">12.68</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="score-logic-section">
+                            <h6>评分逻辑</h6>
+                            <div class="logic-list">
+                                <div class="logic-item">✓ 完美多头排列(MA5>MA20>MA60): +15分</div>
+                                <div class="logic-item">✓ 价格高于5日均线: +5分</div>
+                                <div class="logic-item">✗ 价格低于20日均线: +0分</div>
+                                <div class="logic-item">✗ 价格低于60日均线: +0分</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 技术指标 -->
+            <div class="score-details-item">
+                <div class="score-dimension">
+                    <div class="score-dimension-header">
+                        <div class="score-dimension-name">
+                            <i class="material-icons" style="font-size: 18px; margin-right: 8px; color: var(--md-sys-color-primary);">show_chart</i>
+                            技术指标
+                            <span class="score-weight-display">(权重: 25%)</span>
+                        </div>
+                        <button class="score-detail-toggle" onclick="toggleScoreDetail('technical')" aria-label="查看技术指标详情">
+                            <i class="material-icons">info</i>
+                        </button>
+                    </div>
+                    <div class="score-dimension-desc">综合RSI、MACD、布林带等技术指标的强弱分析</div>
+                </div>
+                <div class="score-progress-container">
+                    <div class="score-progress-bar">
+                        <div class="score-progress-fill" style="width: 52%;"></div>
+                    </div>
+                    <div class="score-value-display">13/25</div>
+                </div>
+                <div class="score-detail-panel" id="detail-technical" style="display: none;">
+                    <div class="score-detail-content">
+                        <h5 class="score-detail-title">
+                            <i class="material-icons">analytics</i>
+                            评分依据详情
+                        </h5>
+                        
+                        <div class="score-indicators-section">
+                            <h6>关键指标数值</h6>
+                            <div class="indicators-grid">
+                                <div class="indicator-item">
+                                    <span class="indicator-name">RSI:</span>
+                                    <span class="indicator-value">45.2</span>
+                                </div>
+                                <div class="indicator-item">
+                                    <span class="indicator-name">MACD:</span>
+                                    <span class="indicator-value">0.08</span>
+                                </div>
+                                <div class="indicator-item">
+                                    <span class="indicator-name">Signal:</span>
+                                    <span class="indicator-value">0.06</span>
+                                </div>
+                                <div class="indicator-item">
+                                    <span class="indicator-name">布林带位置:</span>
+                                    <span class="indicator-value">0.65</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="score-logic-section">
+                            <h6>评分逻辑</h6>
+                            <div class="logic-list">
+                                <div class="logic-item">✓ RSI中性区域(45.2): +7分</div>
+                                <div class="logic-item">✓ MACD金叉: +8分</div>
+                                <div class="logic-item">✗ 布林带中间区域(0.65): +3分</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 切换评分详情面板显示
+        function toggleScoreDetail(dimensionKey) {
+            const panel = $(`#detail-${dimensionKey}`);
+            const button = panel.siblings('.score-dimension').find('.score-detail-toggle i');
+            
+            if (panel.is(':visible')) {
+                panel.slideUp(300);
+                button.text('info');
+            } else {
+                // 先关闭其他已打开的面板
+                $('.score-detail-panel:visible').slideUp(300);
+                $('.score-detail-toggle i').text('info');
+                
+                // 打开当前面板
+                panel.slideDown(300);
+                button.text('info_outline');
+            }
+        }
+    </script>
+</body>
+</html>
