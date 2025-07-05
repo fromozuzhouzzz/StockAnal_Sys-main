@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多投资组合功能测试</title>
+    
+    <!-- Material Design 3 样式 -->
+    <link rel="stylesheet" href="static/md3-styles.css">
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <style>
+        /* 多投资组合标签页样式 */
+        .md3-portfolio-tabs {
+            margin: 24px 0 32px 0;
+            border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        }
+
+        .md3-tabs {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .md3-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .md3-tab {
+            position: relative;
+            padding: 12px 24px;
+            font-family: var(--md-sys-typescale-title-small-font);
+            font-size: var(--md-sys-typescale-title-small-size);
+            font-weight: var(--md-sys-typescale-title-small-weight);
+            color: var(--md-sys-color-on-surface-variant);
+            background: none;
+            border: none;
+            border-radius: var(--md-sys-shape-corner-small) var(--md-sys-shape-corner-small) 0 0;
+            cursor: pointer;
+            transition: all var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+            white-space: nowrap;
+            min-width: 120px;
+            text-align: center;
+            user-select: none;
+        }
+
+        .md3-tab:hover {
+            background-color: var(--md-sys-color-surface-container-low);
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .md3-tab.active {
+            color: var(--md-sys-color-primary);
+            background-color: var(--md-sys-color-surface-container);
+        }
+
+        .md3-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: var(--md-sys-color-primary);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .md3-tab-add-btn {
+            padding: 8px 12px;
+            margin-left: 8px;
+            font-size: 18px;
+            color: var(--md-sys-color-primary);
+            background: none;
+            border: 2px dashed var(--md-sys-color-outline-variant);
+            border-radius: var(--md-sys-shape-corner-small);
+            cursor: pointer;
+            transition: all var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 40px;
+        }
+
+        .md3-tab-add-btn:hover {
+            border-color: var(--md-sys-color-primary);
+            background-color: var(--md-sys-color-primary-container);
+        }
+
+        .md3-tab-delete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: var(--md-sys-color-error);
+            color: var(--md-sys-color-on-error);
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+        }
+
+        .md3-tab:hover .md3-tab-delete-btn {
+            display: flex;
+        }
+
+        .md3-tab-delete-btn:hover {
+            background-color: var(--md-sys-color-error-container);
+            color: var(--md-sys-color-on-error-container);
+        }
+
+        /* 投资组合切换动画 */
+        .portfolio-switching {
+            opacity: 0.6;
+            pointer-events: none;
+            transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+        }
+
+        .portfolio-content-fade {
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 测试样式 */
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid var(--md-sys-color-outline);
+            border-radius: var(--md-sys-shape-corner-medium);
+        }
+
+        .test-info {
+            background-color: var(--md-sys-color-surface-container);
+            padding: 16px;
+            border-radius: var(--md-sys-shape-corner-small);
+            margin-bottom: 16px;
+        }
+
+        .portfolio-info {
+            background-color: var(--md-sys-color-surface-container-high);
+            padding: 12px;
+            border-radius: var(--md-sys-shape-corner-small);
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="md3-portfolio-container">
+        <div id="alerts-container"></div>
+
+        <!-- 页面标题 -->
+        <div class="md3-portfolio-header">
+            <h1 class="md3-portfolio-title">
+                <i class="material-icons">account_balance_wallet</i>
+                多投资组合功能测试
+            </h1>
+        </div>
+
+        <!-- 多投资组合标签页 -->
+        <div class="md3-portfolio-tabs">
+            <div class="md3-tabs" id="portfolio-tabs">
+                <!-- 标签页将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 测试信息区域 -->
+        <div class="test-section">
+            <h3>功能测试说明</h3>
+            <div class="test-info">
+                <p><strong>测试功能：</strong></p>
+                <ul>
+                    <li>创建新投资组合（点击 + 按钮）</li>
+                    <li>切换投资组合（点击标签页）</li>
+                    <li>删除投资组合（悬停显示删除按钮）</li>
+                    <li>数据持久化（刷新页面验证）</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 当前投资组合信息 -->
+        <div class="test-section">
+            <h3>当前投资组合信息</h3>
+            <div id="current-portfolio-info" class="portfolio-info">
+                <!-- 动态显示当前投资组合信息 -->
+            </div>
+        </div>
+
+        <!-- 所有投资组合列表 -->
+        <div class="test-section">
+            <h3>所有投资组合列表</h3>
+            <div id="all-portfolios-info">
+                <!-- 动态显示所有投资组合信息 -->
+            </div>
+        </div>
+
+        <!-- 测试按钮 -->
+        <div class="test-section">
+            <h3>测试操作</h3>
+            <button class="md3-button md3-button-filled" onclick="clearAllData()">
+                <i class="material-icons">delete_forever</i> 清除所有数据
+            </button>
+            <button class="md3-button md3-button-outlined" onclick="addTestData()">
+                <i class="material-icons">add_circle</i> 添加测试数据
+            </button>
+            <button class="md3-button md3-button-outlined" onclick="refreshInfo()">
+                <i class="material-icons">refresh</i> 刷新信息
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 多投资组合管理器
+        let portfolioManager = {
+            portfolios: {},
+            currentPortfolioId: 'default',
+            portfolioMetadata: {}
+        };
+
+        // 获取投资组合管理器数据
+        function getPortfolioManager() {
+            const saved = localStorage.getItem('portfolioManager');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+            
+            // 返回默认结构
+            return {
+                portfolios: {
+                    'default': []
+                },
+                currentPortfolioId: 'default',
+                portfolioMetadata: {
+                    'default': {
+                        name: '默认投资组合',
+                        createdAt: new Date().toISOString(),
+                        isDefault: true
+                    }
+                }
+            };
+        }
+
+        // 保存投资组合管理器数据
+        function savePortfolioManager() {
+            localStorage.setItem('portfolioManager', JSON.stringify(portfolioManager));
+        }
+
+        // 创建新投资组合
+        function createNewPortfolio() {
+            let name = prompt('请输入新投资组合的名称：');
+            if (!name) {
+                return;
+            }
+            
+            name = name.trim();
+            if (name === '') {
+                alert('投资组合名称不能为空');
+                return;
+            }
+            
+            if (name.length > 20) {
+                alert('投资组合名称不能超过20个字符');
+                return;
+            }
+            
+            // 检查名称是否已存在
+            const existingNames = Object.values(portfolioManager.portfolioMetadata).map(meta => meta.name);
+            if (existingNames.includes(name)) {
+                alert('投资组合名称已存在，请使用其他名称');
+                return;
+            }
+            
+            const portfolioId = 'portfolio_' + Date.now();
+            portfolioManager.portfolios[portfolioId] = [];
+            portfolioManager.portfolioMetadata[portfolioId] = {
+                name: name,
+                createdAt: new Date().toISOString(),
+                isDefault: false
+            };
+            
+            savePortfolioManager();
+            renderPortfolioTabs();
+            refreshInfo();
+            alert(`投资组合 "${name}" 创建成功`);
+            
+            // 询问是否立即切换到新投资组合
+            if (confirm(`是否立即切换到新创建的投资组合 "${name}"？`)) {
+                switchPortfolio(portfolioId);
+            }
+        }
+
+        // 删除投资组合
+        function deletePortfolio(portfolioId) {
+            if (portfolioId === 'default') {
+                alert('默认投资组合不能删除');
+                return;
+            }
+            
+            const metadata = portfolioManager.portfolioMetadata[portfolioId];
+            if (!metadata) {
+                return;
+            }
+            
+            if (!confirm(`确定要删除投资组合 "${metadata.name}" 吗？此操作不可撤销。`)) {
+                return;
+            }
+            
+            delete portfolioManager.portfolios[portfolioId];
+            delete portfolioManager.portfolioMetadata[portfolioId];
+            
+            // 如果删除的是当前投资组合，切换到默认投资组合
+            if (portfolioManager.currentPortfolioId === portfolioId) {
+                portfolioManager.currentPortfolioId = 'default';
+            }
+            
+            savePortfolioManager();
+            renderPortfolioTabs();
+            refreshInfo();
+            alert(`投资组合 "${metadata.name}" 已删除`);
+        }
+
+        // 切换投资组合
+        function switchPortfolio(portfolioId) {
+            if (portfolioId === portfolioManager.currentPortfolioId) {
+                return;
+            }
+            
+            // 切换到新投资组合
+            portfolioManager.currentPortfolioId = portfolioId;
+            
+            savePortfolioManager();
+            renderPortfolioTabs();
+            refreshInfo();
+            
+            const metadata = portfolioManager.portfolioMetadata[portfolioId];
+            alert(`已切换到投资组合 "${metadata.name}"`);
+        }
+
+        // 渲染投资组合标签页
+        function renderPortfolioTabs() {
+            const tabsContainer = $('#portfolio-tabs');
+            tabsContainer.empty();
+            
+            // 渲染所有投资组合标签
+            Object.keys(portfolioManager.portfolios).forEach(portfolioId => {
+                const metadata = portfolioManager.portfolioMetadata[portfolioId];
+                const isActive = portfolioId === portfolioManager.currentPortfolioId;
+                
+                const tab = $(`
+                    <div class="md3-tab ${isActive ? 'active' : ''}" data-portfolio-id="${portfolioId}">
+                        ${metadata.name}
+                        ${!metadata.isDefault ? '<button class="md3-tab-delete-btn" onclick="deletePortfolio(\'' + portfolioId + '\'); event.stopPropagation();">×</button>' : ''}
+                    </div>
+                `);
+                
+                tab.click(function() {
+                    switchPortfolio(portfolioId);
+                });
+                
+                tabsContainer.append(tab);
+            });
+            
+            // 添加新建投资组合按钮
+            const addBtn = $(`
+                <button class="md3-tab-add-btn" title="创建新投资组合">
+                    +
+                </button>
+            `);
+            
+            addBtn.click(function() {
+                createNewPortfolio();
+            });
+            
+            tabsContainer.append(addBtn);
+        }
+
+        // 刷新信息显示
+        function refreshInfo() {
+            // 显示当前投资组合信息
+            const currentMeta = portfolioManager.portfolioMetadata[portfolioManager.currentPortfolioId];
+            const currentPortfolio = portfolioManager.portfolios[portfolioManager.currentPortfolioId];
+            
+            $('#current-portfolio-info').html(`
+                <strong>ID:</strong> ${portfolioManager.currentPortfolioId}<br>
+                <strong>名称:</strong> ${currentMeta.name}<br>
+                <strong>创建时间:</strong> ${new Date(currentMeta.createdAt).toLocaleString()}<br>
+                <strong>是否默认:</strong> ${currentMeta.isDefault ? '是' : '否'}<br>
+                <strong>股票数量:</strong> ${currentPortfolio.length}
+            `);
+            
+            // 显示所有投资组合信息
+            let allInfo = '';
+            Object.keys(portfolioManager.portfolios).forEach(portfolioId => {
+                const meta = portfolioManager.portfolioMetadata[portfolioId];
+                const portfolio = portfolioManager.portfolios[portfolioId];
+                const isActive = portfolioId === portfolioManager.currentPortfolioId;
+                
+                allInfo += `
+                    <div class="portfolio-info" style="${isActive ? 'border-left: 4px solid var(--md-sys-color-primary);' : ''}">
+                        <strong>${meta.name}</strong> ${isActive ? '(当前)' : ''}<br>
+                        ID: ${portfolioId}<br>
+                        股票数量: ${portfolio.length}<br>
+                        创建时间: ${new Date(meta.createdAt).toLocaleString()}
+                    </div>
+                `;
+            });
+            
+            $('#all-portfolios-info').html(allInfo);
+        }
+
+        // 清除所有数据
+        function clearAllData() {
+            if (confirm('确定要清除所有投资组合数据吗？此操作不可撤销。')) {
+                localStorage.removeItem('portfolioManager');
+                localStorage.removeItem('portfolio'); // 清除旧数据
+                portfolioManager = getPortfolioManager();
+                renderPortfolioTabs();
+                refreshInfo();
+                alert('所有数据已清除');
+            }
+        }
+
+        // 添加测试数据
+        function addTestData() {
+            portfolioManager.portfolios[portfolioManager.currentPortfolioId].push({
+                stock_code: '000001',
+                stock_name: '平安银行',
+                weight: 10,
+                industry: '银行',
+                price: 12.50,
+                price_change: 0.05,
+                score: 75
+            });
+            
+            savePortfolioManager();
+            refreshInfo();
+            alert('已添加测试股票数据');
+        }
+
+        // 页面加载完成后初始化
+        $(document).ready(function() {
+            portfolioManager = getPortfolioManager();
+            renderPortfolioTabs();
+            refreshInfo();
+        });
+    </script>
+</body>
+</html>

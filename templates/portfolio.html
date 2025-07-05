@@ -143,6 +143,154 @@
         color: var(--md-sys-color-on-surface-variant);
         margin-bottom: 32px;
     }
+
+    /* 多投资组合标签页样式 */
+    .md3-portfolio-tabs {
+        margin: 24px 0 32px 0;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    }
+
+    .md3-tabs {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .md3-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .md3-tab {
+        position: relative;
+        padding: 12px 24px;
+        font-family: var(--md-sys-typescale-title-small-font);
+        font-size: var(--md-sys-typescale-title-small-size);
+        font-weight: var(--md-sys-typescale-title-small-weight);
+        color: var(--md-sys-color-on-surface-variant);
+        background: none;
+        border: none;
+        border-radius: var(--md-sys-shape-corner-small) var(--md-sys-shape-corner-small) 0 0;
+        cursor: pointer;
+        transition: all var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+        white-space: nowrap;
+        min-width: 120px;
+        text-align: center;
+        user-select: none;
+    }
+
+    .md3-tab:hover {
+        background-color: var(--md-sys-color-surface-container-low);
+        color: var(--md-sys-color-on-surface);
+    }
+
+    .md3-tab.active {
+        color: var(--md-sys-color-primary);
+        background-color: var(--md-sys-color-surface-container);
+    }
+
+    .md3-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background-color: var(--md-sys-color-primary);
+        border-radius: 3px 3px 0 0;
+    }
+
+    .md3-tab-add-btn {
+        padding: 8px 12px;
+        margin-left: 8px;
+        font-size: 18px;
+        color: var(--md-sys-color-primary);
+        background: none;
+        border: 2px dashed var(--md-sys-color-outline-variant);
+        border-radius: var(--md-sys-shape-corner-small);
+        cursor: pointer;
+        transition: all var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 40px;
+        height: 40px;
+    }
+
+    .md3-tab-add-btn:hover {
+        border-color: var(--md-sys-color-primary);
+        background-color: var(--md-sys-color-primary-container);
+    }
+
+    .md3-tab-delete-btn {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: var(--md-sys-color-error);
+        color: var(--md-sys-color-on-error);
+        border: none;
+        font-size: 12px;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        transition: all var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard);
+    }
+
+    .md3-tab:hover .md3-tab-delete-btn {
+        display: flex;
+    }
+
+    .md3-tab-delete-btn:hover {
+        background-color: var(--md-sys-color-error-container);
+        color: var(--md-sys-color-on-error-container);
+    }
+
+    /* 投资组合切换动画 */
+    .portfolio-switching {
+        opacity: 0.6;
+        pointer-events: none;
+        transition: opacity var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+    }
+
+    .portfolio-content-fade {
+        animation: fadeInUp 0.3s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* 加载状态指示器 */
+    .portfolio-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        color: var(--md-sys-color-on-surface-variant);
+    }
+
+    .portfolio-loading i {
+        margin-right: 8px;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
 </style>
 {% endblock %}
 
@@ -163,6 +311,13 @@
             <button class="md3-button md3-button-outlined" data-bs-toggle="modal" data-bs-target="#importCsvModal">
                 <i class="material-icons">upload_file</i> 批量导入
             </button>
+        </div>
+    </div>
+
+    <!-- 多投资组合标签页 -->
+    <div class="md3-portfolio-tabs">
+        <div class="md3-tabs" id="portfolio-tabs">
+            <!-- 标签页将通过JavaScript动态生成 -->
         </div>
     </div>
 
@@ -442,10 +597,252 @@
     let portfolio = [];
     let portfolioAnalysis = null;
 
+    // 多投资组合管理器
+    let portfolioManager = {
+        portfolios: {},
+        currentPortfolioId: 'default',
+        portfolioMetadata: {}
+    };
+
+    // ==================== 多投资组合管理核心函数 ====================
+
+    // 获取投资组合管理器数据
+    function getPortfolioManager() {
+        const saved = localStorage.getItem('portfolioManager');
+        if (saved) {
+            return JSON.parse(saved);
+        }
+
+        // 如果没有多投资组合数据，检查是否需要迁移旧数据
+        const oldPortfolio = localStorage.getItem('portfolio');
+        if (oldPortfolio) {
+            return migrateOldPortfolio(JSON.parse(oldPortfolio));
+        }
+
+        // 返回默认结构
+        return {
+            portfolios: {
+                'default': []
+            },
+            currentPortfolioId: 'default',
+            portfolioMetadata: {
+                'default': {
+                    name: '默认投资组合',
+                    createdAt: new Date().toISOString(),
+                    isDefault: true
+                }
+            }
+        };
+    }
+
+    // 保存投资组合管理器数据
+    function savePortfolioManager() {
+        localStorage.setItem('portfolioManager', JSON.stringify(portfolioManager));
+    }
+
+    // 迁移旧的单投资组合数据
+    function migrateOldPortfolio(oldData) {
+        const migrated = {
+            portfolios: {
+                'default': oldData
+            },
+            currentPortfolioId: 'default',
+            portfolioMetadata: {
+                'default': {
+                    name: '默认投资组合',
+                    createdAt: new Date().toISOString(),
+                    isDefault: true
+                }
+            }
+        };
+
+        // 保存迁移后的数据
+        localStorage.setItem('portfolioManager', JSON.stringify(migrated));
+        // 删除旧数据
+        localStorage.removeItem('portfolio');
+
+        showSuccess('已自动迁移您的投资组合数据到新的多投资组合系统');
+        return migrated;
+    }
+
+    // 创建新投资组合
+    function createNewPortfolio() {
+        let name = prompt('请输入新投资组合的名称：');
+        if (!name) {
+            return; // 用户取消
+        }
+
+        name = name.trim();
+        if (name === '') {
+            showError('投资组合名称不能为空');
+            return;
+        }
+
+        if (name.length > 20) {
+            showError('投资组合名称不能超过20个字符');
+            return;
+        }
+
+        // 检查名称是否已存在
+        const existingNames = Object.values(portfolioManager.portfolioMetadata).map(meta => meta.name);
+        if (existingNames.includes(name)) {
+            showError('投资组合名称已存在，请使用其他名称');
+            return;
+        }
+
+        const portfolioId = 'portfolio_' + Date.now();
+        portfolioManager.portfolios[portfolioId] = [];
+        portfolioManager.portfolioMetadata[portfolioId] = {
+            name: name,
+            createdAt: new Date().toISOString(),
+            isDefault: false
+        };
+
+        savePortfolioManager();
+        renderPortfolioTabs();
+        showSuccess(`投资组合 "${name}" 创建成功`);
+
+        // 询问是否立即切换到新投资组合
+        if (confirm(`是否立即切换到新创建的投资组合 "${name}"？`)) {
+            switchPortfolio(portfolioId);
+        }
+    }
+
+    // 删除投资组合
+    function deletePortfolio(portfolioId) {
+        if (portfolioId === 'default') {
+            showError('默认投资组合不能删除');
+            return;
+        }
+
+        const metadata = portfolioManager.portfolioMetadata[portfolioId];
+        if (!metadata) {
+            return;
+        }
+
+        if (!confirm(`确定要删除投资组合 "${metadata.name}" 吗？此操作不可撤销。`)) {
+            return;
+        }
+
+        delete portfolioManager.portfolios[portfolioId];
+        delete portfolioManager.portfolioMetadata[portfolioId];
+
+        // 如果删除的是当前投资组合，切换到默认投资组合
+        if (portfolioManager.currentPortfolioId === portfolioId) {
+            portfolioManager.currentPortfolioId = 'default';
+            loadCurrentPortfolio();
+        }
+
+        savePortfolioManager();
+        renderPortfolioTabs();
+        showSuccess(`投资组合 "${metadata.name}" 已删除`);
+    }
+
+    // 切换投资组合
+    function switchPortfolio(portfolioId) {
+        if (portfolioId === portfolioManager.currentPortfolioId) {
+            return;
+        }
+
+        // 添加切换动画
+        const contentArea = $('.md3-portfolio-container');
+        contentArea.addClass('portfolio-switching');
+
+        // 显示加载状态
+        const loadingHtml = `
+            <div class="portfolio-loading">
+                <i class="material-icons">refresh</i>
+                <span>正在切换投资组合...</span>
+            </div>
+        `;
+
+        // 保存当前投资组合数据
+        portfolioManager.portfolios[portfolioManager.currentPortfolioId] = [...portfolio];
+
+        // 延迟切换以显示动画效果
+        setTimeout(() => {
+            // 切换到新投资组合
+            portfolioManager.currentPortfolioId = portfolioId;
+            loadCurrentPortfolio();
+
+            savePortfolioManager();
+            renderPortfolioTabs();
+
+            // 移除切换动画，添加内容动画
+            contentArea.removeClass('portfolio-switching');
+            $('#portfolio-content, #portfolio-analysis, #portfolio-recommendations').addClass('portfolio-content-fade');
+
+            const metadata = portfolioManager.portfolioMetadata[portfolioId];
+            showSuccess(`已切换到投资组合 "${metadata.name}"`);
+
+            // 清除动画类
+            setTimeout(() => {
+                $('.portfolio-content-fade').removeClass('portfolio-content-fade');
+            }, 300);
+        }, 200);
+    }
+
+    // 加载当前投资组合数据
+    function loadCurrentPortfolio() {
+        const currentId = portfolioManager.currentPortfolioId;
+        portfolio = [...(portfolioManager.portfolios[currentId] || [])];
+        renderPortfolio();
+        analyzePortfolio();
+    }
+
     $(document).ready(function() {
+        // 初始化多投资组合管理器
+        portfolioManager = getPortfolioManager();
+
+        // 渲染投资组合标签页
+        renderPortfolioTabs();
+
         // 从本地存储加载投资组合
         loadPortfolio();
+        // 从本地存储加载投资组合
+        loadPortfolio();
+    });
 
+    // 渲染投资组合标签页
+    function renderPortfolioTabs() {
+        const tabsContainer = $('#portfolio-tabs');
+        tabsContainer.empty();
+
+        // 渲染所有投资组合标签
+        Object.keys(portfolioManager.portfolios).forEach(portfolioId => {
+            const metadata = portfolioManager.portfolioMetadata[portfolioId];
+            const isActive = portfolioId === portfolioManager.currentPortfolioId;
+
+            const tab = $(`
+                <div class="md3-tab ${isActive ? 'active' : ''}" data-portfolio-id="${portfolioId}">
+                    ${metadata.name}
+                    ${!metadata.isDefault ? '<button class="md3-tab-delete-btn" onclick="deletePortfolio(\'' + portfolioId + '\'); event.stopPropagation();">×</button>' : ''}
+                </div>
+            `);
+
+            tab.click(function() {
+                switchPortfolio(portfolioId);
+            });
+
+            tabsContainer.append(tab);
+        });
+
+        // 添加新建投资组合按钮
+        const addBtn = $(`
+            <button class="md3-tab-add-btn" title="创建新投资组合">
+                +
+            </button>
+        `);
+
+        addBtn.click(function() {
+            createNewPortfolio();
+        });
+
+        tabsContainer.append(addBtn);
+    }
+
+    // 重新初始化文档就绪事件处理
+    $(document).ready(function() {
         // 添加股票按钮点击事件
         $('#add-stock-btn').click(function() {
             addStockToPortfolio();
@@ -488,18 +885,15 @@
         });
     });
 
-    // 从本地存储加载投资组合
+    // 从本地存储加载投资组合（支持多投资组合）
     function loadPortfolio() {
-        const savedPortfolio = localStorage.getItem('portfolio');
-        if (savedPortfolio) {
-            portfolio = JSON.parse(savedPortfolio);
-            renderPortfolio(); // 先用缓存数据渲染一次，避免白屏
-            
-            // 为每个股票获取最新数据
-            portfolio.forEach((stock, index) => {
-                fetchStockData(stock.stock_code);
-            });
-        }
+        // 加载当前投资组合数据
+        loadCurrentPortfolio();
+
+        // 为每个股票获取最新数据
+        portfolio.forEach((stock, index) => {
+            fetchStockData(stock.stock_code);
+        });
     }
 
     // 渲染投资组合
@@ -666,9 +1060,11 @@
         }
     }
 
-    // 保存投资组合到本地存储
+    // 保存投资组合到本地存储（支持多投资组合）
     function savePortfolio() {
-        localStorage.setItem('portfolio', JSON.stringify(portfolio));
+        // 保存当前投资组合数据到管理器
+        portfolioManager.portfolios[portfolioManager.currentPortfolioId] = [...portfolio];
+        savePortfolioManager();
         renderPortfolio();
     }
 
