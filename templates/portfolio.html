@@ -35,12 +35,13 @@
         transition: all 0.2s ease;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 8px 12px;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 6px;
         border-radius: var(--md-sys-shape-corner-small);
         width: 100%;
         min-height: 40px;
+        text-align: center;
     }
 
     .sortable-header:hover {
@@ -54,10 +55,12 @@
     }
 
     .sort-indicator {
-        font-size: 18px;
+        font-size: 16px;
         color: var(--md-sys-color-on-surface-variant);
         transition: all 0.3s ease;
         opacity: 0.6;
+        margin-left: 2px;
+        flex-shrink: 0;
     }
 
     .sortable-header:hover .sort-indicator {
@@ -77,6 +80,23 @@
 
     .sortable-header[data-sort="none"] .sort-indicator {
         opacity: 0.6;
+    }
+
+    /* 响应式设计 - 小屏幕优化 */
+    @media (max-width: 768px) {
+        .sortable-header {
+            gap: 4px;
+            padding: 6px 4px;
+            font-size: 12px;
+        }
+
+        .sortable-header span {
+            font-size: 12px;
+        }
+
+        .sort-indicator {
+            font-size: 14px;
+        }
     }
 
     .md3-portfolio-title {

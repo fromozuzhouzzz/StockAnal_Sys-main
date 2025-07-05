@@ -1374,46 +1374,46 @@ table.md3-data-table td[style*="left"] {
     width: 100% !important;
 }
 
-/* 投资组合表格列宽度和对齐方式 */
+/* 投资组合表格列宽度和对齐方式 - 统一居中对齐并优化列宽 */
 .md3-table th:nth-child(1),
 .md3-table td:nth-child(1) {
-    width: 80px !important; /* 股票代码 */
+    width: 90px !important; /* 股票代码 */
     text-align: center !important;
 }
 
 .md3-table th:nth-child(2),
 .md3-table td:nth-child(2) {
-    width: 120px !important; /* 股票名称 */
-    text-align: left !important;
+    width: 140px !important; /* 股票名称 */
+    text-align: center !important;
 }
 
 .md3-table th:nth-child(3),
 .md3-table td:nth-child(3) {
-    width: 100px !important; /* 所属行业 */
-    text-align: left !important;
+    width: 120px !important; /* 所属行业 */
+    text-align: center !important;
 }
 
 .md3-table th:nth-child(4),
 .md3-table td:nth-child(4) {
-    width: 80px !important; /* 持仓比例 */
+    width: 70px !important; /* 持仓比例 - 缩小宽度 */
     text-align: center !important;
 }
 
 .md3-table th:nth-child(5),
 .md3-table td:nth-child(5) {
     width: 80px !important; /* 当前价格 */
-    text-align: right !important;
+    text-align: center !important;
 }
 
 .md3-table th:nth-child(6),
 .md3-table td:nth-child(6) {
-    width: 100px !important; /* 今日涨跌 */
+    width: 80px !important; /* 今日涨跌 - 缩小宽度 */
     text-align: center !important;
 }
 
 .md3-table th:nth-child(7),
 .md3-table td:nth-child(7) {
-    width: 80px !important; /* 综合评分 */
+    width: 70px !important; /* 综合评分 - 缩小宽度 */
     text-align: center !important;
 }
 
