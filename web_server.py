@@ -2225,14 +2225,16 @@ cleaner_thread = threading.Thread(target=run_task_cleaner)
 cleaner_thread.daemon = True
 cleaner_thread.start()
 
-# 初始化预缓存调度器
-try:
-    if init_precache_scheduler():
-        app.logger.info("✓ 股票数据预缓存调度器初始化成功")
-    else:
-        app.logger.warning("✗ 股票数据预缓存调度器初始化失败")
-except Exception as e:
-    app.logger.error(f"✗ 预缓存调度器初始化异常: {str(e)}")
+# 移除自动预缓存调度器初始化，避免系统启动时的不必要API调用
+# 如需预缓存，可通过API手动触发：POST /api/precache/manual
+# try:
+#     if init_precache_scheduler():
+#         app.logger.info("✓ 股票数据预缓存调度器初始化成功")
+#     else:
+#         app.logger.warning("✗ 股票数据预缓存调度器初始化失败")
+# except Exception as e:
+#     app.logger.error(f"✗ 预缓存调度器初始化异常: {str(e)}")
+app.logger.info("ℹ️ 预缓存调度器已禁用，系统启动更快更干净")
 
 # 初始化实时通信功能
 if REALTIME_AVAILABLE:

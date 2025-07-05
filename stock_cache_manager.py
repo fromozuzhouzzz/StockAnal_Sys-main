@@ -47,14 +47,14 @@ class StockCacheManager(AdvancedCacheManager):
             'industry_analysis': 1800,  # 30分钟
         }
         
-        # 预热数据配置
+        # 预热数据配置（保留配置但不自动启动）
         self.popular_stocks = [
             '000001', '000002', '600000', '600036', '000858',
             '002415', '000063', '600519', '000166', '600276'
         ]
-        
-        # 启动股票数据预热
-        self._start_stock_preload()
+
+        # 注释掉自动启动股票数据预热，改为手动调用
+        # self._start_stock_preload()
     
     def _start_stock_preload(self):
         """启动股票数据预热"""

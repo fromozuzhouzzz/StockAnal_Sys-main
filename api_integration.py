@@ -77,17 +77,18 @@ def setup_api_middleware(app: Flask):
         start_cleanup_scheduler()
         logger.info("限流器清理调度器已启动")
         
-        # 预加载热门股票缓存
-        import threading
-        def preload_cache():
-            try:
-                preload_cache_for_popular_stocks()
-            except Exception as e:
-                logger.error(f"预加载缓存失败: {e}")
-        
-        cache_thread = threading.Thread(target=preload_cache, daemon=True)
-        cache_thread.start()
-        logger.info("缓存预加载任务已启动")
+        # 移除自动预加载热门股票缓存，避免系统启动时的API调用
+        # 如需预加载，可通过API手动触发：POST /api/v1/cache/preload
+        # import threading
+        # def preload_cache():
+        #     try:
+        #         preload_cache_for_popular_stocks()
+        #     except Exception as e:
+        #         logger.error(f"预加载缓存失败: {e}")
+        #
+        # cache_thread = threading.Thread(target=preload_cache, daemon=True)
+        # cache_thread.start()
+        logger.info("缓存预加载已禁用，系统启动更快")
         
         return True
         
