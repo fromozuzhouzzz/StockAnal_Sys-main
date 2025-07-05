@@ -37,11 +37,20 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
+        padding: 8px 12px;
+        border-radius: var(--md-sys-shape-corner-small);
+        width: 100%;
+        min-height: 40px;
     }
 
     .sortable-header:hover {
         background-color: var(--md-sys-color-surface-container-highest);
         color: var(--md-sys-color-primary);
+    }
+
+    .sortable-header span {
+        font-weight: 500;
+        white-space: nowrap;
     }
 
     .sort-indicator {
@@ -153,7 +162,7 @@
             <div class="md3-card-header">
                 <h2 class="md3-card-title">
                     <i class="material-icons">list</i>
-                    持仓明细
+                    持仓明细 (支持排序)
                 </h2>
             </div>
             <div class="md3-card-body" style="padding: 0;">
@@ -166,13 +175,17 @@
                                 <th>所属行业</th>
                                 <th>持仓比例</th>
                                 <th>当前价格</th>
-                                <th class="sortable-header" onclick="sortTable('price_change')" data-sort="none">
-                                    今日涨跌
-                                    <i class="material-icons sort-indicator" id="sort-price_change">unfold_more</i>
+                                <th>
+                                    <div class="sortable-header" onclick="sortTable('price_change')" data-sort="none">
+                                        <span>今日涨跌</span>
+                                        <i class="material-icons sort-indicator" id="sort-price_change">unfold_more</i>
+                                    </div>
                                 </th>
-                                <th class="sortable-header" onclick="sortTable('score')" data-sort="none">
-                                    综合评分
-                                    <i class="material-icons sort-indicator" id="sort-score">unfold_more</i>
+                                <th>
+                                    <div class="sortable-header" onclick="sortTable('score')" data-sort="none">
+                                        <span>综合评分</span>
+                                        <i class="material-icons sort-indicator" id="sort-score">unfold_more</i>
+                                    </div>
                                 </th>
                                 <th>投资建议</th>
                                 <th>操作</th>

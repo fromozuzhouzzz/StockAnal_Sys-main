@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>表格排序测试</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            width: 100%;
+            min-height: 40px;
+        }
+
+        .sortable-header:hover {
+            background-color: #f5f5f5;
+            color: #1976d2;
+        }
+
+        .sortable-header span {
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .sort-indicator {
+            font-size: 18px;
+            transition: all 0.2s ease;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>表格排序功能测试</h1>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>股票代码</th>
+                <th>股票名称</th>
+                <th>
+                    <div class="sortable-header" onclick="sortTable('price_change')" data-sort="none">
+                        <span>今日涨跌</span>
+                        <i class="material-icons sort-indicator" id="sort-price_change">unfold_more</i>
+                    </div>
+                </th>
+                <th>
+                    <div class="sortable-header" onclick="sortTable('score')" data-sort="none">
+                        <span>综合评分</span>
+                        <i class="material-icons sort-indicator" id="sort-score">unfold_more</i>
+                    </div>
+                </th>
+            </tr>
+        </thead>
+        <tbody id="portfolio-table-body">
+            <tr>
+                <td>000001.SZ</td>
+                <td>平安银行</td>
+                <td data-price-change="2.5">+2.5%</td>
+                <td data-score="85">85</td>
+            </tr>
+            <tr>
+                <td>000002.SZ</td>
+                <td>万科A</td>
+                <td data-price-change="-1.2">-1.2%</td>
+                <td data-score="72">72</td>
+            </tr>
+            <tr>
+                <td>600000.SH</td>
+                <td>浦发银行</td>
+                <td data-price-change="0.8">+0.8%</td>
+                <td data-score="78">78</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        // 排序状态管理
+        let sortState = {
+            column: null,
+            direction: 'none'
+        };
+
+        function sortTable(column) {
+            console.log('排序列:', column);
+            
+            const tbody = document.getElementById('portfolio-table-body');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // 确定排序方向
+            let direction;
+            if (sortState.column === column) {
+                // 同一列，切换排序方向
+                if (sortState.direction === 'none') {
+                    direction = 'asc';
+                } else if (sortState.direction === 'asc') {
+                    direction = 'desc';
+                } else {
+                    direction = 'none';
+                }
+            } else {
+                // 不同列，从升序开始
+                direction = 'asc';
+            }
+
+            console.log('排序方向:', direction);
+
+            // 重置所有排序指示器
+            document.querySelectorAll('.sortable-header').forEach(header => {
+                header.setAttribute('data-sort', 'none');
+            });
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.textContent = 'unfold_more';
+            });
+
+            if (direction === 'none') {
+                // 恢复原始顺序
+                location.reload();
+                return;
+            }
+
+            // 排序数据
+            rows.sort((a, b) => {
+                let aValue, bValue;
+                
+                if (column === 'price_change') {
+                    aValue = parseFloat(a.querySelector('[data-price-change]').getAttribute('data-price-change'));
+                    bValue = parseFloat(b.querySelector('[data-price-change]').getAttribute('data-price-change'));
+                } else if (column === 'score') {
+                    aValue = parseFloat(a.querySelector('[data-score]').getAttribute('data-score'));
+                    bValue = parseFloat(b.querySelector('[data-score]').getAttribute('data-score'));
+                }
+
+                if (direction === 'asc') {
+                    return aValue - bValue;
+                } else {
+                    return bValue - aValue;
+                }
+            });
+
+            // 更新表格
+            tbody.innerHTML = '';
+            rows.forEach(row => tbody.appendChild(row));
+
+            // 更新排序指示器
+            updateSortIndicator(column, direction);
+
+            // 更新状态
+            sortState.column = column;
+            sortState.direction = direction;
+        }
+
+        function updateSortIndicator(column, direction) {
+            const header = document.querySelector(`.sortable-header[onclick="sortTable('${column}')"]`);
+            const indicator = document.querySelector(`#sort-${column}`);
+
+            header.setAttribute('data-sort', direction);
+
+            switch (direction) {
+                case 'asc':
+                    indicator.textContent = 'keyboard_arrow_up';
+                    break;
+                case 'desc':
+                    indicator.textContent = 'keyboard_arrow_down';
+                    break;
+                case 'none':
+                    indicator.textContent = 'unfold_more';
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>

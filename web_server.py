@@ -88,6 +88,11 @@ swaggerui_blueprint = get_swaggerui_blueprint(
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# 禁用模板缓存以确保修改立即生效
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
 analyzer = StockAnalyzer()
 us_stock_service = USStockService()
 
