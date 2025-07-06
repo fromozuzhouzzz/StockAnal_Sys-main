@@ -35,7 +35,10 @@ class RateLimiter:
         self.endpoint_limits = {
             '/api/v1/stock/analyze': {'requests': 50, 'window': 3600},
             '/api/v1/portfolio/analyze': {'requests': 20, 'window': 3600},
-            '/api/v1/stocks/batch-score': {'requests': 10, 'window': 3600}
+            '/api/v1/stocks/batch-score': {'requests': 10, 'window': 3600},
+            '/api/v1/batch/update': {'requests': 5, 'window': 300},  # 5分钟内最多5次批量更新
+            '/api/v1/batch/progress': {'requests': 100, 'window': 300},  # 进度查询相对宽松
+            '/api/v1/batch/cleanup': {'requests': 10, 'window': 3600}  # 清理操作限制
         }
     
     def get_user_tier(self, api_key):

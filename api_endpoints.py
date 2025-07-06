@@ -1155,7 +1155,7 @@ def _format_traditional_result(stock_code: str, analysis_result: Dict,
 @api_v1.route('/batch/update', methods=['POST'])
 @api_error_handler
 @require_api_key
-@require_rate_limit(calls=5, period=300)  # 5分钟内最多5次批量更新
+@require_rate_limit('/api/v1/batch/update')  # 使用正确的参数格式
 def batch_update_data():
     """
     批量更新投资组合股票数据
@@ -1247,6 +1247,7 @@ def batch_update_data():
 @api_v1.route('/batch/progress/<session_id>', methods=['GET'])
 @api_error_handler
 @require_api_key
+@require_rate_limit('/api/v1/batch/progress')
 def get_batch_update_progress(session_id: str):
     """
     获取批量更新进度
@@ -1282,6 +1283,7 @@ def get_batch_update_progress(session_id: str):
 @api_v1.route('/batch/cleanup', methods=['POST'])
 @api_error_handler
 @require_api_key
+@require_rate_limit('/api/v1/batch/cleanup')
 def cleanup_batch_sessions():
     """
     清理旧的批量更新会话
