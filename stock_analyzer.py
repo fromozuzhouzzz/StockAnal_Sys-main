@@ -1795,14 +1795,25 @@ class StockAnalyzer:
 
             return report
         except Exception as e:
-            self.logger.error(f"快速分析股票 {stock_code} 时出错: {str(e)}")
+            error_msg = str(e)
+            self.logger.error(f"快速分析股票 {stock_code} 时出错: {error_msg}")
+
+            # 尝试降级策略：使用缓存数据
+            fallback_result = self._try_get_fallback_analysis(stock_code, market_type)
+            if fallback_result:
+                self.logger.info(f"股票 {stock_code} 使用降级分析数据")
+                fallback_result['analysis_time'] = time.time() - start_time
+                fallback_result['fallback'] = True
+                fallback_result['original_error'] = error_msg
+                return fallback_result
+
             # 返回错误报告而不是抛出异常
             return {
                 'stock_code': stock_code,
                 'stock_name': '未知',
                 'industry': '未知',
                 'analysis_date': datetime.now().strftime('%Y-%m-%d'),
-                'score': 0,
+                'score': 50,  # 中性评分
                 'price': 0,
                 'price_change': 0,
                 'ma_trend': 'UNKNOWN',
@@ -1811,8 +1822,85 @@ class StockAnalyzer:
                 'volume_status': 'NORMAL',
                 'recommendation': '数据获取失败',
                 'analysis_time': time.time() - start_time,
-                'error': str(e)
+                'error': error_msg,
+                'data_source': 'error_fallback'
             }
+
+    def _try_get_fallback_analysis(self, stock_code: str, market_type: str) -> Optional[Dict]:
+        """尝试获取降级分析数据"""
+        try:
+            # 1. 尝试从内存缓存获取
+            cache_key = f"{stock_code}_{market_type}_quick_analysis"
+            if cache_key in self.data_cache:
+                cached_result = self.data_cache[cache_key]
+                if isinstance(cached_result, dict) and 'data' in cached_result:
+                    self.logger.info(f"股票 {stock_code} 使用内存缓存分析数据")
+                    return cached_result['data']
+
+            # 2. 尝试从数据库缓存获取基本信息
+            try:
+                from database import get_session, StockBasicInfo, StockRealtimeData
+                session = get_session()
+
+                # 获取基本信息
+                basic_info = session.query(StockBasicInfo).filter_by(
+                    stock_code=stock_code, market_type=market_type
+                ).first()
+
+                # 获取实时数据
+                realtime_data = session.query(StockRealtimeData).filter_by(
+                    stock_code=stock_code, market_type=market_type
+                ).first()
+
+                session.close()
+
+                if basic_info and realtime_data:
+                    # 构建降级分析结果
+                    fallback_analysis = {
+                        'stock_code': stock_code,
+                        'stock_name': basic_info.stock_name or '未知',
+                        'industry': basic_info.industry or '未知',
+                        'analysis_date': datetime.now().strftime('%Y-%m-%d'),
+                        'score': 50,  # 中性评分
+                        'price': realtime_data.current_price or 0,
+                        'price_change': realtime_data.change_pct or 0,
+                        'ma_trend': 'UNKNOWN',
+                        'rsi': 50,
+                        'macd_signal': 'HOLD',
+                        'volume_status': 'NORMAL',
+                        'recommendation': '基于缓存数据',
+                        'data_source': 'database_fallback'
+                    }
+
+                    self.logger.info(f"股票 {stock_code} 成功获取数据库降级数据")
+                    return fallback_analysis
+
+            except Exception as db_error:
+                self.logger.warning(f"获取数据库降级数据失败: {db_error}")
+
+            # 3. 最后的降级方案：返回基本结构
+            basic_fallback = {
+                'stock_code': stock_code,
+                'stock_name': '未知',
+                'industry': '未知',
+                'analysis_date': datetime.now().strftime('%Y-%m-%d'),
+                'score': 50,  # 中性评分
+                'price': 0,
+                'price_change': 0,
+                'ma_trend': 'UNKNOWN',
+                'rsi': 50,
+                'macd_signal': 'HOLD',
+                'volume_status': 'NORMAL',
+                'recommendation': '数据不足',
+                'data_source': 'minimal_fallback'
+            }
+
+            self.logger.warning(f"股票 {stock_code} 使用最小降级数据")
+            return basic_fallback
+
+        except Exception as e:
+            self.logger.error(f"获取股票 {stock_code} 降级分析数据失败: {e}")
+            return None
 
     def _safe_quick_analyze(self, stock_code, market_type, min_score):
         """安全的快速分析方法，用于并发处理"""

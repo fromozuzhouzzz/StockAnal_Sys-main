@@ -50,11 +50,11 @@ def init_pymysql_compatibility():
 if 'mysql' in DATABASE_URL.lower():
     init_pymysql_compatibility()
 
-# 数据库连接池配置 - 针对HF Spaces环境优化
-DATABASE_POOL_SIZE = int(os.getenv('DATABASE_POOL_SIZE', '15'))  # 增加连接池大小
-DATABASE_POOL_RECYCLE = int(os.getenv('DATABASE_POOL_RECYCLE', '1800'))  # 减少回收时间
-DATABASE_POOL_TIMEOUT = int(os.getenv('DATABASE_POOL_TIMEOUT', '60'))  # 增加超时时间
-DATABASE_POOL_MAX_OVERFLOW = int(os.getenv('DATABASE_POOL_MAX_OVERFLOW', '20'))  # 添加溢出连接
+# 数据库连接池配置 - 针对Aiven MySQL和HF Spaces环境优化
+DATABASE_POOL_SIZE = int(os.getenv('DATABASE_POOL_SIZE', '8'))  # 减少连接池大小避免超时
+DATABASE_POOL_RECYCLE = int(os.getenv('DATABASE_POOL_RECYCLE', '900'))  # 15分钟回收连接
+DATABASE_POOL_TIMEOUT = int(os.getenv('DATABASE_POOL_TIMEOUT', '30'))  # 减少超时时间
+DATABASE_POOL_MAX_OVERFLOW = int(os.getenv('DATABASE_POOL_MAX_OVERFLOW', '5'))  # 减少溢出连接
 
 # 缓存配置
 CACHE_DEFAULT_TTL = int(os.getenv('CACHE_DEFAULT_TTL', '900'))  # 15分钟
@@ -72,13 +72,19 @@ if 'mysql' in DATABASE_URL.lower():
         max_overflow=DATABASE_POOL_MAX_OVERFLOW,  # 添加溢出连接配置
         pool_pre_ping=True,  # 验证连接有效性
         echo=False,  # 生产环境关闭SQL日志
-        # 添加查询优化配置
+        # 优化Aiven MySQL连接配置
         connect_args={
             "charset": "utf8mb4",
             "autocommit": True,
-            "connect_timeout": 60,
-            "read_timeout": 60,
-            "write_timeout": 60
+            "connect_timeout": 20,  # 减少连接超时
+            "read_timeout": 30,     # 减少读取超时
+            "write_timeout": 30,    # 减少写入超时
+            "init_command": "SET SESSION sql_mode='STRICT_TRANS_TABLES'",
+            "use_unicode": True,
+            # 添加重连机制
+            "reconnect": True,
+            # 优化网络配置
+            "tcp_keepalive": True
         }
     )
 else:
@@ -408,8 +414,27 @@ def init_db():
 
 
 def get_session():
-    """获取数据库会话"""
-    return Session()
+    """获取数据库会话，带重试机制"""
+    import time
+    max_retries = 3
+    retry_delay = 1
+
+    for attempt in range(max_retries):
+        try:
+            session = Session()
+            # 测试连接
+            session.execute("SELECT 1")
+            return session
+        except Exception as e:
+            if session:
+                session.close()
+
+            if attempt < max_retries - 1:
+                logger.warning(f"数据库连接失败，第{attempt + 1}次重试: {e}")
+                time.sleep(retry_delay * (attempt + 1))  # 指数退避
+            else:
+                logger.error(f"数据库连接失败，已达最大重试次数: {e}")
+                raise
 
 
 def test_connection():

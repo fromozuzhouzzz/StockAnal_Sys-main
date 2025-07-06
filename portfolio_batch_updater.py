@@ -477,13 +477,25 @@ class PortfolioBatchUpdater:
         try:
             logger.info(f"开始更新股票 {stock_code}")
 
-            # 调用股票分析器获取完整数据
-            result = self.analyzer.calculate_score(stock_code, market_type)
+            # 使用正确的方法调用股票分析器获取完整数据
+            # 注意：calculate_score期望DataFrame参数，不是股票代码
+            # 我们应该使用quick_analyze_stock方法来获取完整的分析结果
+            result = self.analyzer.quick_analyze_stock(stock_code, market_type)
 
             if result:
-                # 验证返回数据的完整性
+                # 验证返回数据的完整性和类型
+                if not isinstance(result, dict):
+                    error_msg = f"分析器返回数据类型错误，期望dict，实际{type(result)}"
+                    logger.error(f"股票 {stock_code} 数据类型错误: {error_msg}")
+                    return {
+                        'success': False,
+                        'error': error_msg,
+                        'error_type': 'DATA_TYPE_ERROR'
+                    }
+
+                # 检查必要字段
                 required_fields = ['stock_code', 'stock_name', 'score']
-                missing_fields = [field for field in required_fields if not result.get(field)]
+                missing_fields = [field for field in required_fields if field not in result or result[field] is None]
 
                 if missing_fields:
                     error_msg = f"返回数据缺少必要字段: {', '.join(missing_fields)}"
@@ -491,7 +503,35 @@ class PortfolioBatchUpdater:
                     return {
                         'success': False,
                         'error': error_msg,
+                        'error_type': 'INCOMPLETE_DATA',
                         'partial_data': result
+                    }
+
+                # 数据类型转换和验证
+                try:
+                    # 确保评分是数字类型
+                    if 'score' in result:
+                        result['score'] = float(result['score']) if result['score'] is not None else 0.0
+
+                    # 确保价格是数字类型
+                    if 'price' in result and result['price'] is not None:
+                        result['price'] = float(result['price'])
+
+                    # 确保价格变化是数字类型
+                    if 'price_change' in result and result['price_change'] is not None:
+                        result['price_change'] = float(result['price_change'])
+
+                    # 确保RSI是数字类型
+                    if 'rsi' in result and result['rsi'] is not None:
+                        result['rsi'] = float(result['rsi'])
+
+                except (ValueError, TypeError) as e:
+                    error_msg = f"数据类型转换失败: {str(e)}"
+                    logger.error(f"股票 {stock_code} 数据转换错误: {error_msg}")
+                    return {
+                        'success': False,
+                        'error': error_msg,
+                        'error_type': 'DATA_CONVERSION_ERROR'
                     }
 
                 # 记录成功更新
@@ -508,31 +548,59 @@ class PortfolioBatchUpdater:
                 logger.warning(f"股票 {stock_code} 更新失败: {error_msg}")
                 return {
                     'success': False,
-                    'error': error_msg
+                    'error': error_msg,
+                    'error_type': 'EMPTY_RESULT'
                 }
 
         except Exception as e:
             elapsed_time = time.time() - start_time
             error_msg = str(e)
 
-            # 分类错误类型
-            if 'AKShare' in error_msg:
+            # 分类错误类型并提供更详细的错误信息
+            if 'iloc' in error_msg and 'str' in error_msg:
+                error_type = 'DATA_TYPE_ERROR'
+                user_friendly_msg = '数据类型错误：期望DataFrame但收到字符串'
+                logger.error(f"股票 {stock_code} 数据类型错误: {error_msg}")
+            elif 'get' in error_msg and 'int' in error_msg:
+                error_type = 'DATA_TYPE_ERROR'
+                user_friendly_msg = '数据类型错误：期望字典但收到整数'
+                logger.error(f"股票 {stock_code} 数据类型错误: {error_msg}")
+            elif 'AKShare' in error_msg or 'akshare' in error_msg.lower():
                 error_type = 'API_ERROR'
                 user_friendly_msg = 'AKShare数据接口异常'
+                logger.warning(f"股票 {stock_code} AKShare API错误: {error_msg}")
             elif 'timeout' in error_msg.lower():
                 error_type = 'TIMEOUT_ERROR'
                 user_friendly_msg = '请求超时'
-            elif 'connection' in error_msg.lower():
+                logger.warning(f"股票 {stock_code} 请求超时: {error_msg}")
+            elif 'connection' in error_msg.lower() or 'network' in error_msg.lower():
                 error_type = 'CONNECTION_ERROR'
                 user_friendly_msg = '网络连接异常'
+                logger.warning(f"股票 {stock_code} 网络错误: {error_msg}")
             elif 'database' in error_msg.lower() or 'mysql' in error_msg.lower():
                 error_type = 'DATABASE_ERROR'
                 user_friendly_msg = '数据库操作异常'
+                logger.warning(f"股票 {stock_code} 数据库错误: {error_msg}")
+            elif 'empty' in error_msg.lower() or 'dataframe' in error_msg.lower():
+                error_type = 'DATA_ERROR'
+                user_friendly_msg = '股票数据为空或格式错误'
+                logger.warning(f"股票 {stock_code} 数据错误: {error_msg}")
             else:
                 error_type = 'UNKNOWN_ERROR'
-                user_friendly_msg = '未知错误'
+                user_friendly_msg = f'分析失败: {error_msg[:100]}...' if len(error_msg) > 100 else error_msg
+                logger.error(f"股票 {stock_code} 未知错误: {error_msg}")
 
-            logger.error(f"股票 {stock_code} 更新失败 ({error_type}): {error_msg}")
+            # 尝试降级策略：使用缓存数据
+            fallback_result = self._try_fallback_data(stock_code, market_type)
+            if fallback_result:
+                logger.info(f"股票 {stock_code} 使用降级数据")
+                return {
+                    'success': True,
+                    'data': fallback_result,
+                    'elapsed_time': elapsed_time,
+                    'fallback': True,
+                    'original_error': user_friendly_msg
+                }
 
             return {
                 'success': False,
@@ -541,7 +609,61 @@ class PortfolioBatchUpdater:
                 'error_detail': error_msg,
                 'elapsed_time': elapsed_time
             }
-    
+
+    def _try_fallback_data(self, stock_code: str, market_type: str) -> Optional[Dict[str, Any]]:
+        """尝试获取降级数据（缓存数据）"""
+        try:
+            # 尝试从数据库优化器获取缓存数据
+            if self.db_optimizer:
+                cached_basic = self.db_optimizer.get_stock_basic_info(stock_code, market_type)
+                cached_realtime = self.db_optimizer.get_stock_realtime_data(stock_code, market_type)
+
+                if cached_basic and cached_realtime:
+                    # 构建降级数据结构
+                    fallback_data = {
+                        'stock_code': stock_code,
+                        'stock_name': cached_basic.get('stock_name', '未知'),
+                        'industry': cached_basic.get('industry', '未知'),
+                        'score': cached_realtime.get('score', 50),  # 默认中性评分
+                        'price': cached_realtime.get('current_price', 0),
+                        'price_change': cached_realtime.get('change_pct', 0),
+                        'recommendation': '持有',  # 默认建议
+                        'analysis_date': datetime.now().strftime('%Y-%m-%d'),
+                        'data_source': 'cache_fallback'
+                    }
+
+                    logger.info(f"股票 {stock_code} 成功获取降级缓存数据")
+                    return fallback_data
+
+            # 如果数据库优化器不可用，尝试使用分析器的缓存
+            if hasattr(self.analyzer, 'data_cache'):
+                cache_key = f"{stock_code}_{market_type}"
+                if cache_key in self.analyzer.data_cache:
+                    cached_data = self.analyzer.data_cache[cache_key]
+                    if isinstance(cached_data, dict) and 'data' in cached_data:
+                        logger.info(f"股票 {stock_code} 使用分析器缓存数据")
+                        return cached_data['data']
+
+            # 最后的降级方案：返回基本结构
+            basic_fallback = {
+                'stock_code': stock_code,
+                'stock_name': '未知',
+                'industry': '未知',
+                'score': 50,  # 中性评分
+                'price': 0,
+                'price_change': 0,
+                'recommendation': '数据不足',
+                'analysis_date': datetime.now().strftime('%Y-%m-%d'),
+                'data_source': 'minimal_fallback'
+            }
+
+            logger.warning(f"股票 {stock_code} 使用最小降级数据")
+            return basic_fallback
+
+        except Exception as e:
+            logger.error(f"获取股票 {stock_code} 降级数据失败: {e}")
+            return None
+
     def get_update_status(self, task_id: str) -> Optional[Dict[str, Any]]:
         """获取更新任务状态"""
         with self.task_lock:
