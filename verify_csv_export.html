@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV导出内容验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        .csv-content {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .success {
+            color: #28a745;
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            color: #0c5460;
+            background-color: #d1ecf1;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CSV导出内容验证工具</h1>
+        <p>请选择导出的CSV文件来验证其内容和格式是否正确。</p>
+        
+        <div class="upload-area" onclick="document.getElementById('csvFile').click()">
+            <p>点击此处选择CSV文件或拖拽文件到此区域</p>
+            <input type="file" id="csvFile" accept=".csv" style="display: none;">
+        </div>
+        
+        <div id="results"></div>
+        <div id="csvContent" class="csv-content"></div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('csvFile');
+        const resultsDiv = document.getElementById('results');
+        const csvContentDiv = document.getElementById('csvContent');
+
+        // 期望的CSV列标题
+        const expectedHeaders = [
+            '股票代码',
+            '股票名称', 
+            '所属行业',
+            '持仓比例(%)',
+            '当前价格',
+            '今日涨跌(%)',
+            '综合评分',
+            '趋势分析评分',
+            '技术指标评分',
+            '成交量分析评分',
+            '波动率评估评分',
+            '动量指标评分',
+            '投资建议',
+            '数据时间'
+        ];
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                readCSVFile(file);
+            }
+        });
+
+        // 拖拽功能
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#007bff';
+            this.style.backgroundColor = '#f8f9fa';
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#ccc';
+            this.style.backgroundColor = 'white';
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.style.borderColor = '#ccc';
+            this.style.backgroundColor = 'white';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].name.endsWith('.csv')) {
+                readCSVFile(files[0]);
+            }
+        });
+
+        function readCSVFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csvText = e.target.result;
+                validateCSV(csvText, file.name);
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function validateCSV(csvText, fileName) {
+            resultsDiv.innerHTML = '';
+            csvContentDiv.innerHTML = '';
+
+            try {
+                // 移除BOM标记
+                const cleanText = csvText.replace(/^\uFEFF/, '');
+                const lines = cleanText.split('\n').filter(line => line.trim());
+                
+                if (lines.length === 0) {
+                    showError('CSV文件为空');
+                    return;
+                }
+
+                // 解析CSV
+                const rows = lines.map(line => parseCSVLine(line));
+                const headers = rows[0];
+                const dataRows = rows.slice(1);
+
+                // 验证文件基本信息
+                showInfo(`文件名: ${fileName}<br>总行数: ${lines.length}<br>数据行数: ${dataRows.length}<br>列数: ${headers.length}`);
+
+                // 验证列标题
+                validateHeaders(headers);
+
+                // 验证数据内容
+                validateData(dataRows, headers);
+
+                // 显示CSV内容
+                displayCSVContent(headers, dataRows);
+
+                showSuccess('CSV文件验证完成！');
+
+            } catch (error) {
+                showError(`解析CSV文件时出错: ${error.message}`);
+            }
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++; // 跳过下一个引号
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            result.push(current);
+            return result;
+        }
+
+        function validateHeaders(headers) {
+            const missing = [];
+            const extra = [];
+
+            // 检查缺失的列
+            expectedHeaders.forEach(expected => {
+                if (!headers.includes(expected)) {
+                    missing.push(expected);
+                }
+            });
+
+            // 检查多余的列
+            headers.forEach(header => {
+                if (!expectedHeaders.includes(header)) {
+                    extra.push(header);
+                }
+            });
+
+            if (missing.length === 0 && extra.length === 0) {
+                showSuccess('✅ 列标题验证通过：所有期望的列都存在且顺序正确');
+            } else {
+                if (missing.length > 0) {
+                    showError(`❌ 缺失的列: ${missing.join(', ')}`);
+                }
+                if (extra.length > 0) {
+                    showError(`❌ 多余的列: ${extra.join(', ')}`);
+                }
+            }
+
+            // 检查列顺序
+            let orderCorrect = true;
+            for (let i = 0; i < Math.min(headers.length, expectedHeaders.length); i++) {
+                if (headers[i] !== expectedHeaders[i]) {
+                    orderCorrect = false;
+                    break;
+                }
+            }
+
+            if (orderCorrect && headers.length === expectedHeaders.length) {
+                showSuccess('✅ 列顺序正确');
+            } else {
+                showError('❌ 列顺序不正确或列数不匹配');
+            }
+        }
+
+        function validateData(dataRows, headers) {
+            if (dataRows.length === 0) {
+                showError('❌ 没有数据行');
+                return;
+            }
+
+            let validRows = 0;
+            let issues = [];
+
+            dataRows.forEach((row, index) => {
+                if (row.length !== headers.length) {
+                    issues.push(`第${index + 2}行列数不匹配 (期望${headers.length}列，实际${row.length}列)`);
+                    return;
+                }
+
+                // 验证必要字段
+                const stockCode = row[0];
+                const stockName = row[1];
+                const score = row[6];
+
+                if (!stockCode || stockCode.trim() === '') {
+                    issues.push(`第${index + 2}行股票代码为空`);
+                }
+
+                if (!stockName || stockName.trim() === '') {
+                    issues.push(`第${index + 2}行股票名称为空`);
+                }
+
+                // 验证评分数据
+                for (let i = 6; i <= 11; i++) { // 综合评分到动量指标评分
+                    const scoreValue = row[i];
+                    if (scoreValue !== '-' && scoreValue !== '' && isNaN(parseFloat(scoreValue))) {
+                        issues.push(`第${index + 2}行第${i + 1}列评分数据格式错误: ${scoreValue}`);
+                    }
+                }
+
+                validRows++;
+            });
+
+            if (issues.length === 0) {
+                showSuccess(`✅ 数据验证通过：${validRows}行数据格式正确`);
+            } else {
+                showError(`❌ 发现${issues.length}个数据问题:<br>${issues.slice(0, 10).join('<br>')}`);
+                if (issues.length > 10) {
+                    showError(`... 还有${issues.length - 10}个问题未显示`);
+                }
+            }
+        }
+
+        function displayCSVContent(headers, dataRows) {
+            let html = '<h3>CSV文件内容预览</h3>';
+            html += '<table>';
+            
+            // 表头
+            html += '<tr>';
+            headers.forEach(header => {
+                html += `<th>${escapeHtml(header)}</th>`;
+            });
+            html += '</tr>';
+            
+            // 数据行（最多显示前10行）
+            const displayRows = dataRows.slice(0, 10);
+            displayRows.forEach(row => {
+                html += '<tr>';
+                row.forEach(cell => {
+                    html += `<td>${escapeHtml(cell)}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</table>';
+            
+            if (dataRows.length > 10) {
+                html += `<p><em>只显示前10行数据，总共${dataRows.length}行</em></p>`;
+            }
+            
+            csvContentDiv.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showSuccess(message) {
+            resultsDiv.innerHTML += `<div class="success">${message}</div>`;
+        }
+
+        function showError(message) {
+            resultsDiv.innerHTML += `<div class="error">${message}</div>`;
+        }
+
+        function showInfo(message) {
+            resultsDiv.innerHTML += `<div class="info">${message}</div>`;
+        }
+    </script>
+</body>
+</html>

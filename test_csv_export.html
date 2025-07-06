@@ -85,7 +85,7 @@
             }
         };
 
-        // 测试场景1：正常投资组合数据
+        // 测试场景1：正常投资组合数据（包含完整的评分详情）
         function testNormalPortfolio() {
             portfolio = [
                 {
@@ -96,6 +96,14 @@
                     price: 12.34,
                     price_change: 2.5,
                     score: 75,
+                    score_details: {
+                        trend: 22,
+                        technical: 18,
+                        volume: 15,
+                        volatility: 12,
+                        momentum: 8,
+                        total: 75
+                    },
                     recommendation: '买入',
                     loading: false
                 },
@@ -107,6 +115,14 @@
                     price: 8.96,
                     price_change: -1.2,
                     score: 68,
+                    score_details: {
+                        trend: 18,
+                        technical: 16,
+                        volume: 14,
+                        volatility: 13,
+                        momentum: 7,
+                        total: 68
+                    },
                     recommendation: '持有',
                     loading: false
                 },
@@ -118,6 +134,14 @@
                     price: 15.67,
                     price_change: 0.8,
                     score: 82,
+                    score_details: {
+                        trend: 25,
+                        technical: 20,
+                        volume: 16,
+                        volatility: 14,
+                        momentum: 7,
+                        total: 82
+                    },
                     recommendation: '强烈买入',
                     loading: false
                 }
@@ -144,6 +168,14 @@
                     price: 12.34,
                     price_change: 2.5,
                     score: 75,
+                    score_details: {
+                        trend: 22,
+                        technical: 18,
+                        volume: 15,
+                        volatility: 12,
+                        momentum: 8,
+                        total: 75
+                    },
                     recommendation: '买入',
                     loading: false
                 },
@@ -155,6 +187,7 @@
                     price: null,
                     price_change: null,
                     score: null,
+                    score_details: null,
                     recommendation: null,
                     loading: true
                 }
@@ -174,6 +207,14 @@
                     price: 12.34,
                     price_change: 2.5,
                     score: 75,
+                    score_details: {
+                        trend: 22,
+                        technical: 18,
+                        volume: 15,
+                        volatility: 12,
+                        momentum: 8,
+                        total: 75
+                    },
                     recommendation: '买入,持有"建议"',
                     loading: false
                 }
@@ -320,7 +361,7 @@
                 throw new Error('投资组合数据无效或为空');
             }
 
-            // CSV列标题（中文）
+            // CSV列标题（中文）- 与股票详情页面保持一致的5个评分维度
             const headers = [
                 '股票代码',
                 '股票名称',
@@ -329,9 +370,11 @@
                 '当前价格',
                 '今日涨跌(%)',
                 '综合评分',
-                '技术面评分',
-                '基本面评分',
-                '资金面评分',
+                '趋势分析评分',
+                '技术指标评分',
+                '成交量分析评分',
+                '波动率评估评分',
+                '动量指标评分',
                 '投资建议',
                 '数据时间'
             ];
@@ -363,11 +406,16 @@
                     const priceChange = stock.price_change !== null && stock.price_change !== undefined ?
                         formatCSVNumber(stock.price_change, 2) : '-';
 
-                    // 计算各维度评分（基于综合评分的简化计算）
+                    // 获取真实的评分维度数据（与股票详情页面一致）
                     const totalScore = validateNumber(stock.score, 0);
-                    const technicalScore = totalScore > 0 ? Math.round(totalScore * 0.4) : '-';
-                    const fundamentalScore = totalScore > 0 ? Math.round(totalScore * 0.4) : '-';
-                    const capitalFlowScore = totalScore > 0 ? Math.round(totalScore * 0.2) : '-';
+
+                    // 从stock对象中获取详细评分数据，如果不存在则使用默认值
+                    const scoreDetails = stock.score_details || {};
+                    const trendScore = validateNumber(scoreDetails.trend, 0);
+                    const technicalScore = validateNumber(scoreDetails.technical, 0);
+                    const volumeScore = validateNumber(scoreDetails.volume, 0);
+                    const volatilityScore = validateNumber(scoreDetails.volatility, 0);
+                    const momentumScore = validateNumber(scoreDetails.momentum, 0);
 
                     const recommendation = sanitizeCSVField(stock.recommendation) || '-';
 
@@ -379,9 +427,11 @@
                         price,
                         priceChange,
                         totalScore || '-',
-                        technicalScore,
-                        fundamentalScore,
-                        capitalFlowScore,
+                        trendScore || '-',
+                        technicalScore || '-',
+                        volumeScore || '-',
+                        volatilityScore || '-',
+                        momentumScore || '-',
                         recommendation,
                         currentTime
                     ];

@@ -1007,32 +1007,34 @@
         savePortfolio();
         renderPortfolio();
 
+        // 使用统一评分API获取完整的评分详情数据
         $.ajax({
-            url: '/analyze',
+            url: '/api/stock_score',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({
-                stock_codes: [stockCode],
+                stock_code: stockCode,
                 market_type: 'A'
             }),
             success: function(response) {
-                if (response.results && response.results.length > 0) {
-                    const result = response.results[0];
-
-                    portfolio[index].stock_name = result.stock_name || '未知';
-                    portfolio[index].industry = result.industry || '未知';
-                    portfolio[index].price = result.price || 0;
-                    portfolio[index].price_change = result.price_change || 0;
-                    portfolio[index].score = result.score || 0;
-                    portfolio[index].recommendation = result.recommendation || '-';
+                if (response && response.stock_code) {
+                    // 更新投资组合数据，包含完整的评分详情
+                    portfolio[index].stock_name = response.stock_name || '未知';
+                    portfolio[index].industry = response.industry || '未知';
+                    portfolio[index].price = response.price || 0;
+                    portfolio[index].price_change = response.price_change || 0;
+                    portfolio[index].score = response.score || 0;
+                    portfolio[index].score_details = response.score_details || {};
+                    portfolio[index].score_breakdown = response.score_breakdown || {};
+                    portfolio[index].recommendation = response.recommendation || '-';
                     portfolio[index].loading = false;
 
                     savePortfolio();
                     analyzePortfolio();
-                    
+
                     // 只在添加新股票时显示成功消息
                     if (portfolio[index].isNew) {
-                        showSuccess(`已添加 ${result.stock_name || stockCode} 到投资组合`);
+                        showSuccess(`已添加 ${response.stock_name || stockCode} 到投资组合`);
                         portfolio[index].isNew = false;
                     }
                 } else {
@@ -1869,7 +1871,7 @@
             throw new Error('投资组合数据无效或为空');
         }
 
-        // CSV列标题（中文）
+        // CSV列标题（中文）- 与股票详情页面保持一致的5个评分维度
         const headers = [
             '股票代码',
             '股票名称',
@@ -1878,9 +1880,11 @@
             '当前价格',
             '今日涨跌(%)',
             '综合评分',
-            '技术面评分',
-            '基本面评分',
-            '资金面评分',
+            '趋势分析评分',
+            '技术指标评分',
+            '成交量分析评分',
+            '波动率评估评分',
+            '动量指标评分',
             '投资建议',
             '数据时间'
         ];
@@ -1912,11 +1916,16 @@
                 const priceChange = stock.price_change !== null && stock.price_change !== undefined ?
                     formatCSVNumber(stock.price_change, 2) : '-';
 
-                // 计算各维度评分（基于综合评分的简化计算）
+                // 获取真实的评分维度数据（与股票详情页面一致）
                 const totalScore = validateNumber(stock.score, 0);
-                const technicalScore = totalScore > 0 ? Math.round(totalScore * 0.4) : '-';
-                const fundamentalScore = totalScore > 0 ? Math.round(totalScore * 0.4) : '-';
-                const capitalFlowScore = totalScore > 0 ? Math.round(totalScore * 0.2) : '-';
+
+                // 从stock对象中获取详细评分数据，如果不存在则使用默认值
+                const scoreDetails = stock.score_details || {};
+                const trendScore = validateNumber(scoreDetails.trend, 0);
+                const technicalScore = validateNumber(scoreDetails.technical, 0);
+                const volumeScore = validateNumber(scoreDetails.volume, 0);
+                const volatilityScore = validateNumber(scoreDetails.volatility, 0);
+                const momentumScore = validateNumber(scoreDetails.momentum, 0);
 
                 const recommendation = sanitizeCSVField(stock.recommendation) || '-';
 
@@ -1928,9 +1937,11 @@
                     price,
                     priceChange,
                     totalScore || '-',
-                    technicalScore,
-                    fundamentalScore,
-                    capitalFlowScore,
+                    trendScore || '-',
+                    technicalScore || '-',
+                    volumeScore || '-',
+                    volatilityScore || '-',
+                    momentumScore || '-',
                     recommendation,
                     currentTime
                 ];
