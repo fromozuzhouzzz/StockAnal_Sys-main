@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV导出功能测试</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="static/md3-styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            padding: 20px;
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid var(--md-sys-color-outline);
+            border-radius: var(--md-sys-shape-corner-large);
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>CSV导出功能测试</h1>
+        
+        <div class="test-section">
+            <h2>测试场景1：正常投资组合数据</h2>
+            <button class="md3-button md3-button-filled" onclick="testNormalPortfolio()">
+                <i class="material-icons">play_arrow</i> 测试正常数据导出
+            </button>
+            <button class="md3-button md3-button-outlined" onclick="exportPortfolioToCSV()" id="export-btn">
+                <i class="material-icons">file_download</i> 导出CSV
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h2>测试场景2：空投资组合</h2>
+            <button class="md3-button md3-button-filled" onclick="testEmptyPortfolio()">
+                <i class="material-icons">play_arrow</i> 测试空数据导出
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h2>测试场景3：包含加载中的股票</h2>
+            <button class="md3-button md3-button-filled" onclick="testLoadingPortfolio()">
+                <i class="material-icons">play_arrow</i> 测试加载中数据导出
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h2>测试场景4：包含特殊字符的数据</h2>
+            <button class="md3-button md3-button-filled" onclick="testSpecialCharacters()">
+                <i class="material-icons">play_arrow</i> 测试特殊字符数据导出
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h2>当前投资组合数据</h2>
+            <div id="portfolio-display"></div>
+        </div>
+
+        <div id="alerts-container"></div>
+    </div>
+
+    <script>
+        // 模拟投资组合数据和管理器
+        let portfolio = [];
+        let portfolioManager = {
+            currentPortfolioId: 'test',
+            portfolioMetadata: {
+                'test': {
+                    name: '测试投资组合'
+                }
+            }
+        };
+
+        // 测试场景1：正常投资组合数据
+        function testNormalPortfolio() {
+            portfolio = [
+                {
+                    stock_code: '000001.SZ',
+                    stock_name: '平安银行',
+                    industry: '银行',
+                    weight: 20,
+                    price: 12.34,
+                    price_change: 2.5,
+                    score: 75,
+                    recommendation: '买入',
+                    loading: false
+                },
+                {
+                    stock_code: '600000.SH',
+                    stock_name: '浦发银行',
+                    industry: '银行',
+                    weight: 15,
+                    price: 8.96,
+                    price_change: -1.2,
+                    score: 68,
+                    recommendation: '持有',
+                    loading: false
+                },
+                {
+                    stock_code: '000002.SZ',
+                    stock_name: '万科A',
+                    industry: '房地产',
+                    weight: 25,
+                    price: 15.67,
+                    price_change: 0.8,
+                    score: 82,
+                    recommendation: '强烈买入',
+                    loading: false
+                }
+            ];
+            updatePortfolioDisplay();
+            showSuccess('已加载正常投资组合数据');
+        }
+
+        // 测试场景2：空投资组合
+        function testEmptyPortfolio() {
+            portfolio = [];
+            updatePortfolioDisplay();
+            showSuccess('已清空投资组合数据');
+        }
+
+        // 测试场景3：包含加载中的股票
+        function testLoadingPortfolio() {
+            portfolio = [
+                {
+                    stock_code: '000001.SZ',
+                    stock_name: '平安银行',
+                    industry: '银行',
+                    weight: 20,
+                    price: 12.34,
+                    price_change: 2.5,
+                    score: 75,
+                    recommendation: '买入',
+                    loading: false
+                },
+                {
+                    stock_code: '600519.SH',
+                    stock_name: '加载中...',
+                    industry: '-',
+                    weight: 30,
+                    price: null,
+                    price_change: null,
+                    score: null,
+                    recommendation: null,
+                    loading: true
+                }
+            ];
+            updatePortfolioDisplay();
+            showSuccess('已加载包含加载中股票的投资组合数据');
+        }
+
+        // 测试场景4：包含特殊字符的数据
+        function testSpecialCharacters() {
+            portfolio = [
+                {
+                    stock_code: '000001.SZ',
+                    stock_name: '平安银行(测试,特殊"字符")',
+                    industry: '银行\n换行测试',
+                    weight: 20,
+                    price: 12.34,
+                    price_change: 2.5,
+                    score: 75,
+                    recommendation: '买入,持有"建议"',
+                    loading: false
+                }
+            ];
+            updatePortfolioDisplay();
+            showSuccess('已加载包含特殊字符的投资组合数据');
+        }
+
+        // 更新投资组合显示
+        function updatePortfolioDisplay() {
+            const display = document.getElementById('portfolio-display');
+            if (portfolio.length === 0) {
+                display.innerHTML = '<p>投资组合为空</p>';
+            } else {
+                let html = '<table class="table table-striped"><thead><tr><th>股票代码</th><th>股票名称</th><th>行业</th><th>权重</th><th>价格</th><th>涨跌</th><th>评分</th><th>建议</th><th>状态</th></tr></thead><tbody>';
+                portfolio.forEach(stock => {
+                    html += `<tr>
+                        <td>${stock.stock_code}</td>
+                        <td>${stock.stock_name}</td>
+                        <td>${stock.industry}</td>
+                        <td>${stock.weight}%</td>
+                        <td>${stock.price || '-'}</td>
+                        <td>${stock.price_change || '-'}%</td>
+                        <td>${stock.score || '-'}</td>
+                        <td>${stock.recommendation || '-'}</td>
+                        <td>${stock.loading ? '加载中...' : '已完成'}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                display.innerHTML = html;
+            }
+        }
+
+        // 消息显示函数
+        function showSuccess(message) {
+            showAlert(message, 'success');
+        }
+
+        function showError(message) {
+            showAlert(message, 'error');
+        }
+
+        function showInfo(message) {
+            showAlert(message, 'info');
+        }
+
+        function showAlert(message, type) {
+            const alertContainer = $('#alerts-container');
+            const alertId = 'alert-' + Date.now();
+
+            const alertColors = {
+                success: '#d4edda',
+                error: '#f8d7da',
+                info: '#d1ecf1'
+            };
+
+            const alertHtml = `
+                <div id="${alertId}" class="alert alert-${type}" style="margin-top: 10px;">
+                    ${message}
+                </div>
+            `;
+
+            alertContainer.append(alertHtml);
+
+            setTimeout(() => {
+                $(`#${alertId}`).fadeOut(300, function() {
+                    $(this).remove();
+                });
+            }, 3000);
+        }
+
+        // 数字格式化函数
+        function formatNumber(num, decimals = 2) {
+            if (num === null || num === undefined) return '-';
+            return parseFloat(num).toFixed(decimals);
+        }
+
+        // ==================== CSV导出功能 ====================
+
+        /**
+         * 导出投资组合数据为CSV文件
+         */
+        function exportPortfolioToCSV() {
+            try {
+                // 检查投资组合是否为空
+                if (!portfolio || portfolio.length === 0) {
+                    showError('投资组合为空，无法导出');
+                    return;
+                }
+
+                // 检查是否有加载中的股票
+                const loadingStocks = portfolio.filter(stock => stock.loading);
+                if (loadingStocks.length > 0) {
+                    const confirmExport = confirm(`有 ${loadingStocks.length} 只股票正在加载数据，是否继续导出？\n（加载中的股票将显示为"加载中..."）`);
+                    if (!confirmExport) {
+                        return;
+                    }
+                }
+
+                // 获取导出按钮并显示加载状态
+                const exportButton = $('#export-btn');
+                const originalText = exportButton.html();
+                exportButton.prop('disabled', true);
+                exportButton.html('<i class="material-icons" style="animation: spin 1s linear infinite;">refresh</i> 导出中...');
+
+                // 显示导出进度提示
+                showInfo('正在生成CSV文件...');
+
+                // 使用setTimeout让UI有时间更新
+                setTimeout(() => {
+                    try {
+                        // 生成CSV数据
+                        const csvData = generateCSVData();
+
+                        // 创建并下载文件
+                        downloadCSVFile(csvData);
+
+                        // 获取当前投资组合名称
+                        const currentPortfolioName = portfolioManager.portfolioMetadata[portfolioManager.currentPortfolioId]?.name || '投资组合';
+                        showSuccess(`成功导出"${currentPortfolioName}"的 ${portfolio.length} 只股票数据`);
+
+                    } catch (error) {
+                        console.error('CSV导出失败:', error);
+                        showError('CSV导出失败: ' + error.message);
+                    } finally {
+                        // 恢复按钮状态
+                        exportButton.prop('disabled', false);
+                        exportButton.html(originalText);
+                    }
+                }, 100);
+
+            } catch (error) {
+                console.error('CSV导出失败:', error);
+                showError('CSV导出失败: ' + error.message);
+            }
+        }
+
+        /**
+         * 生成CSV格式的数据
+         */
+        function generateCSVData() {
+            // 验证投资组合数据
+            if (!portfolio || !Array.isArray(portfolio) || portfolio.length === 0) {
+                throw new Error('投资组合数据无效或为空');
+            }
+
+            // CSV列标题（中文）
+            const headers = [
+                '股票代码',
+                '股票名称',
+                '所属行业',
+                '持仓比例(%)',
+                '当前价格',
+                '今日涨跌(%)',
+                '综合评分',
+                '技术面评分',
+                '基本面评分',
+                '资金面评分',
+                '投资建议',
+                '数据时间'
+            ];
+
+            // 生成当前时间戳
+            const currentTime = new Date().toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            // 构建CSV数据行
+            const rows = [headers];
+
+            portfolio.forEach((stock, index) => {
+                try {
+                    // 安全地获取股票数据，处理各种边界情况
+                    const stockCode = sanitizeCSVField(stock.stock_code) || `未知代码_${index + 1}`;
+                    const stockName = sanitizeCSVField(stock.stock_name) || (stock.loading ? '加载中...' : '未知股票');
+                    const industry = sanitizeCSVField(stock.industry) || '未知行业';
+                    const weight = validateNumber(stock.weight, 0);
+
+                    // 处理价格数据
+                    const price = stock.price !== null && stock.price !== undefined ?
+                        formatCSVNumber(stock.price, 2) : '-';
+                    const priceChange = stock.price_change !== null && stock.price_change !== undefined ?
+                        formatCSVNumber(stock.price_change, 2) : '-';
+
+                    // 计算各维度评分（基于综合评分的简化计算）
+                    const totalScore = validateNumber(stock.score, 0);
+                    const technicalScore = totalScore > 0 ? Math.round(totalScore * 0.4) : '-';
+                    const fundamentalScore = totalScore > 0 ? Math.round(totalScore * 0.4) : '-';
+                    const capitalFlowScore = totalScore > 0 ? Math.round(totalScore * 0.2) : '-';
+
+                    const recommendation = sanitizeCSVField(stock.recommendation) || '-';
+
+                    const row = [
+                        stockCode,
+                        stockName,
+                        industry,
+                        weight,
+                        price,
+                        priceChange,
+                        totalScore || '-',
+                        technicalScore,
+                        fundamentalScore,
+                        capitalFlowScore,
+                        recommendation,
+                        currentTime
+                    ];
+
+                    rows.push(row);
+
+                } catch (error) {
+                    console.warn(`处理股票数据时出错 (索引 ${index}):`, error);
+                    // 添加错误行，确保数据完整性
+                    rows.push([
+                        stock.stock_code || `错误_${index + 1}`,
+                        '数据处理错误',
+                        '-', '-', '-', '-', '-', '-', '-', '-', '-',
+                        currentTime
+                    ]);
+                }
+            });
+
+            // 转换为CSV格式字符串
+            const csvContent = rows.map(row =>
+                row.map(field => escapeCSVField(field)).join(',')
+            ).join('\n');
+
+            // 添加UTF-8 BOM以确保中文正确显示
+            const BOM = '\uFEFF';
+            return BOM + csvContent;
+        }
+
+        /**
+         * 清理和验证CSV字段
+         */
+        function sanitizeCSVField(value) {
+            if (value === null || value === undefined) return '';
+            return String(value).trim();
+        }
+
+        /**
+         * 验证数字字段
+         */
+        function validateNumber(value, defaultValue = 0) {
+            if (value === null || value === undefined || value === '') return defaultValue;
+            const num = parseFloat(value);
+            return isNaN(num) ? defaultValue : num;
+        }
+
+        /**
+         * 转义CSV字段中的特殊字符
+         */
+        function escapeCSVField(field) {
+            const fieldStr = String(field);
+            // 如果字段包含逗号、引号、换行符或制表符，需要用引号包围并转义内部引号
+            if (fieldStr.includes(',') || fieldStr.includes('"') || fieldStr.includes('\n') || fieldStr.includes('\r') || fieldStr.includes('\t')) {
+                return '"' + fieldStr.replace(/"/g, '""') + '"';
+            }
+            return fieldStr;
+        }
+
+        /**
+         * 下载CSV文件
+         */
+        function downloadCSVFile(csvData) {
+            try {
+                // 验证CSV数据
+                if (!csvData || typeof csvData !== 'string') {
+                    throw new Error('CSV数据无效');
+                }
+
+                // 生成安全的文件名
+                const fileName = generateSafeFileName();
+
+                // 检查浏览器兼容性
+                if (!window.Blob || !window.URL || !window.URL.createObjectURL) {
+                    throw new Error('您的浏览器不支持文件下载功能，请升级浏览器');
+                }
+
+                // 创建Blob对象
+                const blob = new Blob([csvData], {
+                    type: 'text/csv;charset=utf-8;'
+                });
+
+                // 检查Blob大小（限制为10MB）
+                if (blob.size > 10 * 1024 * 1024) {
+                    throw new Error('导出文件过大，请减少投资组合中的股票数量');
+                }
+
+                // 尝试使用现代下载API
+                if (window.navigator && window.navigator.msSaveBlob) {
+                    // IE浏览器支持
+                    window.navigator.msSaveBlob(blob, fileName);
+                    return;
+                }
+
+                // 创建下载链接
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+
+                link.setAttribute('href', url);
+                link.setAttribute('download', fileName);
+                link.style.visibility = 'hidden';
+                link.style.position = 'absolute';
+                link.style.left = '-9999px';
+
+                // 添加到DOM并触发下载
+                document.body.appendChild(link);
+
+                // 触发下载
+                link.click();
+
+                // 延迟清理，确保下载开始
+                setTimeout(() => {
+                    try {
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    } catch (cleanupError) {
+                        console.warn('清理下载资源时出错:', cleanupError);
+                    }
+                }, 100);
+
+            } catch (error) {
+                console.error('文件下载失败:', error);
+                throw new Error(`文件下载失败: ${error.message}`);
+            }
+        }
+
+        /**
+         * 生成安全的文件名
+         */
+        function generateSafeFileName() {
+            try {
+                const now = new Date();
+                const dateStr = now.getFullYear() +
+                               String(now.getMonth() + 1).padStart(2, '0') +
+                               String(now.getDate()).padStart(2, '0');
+                const timeStr = String(now.getHours()).padStart(2, '0') +
+                               String(now.getMinutes()).padStart(2, '0') +
+                               String(now.getSeconds()).padStart(2, '0');
+
+                // 获取当前投资组合名称并清理特殊字符
+                let portfolioName = '投资组合';
+                try {
+                    portfolioName = portfolioManager.portfolioMetadata[portfolioManager.currentPortfolioId]?.name || '投资组合';
+                    // 移除文件名中不安全的字符
+                    portfolioName = portfolioName.replace(/[<>:"/\\|?*]/g, '_');
+                } catch (error) {
+                    console.warn('获取投资组合名称失败，使用默认名称');
+                }
+
+                return `${portfolioName}_${dateStr}_${timeStr}.csv`;
+
+            } catch (error) {
+                console.warn('生成文件名失败，使用默认名称:', error);
+                return `投资组合_${Date.now()}.csv`;
+            }
+        }
+
+        /**
+         * 格式化CSV导出专用的数字
+         */
+        function formatCSVNumber(num, decimals = 2) {
+            if (num === null || num === undefined || num === '') return '-';
+            const numValue = parseFloat(num);
+            if (isNaN(numValue)) return '-';
+            return numValue.toFixed(decimals);
+        }
+
+        // 初始化
+        $(document).ready(function() {
+            testNormalPortfolio(); // 默认加载正常数据
+        });
+    </script>
+</body>
+</html>

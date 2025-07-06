@@ -61,15 +61,6 @@ except ImportError as e:
     print(f"API集成模块导入失败: {e}")
     API_INTEGRATION_AVAILABLE = False
 
-# API端点导入
-try:
-    from api_endpoints import api_v1
-    API_ENDPOINTS_AVAILABLE = True
-    print("API端点模块导入成功")
-except ImportError as e:
-    print(f"API端点模块导入失败: {e}")
-    API_ENDPOINTS_AVAILABLE = False
-
 # 加载环境变量
 load_dotenv()
 
@@ -123,13 +114,6 @@ cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 cache.init_app(app)
 
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
-
-# 注册API端点蓝图
-if API_ENDPOINTS_AVAILABLE:
-    app.register_blueprint(api_v1)
-    print("API端点蓝图注册成功")
-else:
-    print("API端点蓝图不可用，将使用内置导出功能")
 
 # 确保全局变量在重新加载时不会丢失
 if 'analyzer' not in globals():
@@ -2291,165 +2275,6 @@ if API_INTEGRATION_AVAILABLE:
         print(f"❌ API功能集成出错: {e}")
 else:
     print("⚠️  API集成模块不可用，跳过API功能集成")
-
-# 简化的投资组合导出API（如果完整API不可用）
-@app.route('/api/v1/portfolio/export', methods=['POST'])
-def simple_export_portfolio():
-    """简化的投资组合CSV导出API"""
-    try:
-        import csv
-        import io
-        from datetime import datetime
-        from flask import make_response
-
-        # 验证请求数据
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': '请求数据不能为空'}), 400
-
-        stocks = data.get('stocks', [])
-        portfolio_name = data.get('portfolio_name', '投资组合')
-        export_format = data.get('export_format', 'csv')
-
-        # 验证股票列表
-        if not stocks or len(stocks) == 0:
-            return jsonify({'error': '股票列表不能为空'}), 400
-
-        if len(stocks) > 50:  # 限制组合大小
-            return jsonify({'error': '投资组合股票数量不能超过50只'}), 400
-
-        # 分析每只股票并收集数据
-        export_data = []
-        portfolio_stats = {
-            'total_weight': 0,
-            'portfolio_score': 0
-        }
-
-        for stock in stocks:
-            try:
-                stock_code = stock.get('stock_code', '').strip()
-                weight = float(stock.get('weight', 0))
-                market_type = stock.get('market_type', 'A')
-
-                if not stock_code:
-                    continue
-
-                # 分析股票
-                analysis_result = analyzer.analyze_stock(stock_code, market_type)
-                if not analysis_result:
-                    continue
-
-                # 获取详细评分信息
-                score_breakdown = getattr(analyzer, 'score_breakdown', {})
-
-                # 风险评估
-                risk_assessment = risk_monitor.analyze_stock_risk(stock_code, market_type)
-
-                # 基本面分析
-                fundamental_result = fundamental_analyzer.analyze_fundamentals(stock_code, market_type)
-
-                # 构建导出数据行
-                stock_data = {
-                    # 基本信息
-                    '股票代码': stock_code,
-                    '股票名称': analysis_result.get('stock_name', '未知'),
-                    '所属行业': analysis_result.get('industry', '未知'),
-                    '市场类型': market_type,
-                    '当前价格': round(analysis_result.get('price', 0), 2),
-                    '价格变化': round(analysis_result.get('price_change', 0), 2),
-                    '价格变化百分比': f"{analysis_result.get('price_change_percent', 0):.2f}%",
-                    '投资组合权重': f"{weight:.1f}%",
-
-                    # 综合评分
-                    '总体评分': round(analysis_result.get('score', 0), 2),
-                    '技术分析评分': round(analysis_result.get('technical_score', 0), 2),
-                    '基本面分析评分': round(fundamental_result.get('total_score', 0) if fundamental_result else 0, 2),
-                    '风险评估评分': round(risk_assessment.get('total_risk_score', 50) if risk_assessment else 50, 2),
-
-                    # 详细评分明细
-                    '趋势分析评分': round(score_breakdown.get('trend', {}).get('score', 0), 2),
-                    '趋势分析权重': '30%',
-                    '技术指标评分': round(score_breakdown.get('technical', {}).get('score', 0), 2),
-                    '技术指标权重': '25%',
-                    '成交量分析评分': round(score_breakdown.get('volume', {}).get('score', 0), 2),
-                    '成交量分析权重': '20%',
-                    '波动率评估评分': round(score_breakdown.get('volatility', {}).get('score', 0), 2),
-                    '波动率评估权重': '15%',
-                    '动量指标评分': round(score_breakdown.get('momentum', {}).get('score', 0), 2),
-                    '动量指标权重': '10%',
-
-                    # 技术指标数值
-                    'RSI': round(score_breakdown.get('technical', {}).get('indicators', {}).get('RSI', 0), 2),
-                    'MACD': round(score_breakdown.get('technical', {}).get('indicators', {}).get('MACD', 0), 4),
-                    'MA5': round(score_breakdown.get('trend', {}).get('indicators', {}).get('MA5', 0), 2),
-                    'MA20': round(score_breakdown.get('trend', {}).get('indicators', {}).get('MA20', 0), 2),
-                    'MA60': round(score_breakdown.get('trend', {}).get('indicators', {}).get('MA60', 0), 2),
-
-                    # 投资建议
-                    '风险等级': risk_assessment.get('risk_level', '中等') if risk_assessment else '中等',
-                    '投资建议': analysis_result.get('recommendation', '持有'),
-                    '分析时间': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                }
-
-                export_data.append(stock_data)
-
-                # 更新投资组合统计
-                portfolio_stats['total_weight'] += weight
-                portfolio_stats['portfolio_score'] += analysis_result.get('score', 0) * weight
-
-            except Exception as e:
-                app.logger.error(f"处理股票 {stock.get('stock_code', 'unknown')} 时出错: {str(e)}")
-                continue
-
-        # 计算投资组合总评分
-        if portfolio_stats['total_weight'] > 0:
-            portfolio_stats['portfolio_score'] = round(
-                portfolio_stats['portfolio_score'] / portfolio_stats['total_weight'], 2
-            )
-
-        # 生成CSV内容
-        if export_format.lower() == 'csv':
-            output = io.StringIO()
-
-            # 写入BOM以确保Excel正确显示中文
-            output.write('\ufeff')
-
-            # 写入投资组合概览信息
-            output.write(f"投资组合名称,{portfolio_name}\n")
-            output.write(f"导出时间,{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            output.write(f"股票数量,{len(export_data)}\n")
-            output.write(f"总权重,{portfolio_stats['total_weight']:.1f}%\n")
-            output.write(f"投资组合评分,{portfolio_stats['portfolio_score']}\n")
-            output.write("\n")  # 空行分隔
-
-            # 写入股票详细数据
-            if export_data:
-                writer = csv.DictWriter(output, fieldnames=export_data[0].keys())
-                writer.writeheader()
-                writer.writerows(export_data)
-
-            # 创建响应
-            csv_content = output.getvalue()
-            output.close()
-
-            # 生成文件名
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f"投资组合_{timestamp}.csv"
-
-            # 创建HTTP响应
-            response = make_response(csv_content)
-            response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
-            response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
-            response.headers['Cache-Control'] = 'no-cache'
-
-            return response
-
-        else:
-            return jsonify({'error': '不支持的导出格式'}), 400
-
-    except Exception as e:
-        app.logger.error(f"投资组合导出API出错: {traceback.format_exc()}")
-        return jsonify({'error': f'投资组合导出失败: {str(e)}'}), 500
 
 if __name__ == '__main__':
     # 将 host 设置为 '0.0.0.0' 使其支持所有网络接口访问
