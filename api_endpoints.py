@@ -38,6 +38,14 @@ except ImportError:
     FALLBACK_STRATEGY_AVAILABLE = False
     fallback_strategy = None
 
+# 导入批量数据更新器
+try:
+    from batch_data_updater import batch_updater
+    BATCH_UPDATER_AVAILABLE = True
+except ImportError:
+    BATCH_UPDATER_AVAILABLE = False
+    batch_updater = None
+
 logger = logging.getLogger(__name__)
 
 # 创建API蓝图
@@ -1140,3 +1148,179 @@ def _format_traditional_result(stock_code: str, analysis_result: Dict,
                 'error_message': str(e)
             }
         }
+
+
+# ==================== 批量数据更新API ====================
+
+@api_v1.route('/batch/update', methods=['POST'])
+@api_error_handler
+@require_api_key
+@require_rate_limit(calls=5, period=300)  # 5分钟内最多5次批量更新
+def batch_update_data():
+    """
+    批量更新投资组合股票数据
+
+    请求格式:
+    {
+        "stock_codes": ["000001.SZ", "600000.SH"],
+        "force_update": false,
+        "session_id": "optional_session_id"
+    }
+    """
+    try:
+        if not BATCH_UPDATER_AVAILABLE:
+            return APIResponse.error(
+                code=ErrorCodes.SERVICE_UNAVAILABLE,
+                message='批量数据更新服务不可用'
+            )
+
+        # 验证请求数据
+        data = request.get_json()
+        if not data:
+            return APIResponse.error(
+                code=ErrorCodes.INVALID_REQUEST,
+                message='请求数据不能为空'
+            )
+
+        # 验证股票代码列表
+        stock_codes = data.get('stock_codes', [])
+        if not stock_codes or not isinstance(stock_codes, list):
+            return APIResponse.error(
+                code=ErrorCodes.INVALID_PARAMETER,
+                message='股票代码列表不能为空且必须是数组格式'
+            )
+
+        if len(stock_codes) > 50:  # 限制批量更新数量
+            return APIResponse.error(
+                code=ErrorCodes.INVALID_PARAMETER,
+                message='单次批量更新最多支持50只股票'
+            )
+
+        # 验证每个股票代码
+        validated_codes = []
+        for code in stock_codes:
+            if validate_stock_code(code):
+                validated_codes.append(normalize_stock_code(code))
+            else:
+                return APIResponse.error(
+                    code=ErrorCodes.INVALID_PARAMETER,
+                    message=f'无效的股票代码: {code}'
+                )
+
+        # 获取其他参数
+        force_update = data.get('force_update', False)
+        session_id = data.get('session_id', f"batch_{int(time.time())}")
+
+        # 启动批量更新
+        try:
+            session_id = batch_updater.start_batch_update(
+                stock_codes=validated_codes,
+                session_id=session_id,
+                force_update=force_update
+            )
+
+            return APIResponse.success(
+                data={
+                    'session_id': session_id,
+                    'total_stocks': len(validated_codes),
+                    'force_update': force_update,
+                    'status': 'started',
+                    'message': f'已启动 {len(validated_codes)} 只股票的批量数据更新'
+                }
+            )
+
+        except Exception as e:
+            logger.error(f"启动批量更新失败: {e}")
+            return APIResponse.error(
+                code=ErrorCodes.INTERNAL_SERVER_ERROR,
+                message=f'启动批量更新失败: {str(e)}'
+            )
+
+    except Exception as e:
+        logger.error(f"批量更新API异常: {e}")
+        return APIResponse.error(
+            code=ErrorCodes.INTERNAL_SERVER_ERROR,
+            message='批量更新服务异常'
+        )
+
+
+@api_v1.route('/batch/progress/<session_id>', methods=['GET'])
+@api_error_handler
+@require_api_key
+def get_batch_update_progress(session_id: str):
+    """
+    获取批量更新进度
+
+    URL: /api/v1/batch/progress/{session_id}
+    """
+    try:
+        if not BATCH_UPDATER_AVAILABLE:
+            return APIResponse.error(
+                code=ErrorCodes.SERVICE_UNAVAILABLE,
+                message='批量数据更新服务不可用'
+            )
+
+        # 获取进度信息
+        progress = batch_updater.get_update_progress(session_id)
+
+        if progress is None:
+            return APIResponse.error(
+                code=ErrorCodes.NOT_FOUND,
+                message=f'未找到会话ID: {session_id}'
+            )
+
+        return APIResponse.success(data=progress)
+
+    except Exception as e:
+        logger.error(f"获取批量更新进度异常: {e}")
+        return APIResponse.error(
+            code=ErrorCodes.INTERNAL_SERVER_ERROR,
+            message='获取进度信息失败'
+        )
+
+
+@api_v1.route('/batch/cleanup', methods=['POST'])
+@api_error_handler
+@require_api_key
+def cleanup_batch_sessions():
+    """
+    清理旧的批量更新会话
+
+    请求格式:
+    {
+        "max_age_hours": 24
+    }
+    """
+    try:
+        if not BATCH_UPDATER_AVAILABLE:
+            return APIResponse.error(
+                code=ErrorCodes.SERVICE_UNAVAILABLE,
+                message='批量数据更新服务不可用'
+            )
+
+        data = request.get_json() or {}
+        max_age_hours = data.get('max_age_hours', 24)
+
+        # 验证参数
+        if not isinstance(max_age_hours, (int, float)) or max_age_hours <= 0:
+            return APIResponse.error(
+                code=ErrorCodes.INVALID_PARAMETER,
+                message='max_age_hours必须是正数'
+            )
+
+        # 执行清理
+        batch_updater.cleanup_old_sessions(max_age_hours)
+
+        return APIResponse.success(
+            data={
+                'message': f'已清理超过 {max_age_hours} 小时的旧会话',
+                'max_age_hours': max_age_hours
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"清理批量更新会话异常: {e}")
+        return APIResponse.error(
+            code=ErrorCodes.INTERNAL_SERVER_ERROR,
+            message='清理会话失败'
+        )
