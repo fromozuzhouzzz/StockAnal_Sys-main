@@ -119,9 +119,13 @@
             grid-template-columns: 1fr;
         }
 
-        .score-detail-toggle {
-            width: 36px;
-            height: 36px;
+        .score-detail-toggle-btn {
+            padding: 6px 10px;
+            gap: 4px;
+        }
+
+        .detail-toggle-text {
+            font-size: 11px;
         }
 
         .score-detail-content {
@@ -130,6 +134,18 @@
 
         .score-detail-title {
             font-size: 16px;
+        }
+
+        .score-detail-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .score-detail-close-btn {
+            align-self: flex-end;
+            padding: 4px 8px;
+            font-size: 11px;
         }
 
         /* 移动设备上的评分明细容器调整 */
@@ -392,28 +408,53 @@
         margin-left: 8px;
     }
 
-    /* 评分详情按钮样式 */
-    .score-detail-toggle {
-        width: 40px;
-        height: 40px;
+    /* 评分详情按钮样式 - 改进版 */
+    .score-detail-toggle-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
         border-radius: 20px;
         border: none;
         background: var(--md-sys-color-surface-variant);
         color: var(--md-sys-color-on-surface-variant);
-        display: flex;
-        align-items: center;
-        justify-content: center;
         cursor: pointer;
         transition: all 0.2s ease;
+        font-family: var(--md-sys-typescale-label-medium-font);
+        font-size: var(--md-sys-typescale-label-medium-size);
+        font-weight: var(--md-sys-typescale-label-medium-weight);
     }
 
-    .score-detail-toggle:hover {
+    .score-detail-toggle-btn:hover {
         background: var(--md-sys-color-primary-container);
         color: var(--md-sys-color-on-primary-container);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
-    .score-detail-toggle:active {
-        transform: scale(0.95);
+    .score-detail-toggle-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .score-detail-toggle-btn .material-icons {
+        font-size: 18px;
+    }
+
+    .detail-toggle-text {
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    /* 按钮激活状态 */
+    .score-detail-toggle-btn.active {
+        background: var(--md-sys-color-primary);
+        color: var(--md-sys-color-on-primary);
+    }
+
+    .score-detail-toggle-btn.active:hover {
+        background: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
     }
 
     /* 评分详情面板样式 */
@@ -429,15 +470,58 @@
         padding: 16px;
     }
 
+    /* 详情面板头部样式 */
+    .score-detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    }
+
     .score-detail-title {
         font-family: var(--md-sys-typescale-title-small-font);
         font-size: var(--md-sys-typescale-title-small-size);
         font-weight: var(--md-sys-typescale-title-small-weight);
         color: var(--md-sys-color-on-surface);
-        margin: 0 0 16px 0;
+        margin: 0;
         display: flex;
         align-items: center;
         gap: 8px;
+    }
+
+    /* 关闭按钮样式 */
+    .score-detail-close-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 12px;
+        border-radius: 16px;
+        border: none;
+        background: var(--md-sys-color-error-container);
+        color: var(--md-sys-color-on-error-container);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: var(--md-sys-typescale-label-small-font);
+        font-size: var(--md-sys-typescale-label-small-size);
+        font-weight: var(--md-sys-typescale-label-small-weight);
+    }
+
+    .score-detail-close-btn:hover {
+        background: var(--md-sys-color-error);
+        color: var(--md-sys-color-on-error);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    .score-detail-close-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .score-detail-close-btn .material-icons {
+        font-size: 16px;
     }
 
     .score-indicators-section,
@@ -547,6 +631,30 @@
     /* 确保评分明细展开时不影响其他元素布局 */
     .md3-card-body {
         position: relative;
+    }
+
+    /* 修复评分容器布局，确保评分数值位置固定 */
+    #score-container {
+        position: relative;
+        z-index: 2;
+    }
+
+    #recommendation-container {
+        position: relative;
+        z-index: 2;
+    }
+
+    #score-details-toggle {
+        position: relative;
+        z-index: 2;
+    }
+
+    /* 评分明细容器不影响上方元素位置 */
+    #score-details-container {
+        position: relative;
+        z-index: 1;
+        /* 确保展开时不推动上方元素 */
+        margin-top: 24px !important;
     }
 
     /* 评分明细按钮样式优化 */
@@ -2827,10 +2935,11 @@
                                 <span class="score-weight-display">(权重: ${config.weight}%)</span>
                             </div>
                             ${hasDetailedInfo ? `
-                                <button class="score-detail-toggle md3-icon-button"
+                                <button class="score-detail-toggle-btn"
                                         onclick="toggleScoreDetail('${key}')"
                                         aria-label="查看${config.name}详情">
                                     <i class="material-icons">info</i>
+                                    <span class="detail-toggle-text">查看详情</span>
                                 </button>
                             ` : ''}
                         </div>
@@ -2845,10 +2954,18 @@
                     ${hasDetailedInfo ? `
                         <div class="score-detail-panel" id="detail-${key}" style="display: none;">
                             <div class="score-detail-content">
-                                <h5 class="score-detail-title">
-                                    <i class="material-icons">analytics</i>
-                                    评分依据详情
-                                </h5>
+                                <div class="score-detail-header">
+                                    <h5 class="score-detail-title">
+                                        <i class="material-icons">analytics</i>
+                                        评分依据详情
+                                    </h5>
+                                    <button class="score-detail-close-btn"
+                                            onclick="toggleScoreDetail('${key}')"
+                                            aria-label="关闭详情">
+                                        <i class="material-icons">close</i>
+                                        <span>收起详情</span>
+                                    </button>
+                                </div>
 
                                 <div class="score-indicators-section">
                                     <h6>关键指标数值</h6>
@@ -2902,19 +3019,28 @@
     // 切换评分详情面板显示
     function toggleScoreDetail(dimensionKey) {
         const panel = $(`#detail-${dimensionKey}`);
-        const button = panel.siblings('.score-dimension').find('.score-detail-toggle i');
+        const toggleButton = panel.siblings('.score-dimension').find('.score-detail-toggle-btn');
+        const toggleIcon = toggleButton.find('.material-icons');
+        const toggleText = toggleButton.find('.detail-toggle-text');
 
         if (panel.is(':visible')) {
+            // 关闭当前面板
             panel.slideUp(300);
-            button.text('info');
+            toggleIcon.text('info');
+            toggleText.text('查看详情');
+            toggleButton.removeClass('active');
         } else {
             // 先关闭其他已打开的面板
             $('.score-detail-panel:visible').slideUp(300);
-            $('.score-detail-toggle i').text('info');
+            $('.score-detail-toggle-btn .material-icons').text('info');
+            $('.score-detail-toggle-btn .detail-toggle-text').text('查看详情');
+            $('.score-detail-toggle-btn').removeClass('active');
 
             // 打开当前面板
             panel.slideDown(300);
-            button.text('info_outline');
+            toggleIcon.text('info_outline');
+            toggleText.text('收起详情');
+            toggleButton.addClass('active');
         }
     }
 

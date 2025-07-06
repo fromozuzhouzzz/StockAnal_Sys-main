@@ -118,28 +118,46 @@
             margin-left: 12px;
         }
 
-        /* 评分详情按钮样式 */
-        .score-detail-toggle {
-            width: 40px;
-            height: 40px;
+        /* 评分详情按钮样式 - 改进版 */
+        .score-detail-toggle-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
             border-radius: 20px;
             border: none;
             background: var(--md-sys-color-surface-variant);
             color: var(--md-sys-color-on-surface-variant);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
+            font-size: 12px;
+            font-weight: 500;
         }
 
-        .score-detail-toggle:hover {
+        .score-detail-toggle-btn:hover {
             background: var(--md-sys-color-primary-container);
             color: var(--md-sys-color-on-primary-container);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
-        .score-detail-toggle:active {
-            transform: scale(0.95);
+        .score-detail-toggle-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        .score-detail-toggle-btn.active {
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+        }
+
+        .score-detail-toggle-btn .material-icons {
+            font-size: 18px;
+        }
+
+        .detail-toggle-text {
+            font-size: 12px;
+            white-space: nowrap;
         }
 
         /* 评分详情面板样式 */
@@ -155,14 +173,51 @@
             padding: 16px;
         }
 
+        /* 详情面板头部样式 */
+        .score-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        }
+
         .score-detail-title {
             font-size: 18px;
             font-weight: 600;
             color: var(--md-sys-color-on-surface);
-            margin: 0 0 16px 0;
+            margin: 0;
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        /* 关闭按钮样式 */
+        .score-detail-close-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: 16px;
+            border: none;
+            background: #ffebee;
+            color: #c62828;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .score-detail-close-btn:hover {
+            background: #f44336;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .score-detail-close-btn .material-icons {
+            font-size: 16px;
         }
 
         .score-indicators-section,
@@ -260,8 +315,9 @@
                             趋势分析
                             <span class="score-weight-display">(权重: 30%)</span>
                         </div>
-                        <button class="score-detail-toggle" onclick="toggleScoreDetail('trend')" aria-label="查看趋势分析详情">
+                        <button class="score-detail-toggle-btn" onclick="toggleScoreDetail('trend')" aria-label="查看趋势分析详情">
                             <i class="material-icons">info</i>
+                            <span class="detail-toggle-text">查看详情</span>
                         </button>
                     </div>
                     <div class="score-dimension-desc">基于移动平均线排列和价格位置的趋势强度评估</div>
@@ -274,10 +330,16 @@
                 </div>
                 <div class="score-detail-panel" id="detail-trend" style="display: none;">
                     <div class="score-detail-content">
-                        <h5 class="score-detail-title">
-                            <i class="material-icons">analytics</i>
-                            评分依据详情
-                        </h5>
+                        <div class="score-detail-header">
+                            <h5 class="score-detail-title">
+                                <i class="material-icons">analytics</i>
+                                评分依据详情
+                            </h5>
+                            <button class="score-detail-close-btn" onclick="toggleScoreDetail('trend')" aria-label="关闭详情">
+                                <i class="material-icons">close</i>
+                                <span>收起详情</span>
+                            </button>
+                        </div>
                         
                         <div class="score-indicators-section">
                             <h6>关键指标数值</h6>
@@ -323,8 +385,9 @@
                             技术指标
                             <span class="score-weight-display">(权重: 25%)</span>
                         </div>
-                        <button class="score-detail-toggle" onclick="toggleScoreDetail('technical')" aria-label="查看技术指标详情">
+                        <button class="score-detail-toggle-btn" onclick="toggleScoreDetail('technical')" aria-label="查看技术指标详情">
                             <i class="material-icons">info</i>
+                            <span class="detail-toggle-text">查看详情</span>
                         </button>
                     </div>
                     <div class="score-dimension-desc">综合RSI、MACD、布林带等技术指标的强弱分析</div>
@@ -337,10 +400,16 @@
                 </div>
                 <div class="score-detail-panel" id="detail-technical" style="display: none;">
                     <div class="score-detail-content">
-                        <h5 class="score-detail-title">
-                            <i class="material-icons">analytics</i>
-                            评分依据详情
-                        </h5>
+                        <div class="score-detail-header">
+                            <h5 class="score-detail-title">
+                                <i class="material-icons">analytics</i>
+                                评分依据详情
+                            </h5>
+                            <button class="score-detail-close-btn" onclick="toggleScoreDetail('technical')" aria-label="关闭详情">
+                                <i class="material-icons">close</i>
+                                <span>收起详情</span>
+                            </button>
+                        </div>
                         
                         <div class="score-indicators-section">
                             <h6>关键指标数值</h6>
@@ -382,19 +451,28 @@
         // 切换评分详情面板显示
         function toggleScoreDetail(dimensionKey) {
             const panel = $(`#detail-${dimensionKey}`);
-            const button = panel.siblings('.score-dimension').find('.score-detail-toggle i');
-            
+            const toggleButton = panel.siblings('.score-dimension').find('.score-detail-toggle-btn');
+            const toggleIcon = toggleButton.find('.material-icons');
+            const toggleText = toggleButton.find('.detail-toggle-text');
+
             if (panel.is(':visible')) {
+                // 关闭当前面板
                 panel.slideUp(300);
-                button.text('info');
+                toggleIcon.text('info');
+                toggleText.text('查看详情');
+                toggleButton.removeClass('active');
             } else {
                 // 先关闭其他已打开的面板
                 $('.score-detail-panel:visible').slideUp(300);
-                $('.score-detail-toggle i').text('info');
-                
+                $('.score-detail-toggle-btn .material-icons').text('info');
+                $('.score-detail-toggle-btn .detail-toggle-text').text('查看详情');
+                $('.score-detail-toggle-btn').removeClass('active');
+
                 // 打开当前面板
                 panel.slideDown(300);
-                button.text('info_outline');
+                toggleIcon.text('info_outline');
+                toggleText.text('收起详情');
+                toggleButton.addClass('active');
             }
         }
     </script>
