@@ -1830,17 +1830,37 @@ def export_portfolio():
         from datetime import datetime
         from flask import make_response
 
+        # 详细的请求日志记录
+        app.logger.info(f"导出API: 收到请求 - 方法: {request.method}, 路径: {request.path}")
+        app.logger.info(f"导出API: 请求头: {dict(request.headers)}")
+        app.logger.info(f"导出API: 用户代理: {request.headers.get('User-Agent', 'Unknown')}")
+
         # API密钥验证
         api_key = request.headers.get('X-API-Key')
         expected_api_key = os.getenv('API_KEY', 'UZXJfw3YNX80DLfN')
 
+        app.logger.info(f"导出API: 接收到的API密钥: {api_key}")
+        app.logger.info(f"导出API: 期望的API密钥: {expected_api_key}")
+
         if not api_key:
             app.logger.warning("导出API: 缺少API密钥")
-            return jsonify({'error': '缺少API密钥'}), 401
+            return jsonify({
+                'error': '缺少API密钥',
+                'debug_info': {
+                    'headers_received': list(request.headers.keys()),
+                    'expected_header': 'X-API-Key'
+                }
+            }), 401
 
         if api_key != expected_api_key:
             app.logger.warning(f"导出API: 无效的API密钥: {api_key}")
-            return jsonify({'error': '无效的API密钥'}), 403
+            return jsonify({
+                'error': '无效的API密钥',
+                'debug_info': {
+                    'received_key': api_key,
+                    'key_length': len(api_key) if api_key else 0
+                }
+            }), 403
 
         app.logger.info("导出API: API密钥验证成功")
 
@@ -2004,7 +2024,16 @@ def export_portfolio():
 
     except Exception as e:
         app.logger.error(f"投资组合导出API出错: {traceback.format_exc()}")
-        return jsonify({'error': f'投资组合导出失败: {str(e)}'}), 500
+        return jsonify({
+            'error': f'投资组合导出失败: {str(e)}',
+            'debug_info': {
+                'error_type': type(e).__name__,
+                'error_message': str(e),
+                'request_method': request.method,
+                'request_path': request.path,
+                'user_agent': request.headers.get('User-Agent', 'Unknown')
+            }
+        }), 500
 
 
 # 简化的导出API（备用方案）
@@ -2064,6 +2093,49 @@ def export_portfolio_simple():
     except Exception as e:
         app.logger.error(f"简化导出API出错: {traceback.format_exc()}")
         return jsonify({'error': f'导出失败: {str(e)}'}), 500
+
+
+# 全局错误处理器
+@app.errorhandler(403)
+def handle_forbidden(error):
+    """处理403 Forbidden错误"""
+    app.logger.warning(f"403错误: {request.method} {request.path} - {request.headers.get('User-Agent', 'Unknown')}")
+    app.logger.warning(f"403错误详情: {str(error)}")
+
+    # 如果是API请求，返回JSON格式的错误
+    if request.path.startswith('/api/'):
+        return jsonify({
+            'error': 'Forbidden',
+            'message': '访问被拒绝',
+            'debug_info': {
+                'path': request.path,
+                'method': request.method,
+                'has_api_key': 'X-API-Key' in request.headers,
+                'api_key_value': request.headers.get('X-API-Key', 'None'),
+                'user_agent': request.headers.get('User-Agent', 'Unknown')
+            }
+        }), 403
+
+    # 非API请求返回HTML错误页面
+    return f"<h1>403 Forbidden</h1><p>访问被拒绝</p><p>路径: {request.path}</p>", 403
+
+@app.errorhandler(401)
+def handle_unauthorized(error):
+    """处理401 Unauthorized错误"""
+    app.logger.warning(f"401错误: {request.method} {request.path} - {request.headers.get('User-Agent', 'Unknown')}")
+
+    if request.path.startswith('/api/'):
+        return jsonify({
+            'error': 'Unauthorized',
+            'message': '未授权访问',
+            'debug_info': {
+                'path': request.path,
+                'method': request.method,
+                'has_api_key': 'X-API-Key' in request.headers
+            }
+        }), 401
+
+    return f"<h1>401 Unauthorized</h1><p>未授权访问</p><p>路径: {request.path}</p>", 401
 
 
 cleaner_thread = threading.Thread(target=run_task_cleaner)
