@@ -311,7 +311,7 @@
             <button class="md3-button md3-button-outlined" data-bs-toggle="modal" data-bs-target="#importCsvModal">
                 <i class="material-icons">upload_file</i> 批量导入
             </button>
-            <button class="md3-button md3-button-outlined" onclick="startBatchDataUpdate()" id="update-data-btn" title="批量更新投资组合中所有股票的最新数据">
+            <button class="md3-button md3-button-outlined" onclick="startBatchDataUpdate()" id="batch-update-btn" title="批量更新投资组合中所有股票的最新数据">
                 <i class="material-icons">refresh</i> 更新数据
             </button>
             <button class="md3-button md3-button-outlined" onclick="exportPortfolioToCSV()" title="导出投资组合数据为CSV文件">
@@ -518,6 +518,106 @@
     </div>
 </div>
 
+<!-- 批量数据更新进度模态框 -->
+<div class="modal fade" id="batchUpdateModal" tabindex="-1" aria-labelledby="batchUpdateModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: var(--md-sys-shape-corner-large); border: none; box-shadow: var(--md-sys-elevation-level3);">
+            <div class="modal-header" style="background-color: var(--md-sys-color-surface-container-high); border-bottom: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large) 0 0; padding: 24px;">
+                <h5 class="modal-title" id="batchUpdateModalLabel" style="font-family: var(--md-sys-typescale-title-large-font); font-size: var(--md-sys-typescale-title-large-size); font-weight: var(--md-sys-typescale-title-large-weight); color: var(--md-sys-color-on-surface); margin: 0; display: flex; align-items: center;">
+                    <i class="material-icons spin" style="margin-right: 12px; color: var(--md-sys-color-primary);">refresh</i>
+                    批量更新数据
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="batch-update-close-btn" style="background: none; border: none; font-size: 24px; color: var(--md-sys-color-on-surface-variant); cursor: pointer; display: none;">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 24px; background-color: var(--md-sys-color-surface);">
+                <!-- 更新状态显示 -->
+                <div class="update-status-container">
+                    <!-- 状态卡片 -->
+                    <div class="update-summary mb-4">
+                        <div class="row g-3">
+                            <div class="col-6 col-md-3">
+                                <div class="status-card" style="background: var(--md-sys-color-surface-container); border-radius: var(--md-sys-shape-corner-medium); padding: 16px; text-align: center;">
+                                    <div class="status-number" id="total-stocks" style="font-size: 24px; font-weight: 600; color: var(--md-sys-color-on-surface);">0</div>
+                                    <div class="status-label" style="font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin-top: 4px;">总股票数</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="status-card success" style="background: var(--md-sys-color-tertiary-container); border-radius: var(--md-sys-shape-corner-medium); padding: 16px; text-align: center;">
+                                    <div class="status-number" id="completed-stocks" style="font-size: 24px; font-weight: 600; color: var(--md-sys-color-on-tertiary-container);">0</div>
+                                    <div class="status-label" style="font-size: 12px; color: var(--md-sys-color-on-tertiary-container); margin-top: 4px;">已完成</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="status-card warning" style="background: var(--md-sys-color-secondary-container); border-radius: var(--md-sys-shape-corner-medium); padding: 16px; text-align: center;">
+                                    <div class="status-number" id="skipped-stocks" style="font-size: 24px; font-weight: 600; color: var(--md-sys-color-on-secondary-container);">0</div>
+                                    <div class="status-label" style="font-size: 12px; color: var(--md-sys-color-on-secondary-container); margin-top: 4px;">已跳过</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="status-card error" style="background: var(--md-sys-color-error-container); border-radius: var(--md-sys-shape-corner-medium); padding: 16px; text-align: center;">
+                                    <div class="status-number" id="failed-stocks" style="font-size: 24px; font-weight: 600; color: var(--md-sys-color-on-error-container);">0</div>
+                                    <div class="status-label" style="font-size: 12px; color: var(--md-sys-color-on-error-container); margin-top: 4px;">失败</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 进度条 -->
+                    <div class="progress-container mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="progress-label" style="font-weight: 500; color: var(--md-sys-color-on-surface);">更新进度</span>
+                            <span class="progress-percentage" id="progress-percentage" style="font-weight: 600; color: var(--md-sys-color-primary);">0%</span>
+                        </div>
+                        <div class="progress" style="height: 8px; background-color: var(--md-sys-color-surface-container-high); border-radius: 4px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 role="progressbar"
+                                 style="width: 0%; background-color: var(--md-sys-color-primary); border-radius: 4px;"
+                                 id="progress-bar">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 当前处理股票 -->
+                    <div class="current-stock-container mb-4" id="current-stock-container" style="display: none; background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-medium); padding: 16px;">
+                        <div class="current-stock-info" style="display: flex; align-items: center;">
+                            <i class="material-icons spin" style="margin-right: 12px; color: var(--md-sys-color-primary);">refresh</i>
+                            <span style="color: var(--md-sys-color-on-surface);">正在处理：</span>
+                            <strong id="current-stock-name" style="margin-left: 8px; color: var(--md-sys-color-on-surface);">-</strong>
+                            <span class="text-muted" style="margin-left: 8px; color: var(--md-sys-color-on-surface-variant);">(<span id="current-stock-code">-</span>)</span>
+                        </div>
+                    </div>
+
+                    <!-- 详细日志 -->
+                    <div class="update-log-container">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="log-label" style="font-weight: 500; color: var(--md-sys-color-on-surface);">更新日志</span>
+                            <button class="md3-button md3-button-text" onclick="clearUpdateLog()" style="padding: 8px 12px;">
+                                <i class="material-icons" style="font-size: 18px;">clear</i> 清空
+                            </button>
+                        </div>
+                        <div class="update-log" id="update-log" style="background: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-medium); padding: 16px; max-height: 200px; overflow-y: auto; font-family: 'Roboto Mono', monospace; font-size: 13px;">
+                            <div class="log-entry info" style="margin-bottom: 8px; color: var(--md-sys-color-on-surface-variant);">
+                                <span class="log-time" style="color: var(--md-sys-color-outline);">[等待开始]</span>
+                                <span class="log-message" style="margin-left: 8px;">准备批量更新数据...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="background-color: var(--md-sys-color-surface-container-low); border-top: 1px solid var(--md-sys-color-outline-variant); border-radius: 0 0 var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large); padding: 16px 24px;">
+                <button type="button" class="md3-button md3-button-outlined" onclick="cancelBatchUpdate()" id="cancel-update-btn">
+                    <i class="material-icons">cancel</i> 取消更新
+                </button>
+                <button type="button" class="md3-button md3-button-filled" data-bs-dismiss="modal" id="close-update-btn" style="display: none;">
+                    <i class="material-icons">check</i> 关闭
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- CSV批量导入模态框 -->
 <div class="modal fade" id="importCsvModal" tabindex="-1" aria-labelledby="importCsvModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -590,92 +690,6 @@
                 <button type="button" class="md3-button md3-button-text" data-bs-dismiss="modal">取消</button>
                 <button type="button" class="md3-button md3-button-filled" id="csv-import-btn" disabled>
                     <i class="material-icons">upload</i> 开始导入
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- 批量数据更新进度模态框 -->
-<div class="modal fade" id="batchUpdateModal" tabindex="-1" aria-labelledby="batchUpdateModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content" style="border-radius: var(--md-sys-shape-corner-large); border: none; box-shadow: var(--md-sys-elevation-level3);">
-            <div class="modal-header" style="background-color: var(--md-sys-color-surface-container-high); border-bottom: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large) 0 0; padding: 24px;">
-                <h5 class="modal-title" id="batchUpdateModalLabel" style="font-family: var(--md-sys-typescale-title-large-font); font-size: var(--md-sys-typescale-title-large-size); font-weight: var(--md-sys-typescale-title-large-weight); color: var(--md-sys-color-on-surface); margin: 0; display: flex; align-items: center;">
-                    <i class="material-icons" style="margin-right: 12px; color: var(--md-sys-color-primary); animation: spin 2s linear infinite;" id="update-icon">refresh</i>
-                    批量数据更新
-                </h5>
-                <button type="button" class="btn-close" id="batch-update-close-btn" style="background: none; border: none; font-size: 24px; color: var(--md-sys-color-on-surface-variant); cursor: pointer; display: none;">
-                    <i class="material-icons">close</i>
-                </button>
-            </div>
-            <div class="modal-body" style="padding: 32px; background-color: var(--md-sys-color-surface-container);">
-                <!-- 进度概览 -->
-                <div class="update-progress-overview" style="margin-bottom: 24px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <h6 style="font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); color: var(--md-sys-color-on-surface); margin: 0;">更新进度</h6>
-                        <span id="progress-percentage" style="font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); color: var(--md-sys-color-primary); font-weight: 600;">0%</span>
-                    </div>
-
-                    <!-- 进度条 -->
-                    <div class="progress" style="height: 8px; background-color: var(--md-sys-color-surface-container-highest); border-radius: 4px; overflow: hidden; margin-bottom: 16px;">
-                        <div class="progress-bar" id="update-progress-bar" role="progressbar" style="width: 0%; background: linear-gradient(90deg, var(--md-sys-color-primary), var(--md-sys-color-secondary)); transition: width 0.3s ease;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-
-                    <!-- 统计信息 -->
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; text-align: center;">
-                        <div>
-                            <div style="font-family: var(--md-sys-typescale-title-large-font); font-size: var(--md-sys-typescale-title-large-size); color: var(--md-sys-color-primary); font-weight: 600;" id="total-stocks">0</div>
-                            <div style="font-family: var(--md-sys-typescale-body-small-font); font-size: var(--md-sys-typescale-body-small-size); color: var(--md-sys-color-on-surface-variant);">总计</div>
-                        </div>
-                        <div>
-                            <div style="font-family: var(--md-sys-typescale-title-large-font); font-size: var(--md-sys-typescale-title-large-size); color: var(--md-sys-color-tertiary); font-weight: 600;" id="completed-stocks">0</div>
-                            <div style="font-family: var(--md-sys-typescale-body-small-font); font-size: var(--md-sys-typescale-body-small-size); color: var(--md-sys-color-on-surface-variant);">已完成</div>
-                        </div>
-                        <div>
-                            <div style="font-family: var(--md-sys-typescale-title-large-font); font-size: var(--md-sys-typescale-title-large-size); color: var(--md-sys-color-error); font-weight: 600;" id="failed-stocks">0</div>
-                            <div style="font-family: var(--md-sys-typescale-body-small-font); font-size: var(--md-sys-typescale-body-small-size); color: var(--md-sys-color-on-surface-variant);">失败</div>
-                        </div>
-                        <div>
-                            <div style="font-family: var(--md-sys-typescale-title-large-font); font-size: var(--md-sys-typescale-title-large-size); color: var(--md-sys-color-outline); font-weight: 600;" id="skipped-stocks">0</div>
-                            <div style="font-family: var(--md-sys-typescale-body-small-font); font-size: var(--md-sys-typescale-body-small-size); color: var(--md-sys-color-on-surface-variant);">跳过</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 当前处理股票 -->
-                <div class="current-stock-info" style="background-color: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-medium); padding: 16px; margin-bottom: 24px;">
-                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <i class="material-icons" style="color: var(--md-sys-color-primary); margin-right: 8px; font-size: 20px;">trending_up</i>
-                        <span style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface-variant);">当前处理：</span>
-                    </div>
-                    <div id="current-stock-display" style="font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); color: var(--md-sys-color-on-surface); font-weight: 500;">准备开始...</div>
-                </div>
-
-                <!-- 时间信息 -->
-                <div class="time-info" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-                    <div style="background-color: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-medium); padding: 16px;">
-                        <div style="font-family: var(--md-sys-typescale-body-small-font); font-size: var(--md-sys-typescale-body-small-size); color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">已用时间</div>
-                        <div id="elapsed-time" style="font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); color: var(--md-sys-color-on-surface); font-weight: 500;">0秒</div>
-                    </div>
-                    <div style="background-color: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-medium); padding: 16px;">
-                        <div style="font-family: var(--md-sys-typescale-body-small-font); font-size: var(--md-sys-typescale-body-small-size); color: var(--md-sys-color-on-surface-variant); margin-bottom: 4px;">预计剩余</div>
-                        <div id="estimated-remaining" style="font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); color: var(--md-sys-color-on-surface); font-weight: 500;">计算中...</div>
-                    </div>
-                </div>
-
-                <!-- 最近结果 -->
-                <div class="recent-results">
-                    <h6 style="font-family: var(--md-sys-typescale-title-medium-font); font-size: var(--md-sys-typescale-title-medium-size); color: var(--md-sys-color-on-surface); margin-bottom: 16px;">最近结果</h6>
-                    <div id="recent-results-list" style="max-height: 200px; overflow-y: auto;">
-                        <!-- 结果列表将通过JavaScript动态生成 -->
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer" style="padding: 16px 32px 32px 32px; background-color: var(--md-sys-color-surface-container); border-radius: 0 0 var(--md-sys-shape-corner-large) var(--md-sys-shape-corner-large); border-top: none; display: flex; gap: 12px; justify-content: flex-end;">
-                <button type="button" class="md3-button md3-button-text" id="cancel-update-btn">取消更新</button>
-                <button type="button" class="md3-button md3-button-filled" id="close-update-btn" style="display: none;">
-                    <i class="material-icons">check</i> 完成
                 </button>
             </div>
         </div>
@@ -1891,6 +1905,309 @@
         resetCsvImportModal();
     });
 
+    // ==================== 批量数据更新功能 ====================
+
+    let batchUpdateTaskId = null;
+    let batchUpdateInterval = null;
+    let batchUpdateCancelled = false;
+
+    /**
+     * 启动批量数据更新
+     */
+    function startBatchDataUpdate() {
+        try {
+            // 检查投资组合是否为空
+            if (!portfolio || portfolio.length === 0) {
+                showError('投资组合为空，无法更新数据');
+                return;
+            }
+
+            // 重置状态
+            batchUpdateCancelled = false;
+            batchUpdateTaskId = null;
+
+            // 显示更新模态框
+            $('#batchUpdateModal').modal('show');
+
+            // 初始化界面
+            initBatchUpdateUI();
+
+            // 获取股票代码列表
+            const stockCodes = portfolio.map(stock => stock.stock_code);
+
+            // 启动批量更新
+            $.ajax({
+                url: '/api/portfolio/batch_update',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    stock_codes: stockCodes,
+                    market_type: 'A',
+                    force_update: false  // 智能更新，只更新过期数据
+                }),
+                success: function(response) {
+                    if (response.task_id) {
+                        batchUpdateTaskId = response.task_id;
+                        addUpdateLog('info', `批量更新任务已启动，任务ID: ${response.task_id}`);
+                        addUpdateLog('info', `开始更新 ${response.total_stocks} 只股票的数据`);
+
+                        // 开始轮询更新状态
+                        startUpdateStatusPolling();
+                    } else {
+                        addUpdateLog('error', `启动批量更新失败: ${response.error || '未知错误'}`);
+                        showBatchUpdateCompleted(false);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    addUpdateLog('error', `启动批量更新失败: ${error}`);
+                    showBatchUpdateCompleted(false);
+                }
+            });
+
+        } catch (error) {
+            console.error('启动批量更新失败:', error);
+            showError('启动批量更新失败: ' + error.message);
+        }
+    }
+
+    /**
+     * 初始化批量更新界面
+     */
+    function initBatchUpdateUI() {
+        // 重置计数器
+        $('#total-stocks').text(portfolio.length);
+        $('#completed-stocks').text('0');
+        $('#skipped-stocks').text('0');
+        $('#failed-stocks').text('0');
+        $('#progress-percentage').text('0%');
+        $('#progress-bar').css('width', '0%');
+
+        // 隐藏当前处理股票
+        $('#current-stock-container').hide();
+
+        // 清空日志
+        $('#update-log').html('<div class="log-entry info" style="margin-bottom: 8px; color: var(--md-sys-color-on-surface-variant);"><span class="log-time" style="color: var(--md-sys-color-outline);">[' + getCurrentTime() + ']</span><span class="log-message" style="margin-left: 8px;">开始批量更新...</span></div>');
+
+        // 显示取消按钮，隐藏关闭按钮
+        $('#cancel-update-btn').show();
+        $('#close-update-btn').hide();
+        $('#batch-update-close-btn').hide();
+    }
+
+    /**
+     * 开始轮询更新状态
+     */
+    function startUpdateStatusPolling() {
+        if (!batchUpdateTaskId) return;
+
+        batchUpdateInterval = setInterval(() => {
+            if (batchUpdateCancelled) {
+                clearInterval(batchUpdateInterval);
+                return;
+            }
+
+            $.ajax({
+                url: `/api/portfolio/update_status/${batchUpdateTaskId}`,
+                type: 'GET',
+                success: function(status) {
+                    updateBatchUpdateUI(status);
+
+                    // 检查是否完成
+                    if (status.status === 'completed' || status.status === 'failed') {
+                        clearInterval(batchUpdateInterval);
+                        showBatchUpdateCompleted(status.status === 'completed');
+
+                        // 如果成功完成，刷新投资组合数据
+                        if (status.status === 'completed') {
+                            refreshPortfolioFromUpdateResults(status.results);
+                        }
+                    }
+                },
+                error: function(xhr, status, error) {
+                    addUpdateLog('error', `获取更新状态失败: ${error}`);
+                    if (xhr.status === 404) {
+                        // 任务不存在，可能已完成
+                        clearInterval(batchUpdateInterval);
+                        showBatchUpdateCompleted(false);
+                    }
+                }
+            });
+        }, 1000); // 每秒轮询一次
+    }
+
+    /**
+     * 更新批量更新界面
+     */
+    function updateBatchUpdateUI(status) {
+        // 更新计数器
+        $('#completed-stocks').text(status.completed_stocks || 0);
+        $('#skipped-stocks').text(status.skipped_stocks || 0);
+        $('#failed-stocks').text(status.failed_stocks || 0);
+        $('#progress-percentage').text(status.progress_percentage + '%');
+        $('#progress-bar').css('width', status.progress_percentage + '%');
+
+        // 显示当前处理的股票
+        if (status.current_stock) {
+            $('#current-stock-container').show();
+            $('#current-stock-code').text(status.current_stock);
+
+            // 尝试从投资组合中找到股票名称
+            const stock = portfolio.find(s => s.stock_code === status.current_stock);
+            $('#current-stock-name').text(stock ? stock.stock_name || '未知' : '未知');
+        } else {
+            $('#current-stock-container').hide();
+        }
+
+        // 添加新的日志条目
+        if (status.errors && status.errors.length > 0) {
+            status.errors.forEach(error => {
+                if (!isLogEntryExists(error.stock_code, 'error')) {
+                    addUpdateLog('error', `${error.stock_code}: ${error.error}`);
+                }
+            });
+        }
+    }
+
+    /**
+     * 显示批量更新完成状态
+     */
+    function showBatchUpdateCompleted(success) {
+        if (success) {
+            addUpdateLog('success', '批量更新完成！');
+            showSuccess('批量数据更新完成');
+        } else {
+            addUpdateLog('error', '批量更新失败或被取消');
+        }
+
+        // 隐藏当前处理股票
+        $('#current-stock-container').hide();
+
+        // 切换按钮
+        $('#cancel-update-btn').hide();
+        $('#close-update-btn').show();
+        $('#batch-update-close-btn').show();
+    }
+
+    /**
+     * 取消批量更新
+     */
+    function cancelBatchUpdate() {
+        batchUpdateCancelled = true;
+
+        if (batchUpdateInterval) {
+            clearInterval(batchUpdateInterval);
+        }
+
+        addUpdateLog('warning', '用户取消了批量更新');
+        showBatchUpdateCompleted(false);
+    }
+
+    /**
+     * 添加更新日志
+     */
+    function addUpdateLog(type, message) {
+        const logContainer = $('#update-log');
+        const time = getCurrentTime();
+
+        let colorClass = 'var(--md-sys-color-on-surface-variant)';
+        switch (type) {
+            case 'success':
+                colorClass = 'var(--md-sys-color-tertiary)';
+                break;
+            case 'error':
+                colorClass = 'var(--md-sys-color-error)';
+                break;
+            case 'warning':
+                colorClass = 'var(--md-sys-color-secondary)';
+                break;
+        }
+
+        const logEntry = `
+            <div class="log-entry ${type}" style="margin-bottom: 8px; color: ${colorClass};">
+                <span class="log-time" style="color: var(--md-sys-color-outline);">[${time}]</span>
+                <span class="log-message" style="margin-left: 8px;">${message}</span>
+            </div>
+        `;
+
+        logContainer.append(logEntry);
+
+        // 自动滚动到底部
+        logContainer.scrollTop(logContainer[0].scrollHeight);
+    }
+
+    /**
+     * 清空更新日志
+     */
+    function clearUpdateLog() {
+        $('#update-log').html('<div class="log-entry info" style="margin-bottom: 8px; color: var(--md-sys-color-on-surface-variant);"><span class="log-time" style="color: var(--md-sys-color-outline);">[' + getCurrentTime() + ']</span><span class="log-message" style="margin-left: 8px;">日志已清空</span></div>');
+    }
+
+    /**
+     * 检查日志条目是否已存在
+     */
+    function isLogEntryExists(stockCode, type) {
+        const logEntries = $('#update-log .log-entry.' + type);
+        for (let i = 0; i < logEntries.length; i++) {
+            if ($(logEntries[i]).text().includes(stockCode)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 获取当前时间字符串
+     */
+    function getCurrentTime() {
+        const now = new Date();
+        return now.toLocaleTimeString('zh-CN', { hour12: false });
+    }
+
+    /**
+     * 从更新结果刷新投资组合数据
+     */
+    function refreshPortfolioFromUpdateResults(results) {
+        if (!results || Object.keys(results).length === 0) {
+            return;
+        }
+
+        let updatedCount = 0;
+
+        // 更新投资组合中的股票数据
+        portfolio.forEach((stock, index) => {
+            const updateData = results[stock.stock_code];
+            if (updateData) {
+                // 更新股票数据
+                portfolio[index] = {
+                    ...portfolio[index],
+                    stock_name: updateData.stock_name || stock.stock_name,
+                    industry: updateData.industry || stock.industry,
+                    price: updateData.price || stock.price,
+                    price_change: updateData.price_change || stock.price_change,
+                    score: updateData.score || stock.score,
+                    score_details: updateData.score_details || stock.score_details,
+                    score_breakdown: updateData.score_breakdown || stock.score_breakdown,
+                    recommendation: updateData.recommendation || stock.recommendation,
+                    loading: false
+                };
+                updatedCount++;
+            }
+        });
+
+        if (updatedCount > 0) {
+            // 保存到本地存储
+            savePortfolio();
+
+            // 重新渲染投资组合
+            renderPortfolio();
+
+            // 重新分析投资组合
+            analyzePortfolio();
+
+            addUpdateLog('success', `成功更新了 ${updatedCount} 只股票的数据`);
+        }
+    }
+
     // ==================== CSV导出功能 ====================
 
     /**
@@ -2194,307 +2511,6 @@
         const numValue = parseFloat(num);
         if (isNaN(numValue)) return '-';
         return numValue.toFixed(decimals);
-    }
-
-    // ==================== 批量数据更新功能 ====================
-
-    let batchUpdateSession = null;
-    let batchUpdateTimer = null;
-
-    /**
-     * 启动批量数据更新
-     */
-    function startBatchDataUpdate() {
-        try {
-            // 检查投资组合是否为空
-            if (!portfolio || portfolio.length === 0) {
-                showError('投资组合为空，无法进行批量更新');
-                return;
-            }
-
-            // 获取所有股票代码
-            const stockCodes = portfolio.map(stock => stock.stock_code).filter(code => code);
-
-            if (stockCodes.length === 0) {
-                showError('没有有效的股票代码');
-                return;
-            }
-
-            // 确认是否进行批量更新
-            const confirmMessage = `即将更新 ${stockCodes.length} 只股票的数据，这可能需要几分钟时间。\n\n更新完成后，CSV导出速度将显著提升。\n\n是否继续？`;
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-
-            // 显示进度模态框
-            showBatchUpdateModal();
-
-            // 调用批量更新API
-            const requestData = {
-                stock_codes: stockCodes,
-                force_update: false,
-                session_id: `portfolio_${portfolioManager.currentPortfolioId}_${Date.now()}`
-            };
-
-            fetch('/api/v1/batch/update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': 'UZXJfw3YNX80DLfN'  // 使用默认API Key
-                },
-                body: JSON.stringify(requestData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    batchUpdateSession = data.data.session_id;
-                    showInfo(`批量更新已启动，会话ID: ${batchUpdateSession}`);
-
-                    // 开始轮询进度
-                    startProgressPolling();
-                } else {
-                    throw new Error(data.message || '启动批量更新失败');
-                }
-            })
-            .catch(error => {
-                console.error('启动批量更新失败:', error);
-                showError(`启动批量更新失败: ${error.message}`);
-                hideBatchUpdateModal();
-            });
-
-        } catch (error) {
-            console.error('批量更新异常:', error);
-            showError(`批量更新异常: ${error.message}`);
-        }
-    }
-
-    /**
-     * 显示批量更新进度模态框
-     */
-    function showBatchUpdateModal() {
-        // 重置进度显示
-        resetBatchUpdateProgress();
-
-        // 显示模态框
-        const modal = new bootstrap.Modal(document.getElementById('batchUpdateModal'));
-        modal.show();
-
-        // 绑定事件
-        document.getElementById('cancel-update-btn').onclick = cancelBatchUpdate;
-        document.getElementById('close-update-btn').onclick = () => modal.hide();
-        document.getElementById('batch-update-close-btn').onclick = () => modal.hide();
-    }
-
-    /**
-     * 隐藏批量更新进度模态框
-     */
-    function hideBatchUpdateModal() {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('batchUpdateModal'));
-        if (modal) {
-            modal.hide();
-        }
-
-        // 停止轮询
-        if (batchUpdateTimer) {
-            clearInterval(batchUpdateTimer);
-            batchUpdateTimer = null;
-        }
-    }
-
-    /**
-     * 重置批量更新进度显示
-     */
-    function resetBatchUpdateProgress() {
-        document.getElementById('progress-percentage').textContent = '0%';
-        document.getElementById('update-progress-bar').style.width = '0%';
-        document.getElementById('total-stocks').textContent = '0';
-        document.getElementById('completed-stocks').textContent = '0';
-        document.getElementById('failed-stocks').textContent = '0';
-        document.getElementById('skipped-stocks').textContent = '0';
-        document.getElementById('current-stock-display').textContent = '准备开始...';
-        document.getElementById('elapsed-time').textContent = '0秒';
-        document.getElementById('estimated-remaining').textContent = '计算中...';
-        document.getElementById('recent-results-list').innerHTML = '';
-
-        // 显示取消按钮，隐藏完成按钮
-        document.getElementById('cancel-update-btn').style.display = 'block';
-        document.getElementById('close-update-btn').style.display = 'none';
-        document.getElementById('batch-update-close-btn').style.display = 'none';
-
-        // 启动图标动画
-        document.getElementById('update-icon').style.animation = 'spin 2s linear infinite';
-    }
-
-    /**
-     * 开始轮询更新进度
-     */
-    function startProgressPolling() {
-        if (!batchUpdateSession) return;
-
-        batchUpdateTimer = setInterval(() => {
-            fetchUpdateProgress();
-        }, 2000); // 每2秒轮询一次
-
-        // 立即获取一次进度
-        fetchUpdateProgress();
-    }
-
-    /**
-     * 获取更新进度
-     */
-    function fetchUpdateProgress() {
-        if (!batchUpdateSession) return;
-
-        fetch(`/api/v1/batch/progress/${batchUpdateSession}`, {
-            headers: {
-                'X-API-Key': 'UZXJfw3YNX80DLfN'  // 使用默认API Key
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                updateProgressDisplay(data.data);
-            } else {
-                console.error('获取进度失败:', data.message);
-            }
-        })
-        .catch(error => {
-            console.error('获取进度异常:', error);
-        });
-    }
-
-    /**
-     * 更新进度显示
-     */
-    function updateProgressDisplay(progressData) {
-        const { progress, current_stock, timing, results, status } = progressData;
-
-        // 更新进度条和百分比
-        document.getElementById('progress-percentage').textContent = `${progress.percent}%`;
-        document.getElementById('update-progress-bar').style.width = `${progress.percent}%`;
-
-        // 更新统计数据
-        document.getElementById('total-stocks').textContent = progress.total;
-        document.getElementById('completed-stocks').textContent = progress.completed;
-        document.getElementById('failed-stocks').textContent = progress.failed;
-        document.getElementById('skipped-stocks').textContent = progress.skipped;
-
-        // 更新当前处理股票
-        if (current_stock) {
-            document.getElementById('current-stock-display').textContent = `${current_stock} (处理中...)`;
-        } else if (status === 'completed') {
-            document.getElementById('current-stock-display').textContent = '全部完成！';
-
-            // 停止图标动画
-            document.getElementById('update-icon').style.animation = 'none';
-
-            // 显示完成按钮
-            document.getElementById('cancel-update-btn').style.display = 'none';
-            document.getElementById('close-update-btn').style.display = 'block';
-            document.getElementById('batch-update-close-btn').style.display = 'block';
-
-            // 停止轮询
-            if (batchUpdateTimer) {
-                clearInterval(batchUpdateTimer);
-                batchUpdateTimer = null;
-            }
-
-            // 显示完成消息
-            showSuccess(`批量数据更新完成！成功: ${progress.completed}, 失败: ${progress.failed}, 跳过: ${progress.skipped}`);
-
-            // 刷新投资组合数据
-            setTimeout(() => {
-                refreshPortfolioData();
-            }, 1000);
-        }
-
-        // 更新时间信息
-        if (timing) {
-            document.getElementById('elapsed-time').textContent = `${timing.elapsed_seconds}秒`;
-
-            if (timing.estimated_remaining_seconds) {
-                const remaining = Math.round(timing.estimated_remaining_seconds);
-                document.getElementById('estimated-remaining').textContent = `${remaining}秒`;
-            }
-        }
-
-        // 更新最近结果
-        if (results && results.length > 0) {
-            updateRecentResults(results);
-        }
-    }
-
-    /**
-     * 更新最近结果显示
-     */
-    function updateRecentResults(results) {
-        const container = document.getElementById('recent-results-list');
-
-        // 清空现有内容
-        container.innerHTML = '';
-
-        // 添加最近的结果
-        results.forEach(result => {
-            const statusIcon = {
-                'completed': 'check_circle',
-                'failed': 'error',
-                'skipped': 'skip_next'
-            }[result.status] || 'help';
-
-            const statusColor = {
-                'completed': 'var(--md-sys-color-tertiary)',
-                'failed': 'var(--md-sys-color-error)',
-                'skipped': 'var(--md-sys-color-outline)'
-            }[result.status] || 'var(--md-sys-color-on-surface-variant)';
-
-            const resultHtml = `
-                <div style="display: flex; align-items: center; padding: 8px 12px; margin-bottom: 4px; background-color: var(--md-sys-color-surface-container-low); border-radius: var(--md-sys-shape-corner-small);">
-                    <i class="material-icons" style="color: ${statusColor}; margin-right: 12px; font-size: 18px;">${statusIcon}</i>
-                    <div style="flex: 1;">
-                        <div style="font-family: var(--md-sys-typescale-body-medium-font); font-size: var(--md-sys-typescale-body-medium-size); color: var(--md-sys-color-on-surface); font-weight: 500;">${result.stock_code}</div>
-                        <div style="font-family: var(--md-sys-typescale-body-small-font); font-size: var(--md-sys-typescale-body-small-size); color: var(--md-sys-color-on-surface-variant);">${result.message}</div>
-                    </div>
-                    <div style="font-family: var(--md-sys-typescale-body-small-font); font-size: var(--md-sys-typescale-body-small-size); color: var(--md-sys-color-on-surface-variant);">${result.duration}s</div>
-                </div>
-            `;
-
-            container.insertAdjacentHTML('beforeend', resultHtml);
-        });
-    }
-
-    /**
-     * 取消批量更新
-     */
-    function cancelBatchUpdate() {
-        if (confirm('确定要取消批量更新吗？已完成的更新不会回滚。')) {
-            // 停止轮询
-            if (batchUpdateTimer) {
-                clearInterval(batchUpdateTimer);
-                batchUpdateTimer = null;
-            }
-
-            // 重置会话
-            batchUpdateSession = null;
-
-            // 隐藏模态框
-            hideBatchUpdateModal();
-
-            showInfo('批量更新已取消');
-        }
-    }
-
-    /**
-     * 刷新投资组合数据
-     */
-    function refreshPortfolioData() {
-        // 重新获取所有股票的数据
-        portfolio.forEach((stock, index) => {
-            if (stock.stock_code) {
-                fetchStockData(stock.stock_code, index);
-            }
-        });
-
-        showInfo('正在刷新投资组合数据...');
     }
 </script>
 
