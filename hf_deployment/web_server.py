@@ -1830,9 +1830,30 @@ def export_portfolio():
         from datetime import datetime
         from flask import make_response
 
+        # API密钥验证
+        api_key = request.headers.get('X-API-Key')
+        expected_api_key = os.getenv('API_KEY', 'UZXJfw3YNX80DLfN')
+
+        if not api_key:
+            app.logger.warning("导出API: 缺少API密钥")
+            return jsonify({'error': '缺少API密钥'}), 401
+
+        if api_key != expected_api_key:
+            app.logger.warning(f"导出API: 无效的API密钥: {api_key}")
+            return jsonify({'error': '无效的API密钥'}), 403
+
+        app.logger.info("导出API: API密钥验证成功")
+
         # 验证请求数据
-        data = request.get_json()
+        try:
+            data = request.get_json()
+            app.logger.info(f"导出API: 接收到请求数据，股票数量: {len(data.get('stocks', [])) if data else 0}")
+        except Exception as e:
+            app.logger.error(f"导出API: 解析请求数据失败: {str(e)}")
+            return jsonify({'error': '请求数据格式错误'}), 400
+
         if not data:
+            app.logger.warning("导出API: 请求数据为空")
             return jsonify({'error': '请求数据不能为空'}), 400
 
         stocks = data.get('stocks', [])
@@ -1984,6 +2005,67 @@ def export_portfolio():
     except Exception as e:
         app.logger.error(f"投资组合导出API出错: {traceback.format_exc()}")
         return jsonify({'error': f'投资组合导出失败: {str(e)}'}), 500
+
+
+# 简化的导出API（备用方案）
+@app.route('/api/portfolio/export-simple', methods=['POST'])
+def export_portfolio_simple():
+    """简化的投资组合导出API，不需要认证"""
+    try:
+        import csv
+        import io
+        from datetime import datetime
+        from flask import make_response
+
+        app.logger.info("简化导出API: 开始处理请求")
+
+        # 验证请求数据
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': '请求数据不能为空'}), 400
+
+        stocks = data.get('stocks', [])
+        portfolio_name = data.get('portfolio_name', '投资组合')
+
+        if not stocks:
+            return jsonify({'error': '股票列表不能为空'}), 400
+
+        # 生成简化的CSV内容
+        output = io.StringIO()
+        output.write('\ufeff')  # BOM
+
+        # 写入基本信息
+        output.write(f"投资组合名称,{portfolio_name}\n")
+        output.write(f"导出时间,{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        output.write(f"股票数量,{len(stocks)}\n")
+        output.write("\n")
+
+        # 写入股票列表
+        output.write("股票代码,权重,市场类型\n")
+        for stock in stocks:
+            output.write(f"{stock.get('stock_code', '')},{stock.get('weight', 0)},{stock.get('market_type', 'A')}\n")
+
+        csv_content = output.getvalue()
+        output.close()
+
+        # 生成文件名
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"投资组合_简化_{timestamp}.csv"
+
+        # 创建响应
+        response = make_response(csv_content)
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response.headers['Cache-Control'] = 'no-cache'
+
+        app.logger.info(f"简化导出API: 成功生成文件 {filename}")
+        return response
+
+    except Exception as e:
+        app.logger.error(f"简化导出API出错: {traceback.format_exc()}")
+        return jsonify({'error': f'导出失败: {str(e)}'}), 500
+
+
 cleaner_thread = threading.Thread(target=run_task_cleaner)
 cleaner_thread.daemon = True
 cleaner_thread.start()

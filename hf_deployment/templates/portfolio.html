@@ -1003,7 +1003,8 @@
             url: '/api/v1/portfolio/export',
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-API-Key': 'UZXJfw3YNX80DLfN'
             },
             data: JSON.stringify(exportData),
             xhrFields: {
@@ -1052,8 +1053,93 @@
                     // 如果解析失败，使用默认错误消息
                 }
 
+                // 如果是403错误，尝试使用简化的导出API
+                if (xhr.status === 403) {
+                    showInfo('尝试使用备用导出方法...');
+                    exportPortfolioSimple();
+                    return;
+                }
+
                 showError(errorMessage);
                 console.error('导出错误:', error);
+            }
+        });
+    }
+
+    // 简化的导出函数（备用方案）
+    function exportPortfolioSimple() {
+        if (portfolio.length === 0) {
+            showError('投资组合为空，无法导出');
+            return;
+        }
+
+        // 准备简化的导出数据
+        const exportData = {
+            stocks: portfolio.map(stock => ({
+                stock_code: stock.stock_code,
+                weight: stock.weight || 10,
+                market_type: 'A'
+            })),
+            portfolio_name: '我的投资组合',
+            export_format: 'csv'
+        };
+
+        // 发送简化的导出请求（不需要API密钥）
+        $.ajax({
+            url: '/api/portfolio/export-simple',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify(exportData),
+            xhrFields: {
+                responseType: 'blob'
+            },
+            success: function(data, status, xhr) {
+                // 重新启用导出按钮
+                $('#export-portfolio-btn').prop('disabled', false);
+
+                // 获取文件名
+                const contentDisposition = xhr.getResponseHeader('Content-Disposition');
+                let filename = '投资组合_简化.csv';
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1];
+                    }
+                }
+
+                // 创建下载链接
+                const blob = new Blob([data], { type: 'text/csv;charset=utf-8-sig' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+
+                // 触发下载
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                showSuccess(`投资组合已成功导出为 ${filename}（简化版本）`);
+            },
+            error: function(xhr, status, error) {
+                // 重新启用导出按钮
+                $('#export-portfolio-btn').prop('disabled', false);
+
+                let errorMessage = '简化导出也失败了';
+                try {
+                    if (xhr.responseText) {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        errorMessage = errorResponse.error || errorMessage;
+                    }
+                } catch (e) {
+                    // 如果解析失败，使用默认错误消息
+                }
+
+                showError(errorMessage);
+                console.error('简化导出错误:', error);
             }
         });
     }
