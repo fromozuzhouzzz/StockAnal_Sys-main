@@ -1736,61 +1736,6 @@ def api_stock_score():
         return jsonify({'error': str(e)}), 500
 
 
-# 投资组合批量数据更新API
-@app.route('/api/portfolio/batch_update', methods=['POST'])
-def api_portfolio_batch_update():
-    """批量更新投资组合数据"""
-    try:
-        data = request.json
-        stock_codes = data.get('stock_codes', [])
-        market_type = data.get('market_type', 'A')
-        force_update = data.get('force_update', False)
-
-        if not stock_codes:
-            return jsonify({'error': '股票代码列表不能为空'}), 400
-
-        if len(stock_codes) > 50:
-            return jsonify({'error': '单次最多支持50只股票'}), 400
-
-        app.logger.info(f"开始批量更新 {len(stock_codes)} 只股票数据，强制更新: {force_update}")
-
-        # 创建批量更新管理器
-        from portfolio_batch_updater import PortfolioBatchUpdater
-        updater = PortfolioBatchUpdater()
-
-        # 执行批量更新
-        result = updater.batch_update_stocks(
-            stock_codes=stock_codes,
-            market_type=market_type,
-            force_update=force_update
-        )
-
-        return custom_jsonify(result)
-
-    except Exception as e:
-        app.logger.error(f"批量更新投资组合数据失败: {traceback.format_exc()}")
-        return jsonify({'error': f'服务器错误: {str(e)}'}), 500
-
-
-@app.route('/api/portfolio/update_status/<task_id>', methods=['GET'])
-def api_portfolio_update_status(task_id):
-    """获取投资组合更新状态"""
-    try:
-        from portfolio_batch_updater import PortfolioBatchUpdater
-        updater = PortfolioBatchUpdater()
-
-        status = updater.get_update_status(task_id)
-
-        if status:
-            return custom_jsonify(status)
-        else:
-            return jsonify({'error': '任务不存在'}), 404
-
-    except Exception as e:
-        app.logger.error(f"获取更新状态失败: {traceback.format_exc()}")
-        return jsonify({'error': f'服务器错误: {str(e)}'}), 500
-
-
 # 风险分析路由
 @app.route('/api/risk_analysis', methods=['POST'])
 def api_risk_analysis():

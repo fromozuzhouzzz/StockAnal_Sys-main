@@ -719,30 +719,6 @@ class DataService:
                         raise Exception(f"AKShare API返回数据类型错误，期望DataFrame，实际: {type(result)}, 原始代码: {original_code}, AKShare代码: {akshare_code}")
 
                     if len(result) == 0:
-                        # 尝试调整日期范围获取数据
-                        self.logger.warning(f"AKShare API返回空DataFrame，尝试调整日期范围 - 原始代码: {original_code}")
-
-                        # 尝试扩大日期范围
-                        extended_start = (datetime.strptime(start_date, '%Y-%m-%d') - timedelta(days=30)).strftime('%Y-%m-%d')
-                        extended_result = None
-
-                        try:
-                            if market_type == 'A':
-                                extended_result = ak.stock_zh_a_hist(
-                                    symbol=akshare_code,
-                                    start_date=extended_start.replace('-', ''),
-                                    end_date=end_date.replace('-', ''),
-                                    adjust="qfq"
-                                )
-
-                            if extended_result is not None and len(extended_result) > 0:
-                                self.logger.info(f"扩大日期范围后成功获取股票 {original_code} 的 {len(extended_result)} 条数据")
-                                return extended_result
-
-                        except Exception as extend_error:
-                            self.logger.warning(f"扩大日期范围也失败: {extend_error}")
-
-                        # 如果扩大日期范围也失败，抛出异常让上层处理降级
                         raise Exception(f"AKShare API返回空DataFrame，原始代码: {original_code}, AKShare代码: {akshare_code}, 日期范围: {start_date} 到 {end_date}")
 
                     self.logger.info(f"成功获取股票 {original_code} 的 {len(result)} 条价格数据")
