@@ -311,6 +311,9 @@
             <button class="md3-button md3-button-outlined" data-bs-toggle="modal" data-bs-target="#importCsvModal">
                 <i class="material-icons">upload_file</i> 批量导入
             </button>
+            <button class="md3-button md3-button-outlined" id="export-portfolio-btn" onclick="exportPortfolio()">
+                <i class="material-icons">download</i> 导出投资组合
+            </button>
         </div>
     </div>
 
@@ -1796,6 +1799,107 @@
     $('#importCsvModal').on('hidden.bs.modal', function() {
         resetCsvImportModal();
     });
+
+    // 导出投资组合为CSV
+    function exportPortfolio() {
+        if (portfolio.length === 0) {
+            showError('投资组合为空，无法导出');
+            return;
+        }
+
+        // 显示导出进度提示
+        showInfo('正在准备导出数据...');
+
+        // 禁用导出按钮防止重复点击
+        $('#export-portfolio-btn').prop('disabled', true);
+
+        // 准备导出数据
+        const exportData = {
+            stocks: portfolio.map(stock => ({
+                stock_code: stock.stock_code,
+                weight: stock.weight || 10,
+                market_type: 'A'
+            })),
+            portfolio_name: getCurrentPortfolioName(),
+            export_format: 'csv'
+        };
+
+        // 发送导出请求
+        $.ajax({
+            url: '/api/v1/portfolio/export',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': 'UZXJfw3YNX80DLfN'
+            },
+            data: JSON.stringify(exportData),
+            xhrFields: {
+                responseType: 'blob'  // 重要：设置响应类型为blob
+            },
+            success: function(data, status, xhr) {
+                // 重新启用导出按钮
+                $('#export-portfolio-btn').prop('disabled', false);
+
+                // 获取文件名
+                const contentDisposition = xhr.getResponseHeader('Content-Disposition');
+                let filename = '投资组合.csv';
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1];
+                    }
+                }
+
+                // 创建下载链接
+                const blob = new Blob([data], { type: 'text/csv;charset=utf-8-sig' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+
+                // 触发下载
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+
+                showSuccess(`投资组合已成功导出为 ${filename}`);
+            },
+            error: function(xhr, status, error) {
+                // 重新启用导出按钮
+                $('#export-portfolio-btn').prop('disabled', false);
+
+                let errorMessage = '导出失败';
+                try {
+                    if (xhr.responseText) {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        errorMessage = errorResponse.message || errorMessage;
+                    }
+                } catch (e) {
+                    // 如果解析失败，使用默认错误消息
+                }
+
+                showError(errorMessage);
+                console.error('导出错误:', error);
+            }
+        });
+    }
+
+    // 获取当前投资组合名称
+    function getCurrentPortfolioName() {
+        const currentId = portfolioManager.currentPortfolioId;
+        if (currentId === 'default') {
+            return '默认投资组合';
+        }
+
+        // 从标签页中获取名称
+        const tabElement = $(`.md3-tab[data-portfolio-id="${currentId}"]`);
+        if (tabElement.length > 0) {
+            return tabElement.find('.tab-title').text().trim();
+        }
+
+        return `投资组合_${currentId}`;
+    }
 </script>
 
 <style>
