@@ -1,0 +1,271 @@
+/* Hugging Face Spaces 兼容性样式 */
+/* 为不支持CSS变量的环境提供完整的fallback样式 */
+
+/* 检测CSS变量支持 */
+@supports not (color: var(--test)) {
+    /* 如果不支持CSS变量，使用这些fallback样式 */
+    
+    body {
+        font-family: 'Roboto', 'Noto Sans SC', sans-serif !important;
+        font-size: 16px !important;
+        font-weight: 400 !important;
+        line-height: 24px !important;
+        background-color: #FEFBFF !important;
+        color: #1C1B1F !important;
+    }
+    
+    .md3-navbar {
+        background-color: #F7F2FA !important;
+        border-bottom: 1px solid #CAC4D0 !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .md3-navbar-brand {
+        color: #1565C0 !important;
+    }
+    
+    .md3-nav-link {
+        color: #49454F !important;
+    }
+    
+    .md3-nav-link:hover {
+        color: #1565C0 !important;
+        background-color: #E3F2FD !important;
+    }
+    
+    .md3-nav-link.active {
+        background-color: #ECEFF1 !important;
+        color: #263238 !important;
+    }
+    
+    .md3-card {
+        background-color: #F7F2FA !important;
+        border-radius: 16px !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+        border: 1px solid #CAC4D0 !important;
+    }
+    
+    .md3-card-title {
+        color: #1C1B1F !important;
+    }
+    
+    .md3-card-title i {
+        color: #1565C0 !important;
+    }
+    
+    .md3-card-subtitle {
+        color: #49454F !important;
+    }
+    
+    .md3-button-filled {
+        background-color: #1565C0 !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+    }
+    
+    .md3-button-filled:hover {
+        background-color: #0D47A1 !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    .md3-button-outlined {
+        background-color: transparent !important;
+        color: #1565C0 !important;
+        border: 1px solid #79747E !important;
+    }
+    
+    .md3-button-outlined:hover {
+        background-color: #E3F2FD !important;
+        color: #0D47A1 !important;
+        border-color: #1565C0 !important;
+    }
+    
+    .md3-button-text {
+        background-color: transparent !important;
+        color: #1565C0 !important;
+    }
+    
+    .md3-button-text:hover {
+        background-color: #E3F2FD !important;
+        color: #0D47A1 !important;
+    }
+    
+    .md3-icon-button {
+        background-color: transparent !important;
+        color: #49454F !important;
+        border-radius: 24px !important;
+    }
+    
+    .md3-icon-button:hover {
+        background-color: #E3F2FD !important;
+        color: #0D47A1 !important;
+    }
+    
+    .md3-text-field-input {
+        background-color: #FEFBFF !important;
+        color: #1C1B1F !important;
+        border: 1px solid #79747E !important;
+        border-radius: 4px !important;
+    }
+    
+    .md3-text-field-input:focus {
+        border-color: #1565C0 !important;
+        border-width: 2px !important;
+    }
+    
+    .md3-text-field-label {
+        color: #49454F !important;
+        background-color: #FEFBFF !important;
+    }
+    
+    .md3-text-field-input:focus + .md3-text-field-label,
+    .md3-text-field-input:not(:placeholder-shown) + .md3-text-field-label {
+        color: #1565C0 !important;
+    }
+    
+    /* 数据表格样式 */
+    .md3-table {
+        background-color: #F7F2FA !important;
+        border-radius: 16px !important;
+    }
+    
+    .md3-table thead {
+        background-color: #ECEFF1 !important;
+    }
+    
+    .md3-table th {
+        color: #49454F !important;
+        border-bottom: 1px solid #CAC4D0 !important;
+    }
+    
+    .md3-table td {
+        color: #1C1B1F !important;
+        border-bottom: 1px solid #CAC4D0 !important;
+    }
+    
+    .md3-table tbody tr:hover {
+        background-color: #ECEFF1 !important;
+    }
+    
+    /* 趋势颜色 - 中国股市习惯 */
+    .trend-up, .md3-text-bull {
+        color: #d32f2f !important; /* 红色表示上涨 */
+    }
+    
+    .trend-down, .md3-text-bear {
+        color: #2e7d32 !important; /* 绿色表示下跌 */
+    }
+    
+    .trend-neutral {
+        color: #49454F !important;
+    }
+    
+    /* 评分颜色 */
+    .md3-score-excellent {
+        background-color: #E8F5E8 !important;
+        color: #2E7D32 !important;
+    }
+    
+    .md3-score-good {
+        background-color: #E3F2FD !important;
+        color: #1565C0 !important;
+    }
+    
+    .md3-score-fair {
+        background-color: #FFF3E0 !important;
+        color: #F57C00 !important;
+    }
+    
+    .md3-score-poor {
+        background-color: #FFEBEE !important;
+        color: #B3261E !important;
+    }
+    
+    /* 徽章样式 */
+    .md3-badge-success {
+        background-color: #E8F5E8 !important;
+        color: #2E7D32 !important;
+    }
+    
+    .md3-badge-error {
+        background-color: #FFEBEE !important;
+        color: #B3261E !important;
+    }
+    
+    .md3-badge-warning {
+        background-color: #FFF3E0 !important;
+        color: #F57C00 !important;
+    }
+    
+    .md3-badge-primary {
+        background-color: #E3F2FD !important;
+        color: #1565C0 !important;
+    }
+    
+    /* 进度条 */
+    .md3-linear-progress {
+        background-color: #E0E0E0 !important;
+        border-radius: 2px !important;
+    }
+    
+    .md3-linear-progress-bar {
+        background-color: #1565C0 !important;
+    }
+    
+    /* 加载覆盖层 */
+    .md3-loading-overlay {
+        background-color: rgba(0, 0, 0, 0.32) !important;
+    }
+    
+    /* 工具提示类 */
+    .md3-text-primary {
+        color: #1565C0 !important;
+    }
+    
+    .md3-text-secondary {
+        color: #546E7A !important;
+    }
+    
+    .md3-text-error {
+        color: #B3261E !important;
+    }
+    
+    .md3-text-success {
+        color: #2E7D32 !important;
+    }
+    
+    .md3-text-warning {
+        color: #F57C00 !important;
+    }
+    
+    .md3-text-on-surface {
+        color: #1C1B1F !important;
+    }
+    
+    .md3-text-on-surface-variant {
+        color: #49454F !important;
+    }
+    
+    .md3-bg-surface {
+        background-color: #FEFBFF !important;
+    }
+    
+    .md3-bg-surface-container {
+        background-color: #F7F2FA !important;
+    }
+    
+    .md3-bg-primary-container {
+        background-color: #E3F2FD !important;
+    }
+}
+
+/* 强制应用关键样式，确保在所有环境中都能正确显示 */
+.hf-spaces-force-styles {
+    /* 这个类可以在需要时强制应用样式 */
+}
+
+/* 确保字体正确加载 */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+/* 确保Material Icons正确加载 */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');

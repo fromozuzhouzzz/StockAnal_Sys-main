@@ -818,6 +818,12 @@ def industry_analysis():
     return render_template('industry_analysis.html')
 
 
+# HF Spaces 配色测试页面
+@app.route('/hf_spaces_test')
+def hf_spaces_test():
+    return render_template('hf_spaces_test.html')
+
+
 def make_cache_key_with_stock():
     """创建包含股票代码的自定义缓存键"""
     path = request.path

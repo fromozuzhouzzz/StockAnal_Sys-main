@@ -7,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Permissions Policy - 只包含广泛支持的特性 -->
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), fullscreen=*">
+    <!-- 环境检测标识 -->
+    <meta name="hf-spaces" content="true">
     <title>{% block title %}智能分析系统{% endblock %}</title>
     <!-- Enhanced Google Fonts for Material Design 3 -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +19,9 @@
     <!-- ApexCharts -->
     <link href="https://cdn.jsdelivr.net/npm/apexcharts@3.44.0/dist/apexcharts.min.css" rel="stylesheet">
     <!-- Enhanced Material Design 3 Styles -->
-    <link href="/static/md3-styles.css?v=20241207-table-alignment-ultimate-fix" rel="stylesheet">
+    <link href="{{ url_for('static', filename='md3-styles.css') }}?v=20241207-hf-spaces-fix" rel="stylesheet">
+    <!-- Hugging Face Spaces 兼容性样式 -->
+    <link href="{{ url_for('static', filename='hf-spaces-compatibility.css') }}?v=20241207-hf-spaces-fix" rel="stylesheet">
     <!-- Download PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
@@ -669,6 +673,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- ApexCharts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.35.0/dist/apexcharts.min.js"></script>
+    <!-- Hugging Face Spaces 兼容性脚本 -->
+    <script src="{{ url_for('static', filename='js/hf-spaces-compatibility.js') }}"></script>
     <!-- 统一主题管理器 - 解决跨浏览器兼容性问题 -->
     <script src="{{ url_for('static', filename='js/theme-manager.js') }}"></script>
     <!-- Common JS -->

@@ -400,11 +400,18 @@ html {
 }
 
 body {
+    /* Fallback values for browsers without CSS variable support */
+    font-family: 'Roboto', 'Noto Sans SC', sans-serif;
     font-family: var(--md-sys-typescale-body-large-font);
+    font-size: 16px;
     font-size: var(--md-sys-typescale-body-large-size);
+    font-weight: 400;
     font-weight: var(--md-sys-typescale-body-large-weight);
+    line-height: 24px;
     line-height: var(--md-sys-typescale-body-large-line-height);
+    background-color: #FEFBFF;
     background-color: var(--md-sys-color-surface);
+    color: #1C1B1F;
     color: var(--md-sys-color-on-surface);
     margin: 0;
     padding: 0;
@@ -414,8 +421,12 @@ body {
 
 /* Enhanced Material Design 3 Navigation Bar */
 .md3-navbar {
+    /* Fallback values for browsers without CSS variable support */
+    background-color: #F7F2FA;
     background-color: var(--md-sys-color-surface-container);
+    border-bottom: 1px solid #CAC4D0;
     border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     box-shadow: var(--md-sys-elevation-level2);
     height: 72px;
     display: flex;
@@ -425,6 +436,7 @@ body {
     top: 0;
     z-index: 1000;
     backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
     transition: all var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
 }
 
@@ -531,12 +543,18 @@ body {
 
 /* Enhanced Material Design 3 Cards */
 .md3-card {
+    /* Fallback values for browsers without CSS variable support */
+    background-color: #F7F2FA;
     background-color: var(--md-sys-color-surface-container);
+    border-radius: 16px;
     border-radius: var(--md-sys-shape-corner-large);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
     box-shadow: var(--md-sys-elevation-level1);
     margin-bottom: 24px;
     overflow: hidden;
+    transition: all 0.2s ease;
     transition: all var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+    border: 1px solid #CAC4D0;
     border: 1px solid var(--md-sys-color-outline-variant);
     position: relative;
 }
@@ -644,8 +662,12 @@ body {
 }
 
 .md3-button-filled {
+    /* Fallback values for browsers without CSS variable support */
+    background-color: #1565C0;
     background-color: var(--md-sys-color-primary);
+    color: #FFFFFF;
     color: var(--md-sys-color-on-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
     box-shadow: var(--md-sys-elevation-level1);
 }
 
@@ -965,30 +987,37 @@ form[style*="grid-template-columns"] .md3-button {
 
 /* Material Design 3 Utility Classes */
 .md3-text-primary {
+    color: #1565C0; /* Fallback */
     color: var(--md-sys-color-primary);
 }
 
 .md3-text-secondary {
+    color: #546E7A; /* Fallback */
     color: var(--md-sys-color-secondary);
 }
 
 .md3-text-error {
+    color: #B3261E; /* Fallback */
     color: var(--md-sys-color-error);
 }
 
 .md3-text-success {
+    color: #2E7D32; /* Fallback */
     color: var(--md-sys-color-success);
 }
 
 .md3-text-warning {
+    color: #F57C00; /* Fallback */
     color: var(--md-sys-color-warning);
 }
 
 .md3-text-on-surface {
+    color: #1C1B1F; /* Fallback */
     color: var(--md-sys-color-on-surface);
 }
 
 .md3-text-on-surface-variant {
+    color: #49454F; /* Fallback */
     color: var(--md-sys-color-on-surface-variant);
 }
 

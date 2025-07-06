@@ -1,0 +1,224 @@
+{% extends "layout.html" %}
+
+{% block title %}HF Spaces 配色测试页面{% endblock %}
+
+{% block content %}
+<div class="md3-main-container">
+    <div class="md3-main-content">
+        <div class="md3-card">
+            <div class="md3-card-header">
+                <h2 class="md3-card-title">
+                    <i class="material-icons">palette</i>
+                    Hugging Face Spaces 配色测试
+                </h2>
+                <p class="md3-card-subtitle">验证Material Design 3样式在HF Spaces环境中的显示效果</p>
+            </div>
+            <div class="md3-card-content">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3>环境检测</h3>
+                        <div id="environment-info">
+                            <p><strong>当前环境:</strong> <span id="current-env">检测中...</span></p>
+                            <p><strong>CSS变量支持:</strong> <span id="css-support">检测中...</span></p>
+                            <p><strong>用户代理:</strong> <span id="user-agent">检测中...</span></p>
+                            <p><strong>主机名:</strong> <span id="hostname">检测中...</span></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h3>样式测试</h3>
+                        <div class="style-test-grid">
+                            <div class="md3-button-filled" style="margin: 5px;">主要按钮</div>
+                            <div class="md3-button-outlined" style="margin: 5px;">轮廓按钮</div>
+                            <div class="md3-button-text" style="margin: 5px;">文本按钮</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr style="margin: 20px 0;">
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>颜色测试</h3>
+                        <div class="color-test-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                            <div class="md3-text-primary">主要颜色文本</div>
+                            <div class="md3-text-secondary">次要颜色文本</div>
+                            <div class="md3-text-error">错误颜色文本</div>
+                            <div class="md3-text-success">成功颜色文本</div>
+                            <div class="md3-text-warning">警告颜色文本</div>
+                            <div class="md3-text-on-surface">表面文本</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr style="margin: 20px 0;">
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>股票趋势颜色测试</h3>
+                        <div class="trend-test-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                            <div class="trend-up">上涨 +5.23%</div>
+                            <div class="trend-down">下跌 -3.45%</div>
+                            <div class="trend-neutral">平盘 0.00%</div>
+                            <div class="md3-text-bull">牛市指标</div>
+                            <div class="md3-text-bear">熊市指标</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr style="margin: 20px 0;">
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>评分徽章测试</h3>
+                        <div class="badge-test-grid" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <span class="md3-badge md3-score-excellent">优秀</span>
+                            <span class="md3-badge md3-score-good">良好</span>
+                            <span class="md3-badge md3-score-fair">一般</span>
+                            <span class="md3-badge md3-score-poor">较差</span>
+                            <span class="md3-badge md3-badge-success">成功</span>
+                            <span class="md3-badge md3-badge-error">错误</span>
+                            <span class="md3-badge md3-badge-warning">警告</span>
+                            <span class="md3-badge md3-badge-primary">主要</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr style="margin: 20px 0;">
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>数据表格测试</h3>
+                        <table class="md3-table">
+                            <thead>
+                                <tr>
+                                    <th>股票代码</th>
+                                    <th>股票名称</th>
+                                    <th>当前价格</th>
+                                    <th>涨跌幅</th>
+                                    <th>评分</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="stock-code">000001</td>
+                                    <td class="stock-name">平安银行</td>
+                                    <td>12.45</td>
+                                    <td class="trend-up">+2.34%</td>
+                                    <td><span class="md3-badge md3-score-good">良好</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="stock-code">000002</td>
+                                    <td class="stock-name">万科A</td>
+                                    <td>8.76</td>
+                                    <td class="trend-down">-1.23%</td>
+                                    <td><span class="md3-badge md3-score-fair">一般</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="stock-code">600036</td>
+                                    <td class="stock-name">招商银行</td>
+                                    <td>45.67</td>
+                                    <td class="trend-up">+0.89%</td>
+                                    <td><span class="md3-badge md3-score-excellent">优秀</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <hr style="margin: 20px 0;">
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>调试工具</h3>
+                        <div class="debug-tools" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="md3-button-outlined" onclick="checkStyles()">检查样式</button>
+                            <button class="md3-button-outlined" onclick="applyEmergencyFix()">应用紧急修复</button>
+                            <button class="md3-button-outlined" onclick="toggleDebugInfo()">切换调试信息</button>
+                            <button class="md3-button-outlined" onclick="reloadStyles()">重新加载样式</button>
+                        </div>
+                        <div id="debug-output" style="margin-top: 10px; padding: 10px; background-color: #f5f5f5; border-radius: 5px; font-family: monospace; font-size: 12px; display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 页面加载完成后执行环境检测
+document.addEventListener('DOMContentLoaded', function() {
+    updateEnvironmentInfo();
+});
+
+function updateEnvironmentInfo() {
+    // 检测当前环境
+    const isHF = window.location.hostname.includes('hf.space') || 
+                 window.location.hostname.includes('huggingface.co') ||
+                 document.querySelector('meta[name="hf-spaces"]') !== null;
+    
+    document.getElementById('current-env').textContent = isHF ? 'Hugging Face Spaces' : '本地环境';
+    
+    // 检测CSS变量支持
+    const cssSupport = window.CSS && CSS.supports && CSS.supports('color', 'var(--test)');
+    document.getElementById('css-support').textContent = cssSupport ? '支持' : '不支持';
+    
+    // 显示用户代理
+    document.getElementById('user-agent').textContent = navigator.userAgent.substring(0, 80) + '...';
+    
+    // 显示主机名
+    document.getElementById('hostname').textContent = window.location.hostname;
+}
+
+function checkStyles() {
+    const output = document.getElementById('debug-output');
+    output.style.display = 'block';
+    
+    const testElement = document.createElement('div');
+    testElement.className = 'md3-card';
+    testElement.style.visibility = 'hidden';
+    testElement.style.position = 'absolute';
+    document.body.appendChild(testElement);
+    
+    const computedStyle = window.getComputedStyle(testElement);
+    const results = [
+        '=== 样式检查结果 ===',
+        '背景色: ' + computedStyle.backgroundColor,
+        '边框半径: ' + computedStyle.borderRadius,
+        '边框: ' + computedStyle.border,
+        '字体: ' + computedStyle.fontFamily,
+        '颜色: ' + computedStyle.color
+    ];
+    
+    document.body.removeChild(testElement);
+    output.innerHTML = results.join('<br>');
+}
+
+function applyEmergencyFix() {
+    if (window.HFSpacesCompatibility && window.HFSpacesCompatibility.applyEmergencyStyles) {
+        window.HFSpacesCompatibility.applyEmergencyStyles();
+        alert('紧急样式修复已应用');
+    } else {
+        alert('兼容性脚本未加载');
+    }
+}
+
+function toggleDebugInfo() {
+    const output = document.getElementById('debug-output');
+    output.style.display = output.style.display === 'none' ? 'block' : 'none';
+}
+
+function reloadStyles() {
+    const links = document.querySelectorAll('link[rel="stylesheet"]');
+    links.forEach(function(link) {
+        const href = link.href;
+        const newHref = href.includes('?') ? href + '&reload=' + Date.now() : href + '?reload=' + Date.now();
+        link.href = newHref;
+    });
+    
+    setTimeout(function() {
+        alert('样式已重新加载');
+        updateEnvironmentInfo();
+    }, 1000);
+}
+</script>
+{% endblock %}
